@@ -12,7 +12,7 @@ La historia clínica guarda hoy el nombre completo, el documento, la fecha y el 
 - El motivo de la solicitud de desbloqueo pasa a un **catálogo cerrado** (sin texto libre), porque el texto libre se guardaba en la solicitud y en los eventos.
 - Inicio del `USER` deja de contar historias "sin documento" y "sin fecha de nacimiento"; conserva "sin fecha de inicio".
 - La búsqueda y el listado trabajan por alias y número de historia; ya no por nombre completo ni documento.
-- Migración de las historias existentes (reales, algunas incompletas): el alias se obtiene de la primera palabra del nombre, la edad se calcula una vez desde la fecha de nacimiento, y los datos que se retiran se borran **solo tras una copia verificada y con aprobación escrita**. Se detalla en `design.md`.
+- Migración de las historias existentes (reales, algunas incompletas): el alias inicial es el nombre de pila más la inicial del primer apellido (editable), la edad se calcula una vez desde la fecha de nacimiento, y los datos que se retiran se borran **solo tras una copia de seguridad verificada y con aprobación escrita**. Las cuentas deshabilitadas o de alumnos que ya no están se borran sin copia, y los autores que no copian antes de la fecha límite pierden los datos digitales (quedan en el papel firmado). Se detalla en `design.md`.
 - La cuenta del tratante conserva su propio documento y celular; sus reglas de formato se escriben en su propio requisito.
 
 ## Capabilities

@@ -62,19 +62,28 @@ La historia SHALL identificar al paciente solo por un alias, su sexo y su edad e
 - **THEN** se trata como adulta, la edad se imprime vacía y no hay error
 
 ### Requirement: Migración de las historias existentes al alias
-Las historias existentes SHALL pasar al formato con alias mediante una acción administrativa única, que no es una operación de la API: el alias es la primera palabra del nombre guardado que no sea una partícula, la edad se calcula una vez y solo entonces se borran las columnas retiradas y los nombres del paciente y apoderado en las firmas. La acción NO SHALL ejecutarse sin copia verificada ni aprobación escrita, y cada historia SHALL quedar marcada como migrada.
+Las historias existentes SHALL pasar al formato con alias con una acción administrativa única fuera de la API: el alias es el nombre de pila más la inicial del primer apellido, sin partículas, la edad se calcula una vez y solo entonces se borran las columnas retiradas y los nombres del paciente y apoderado en las firmas. La acción NO SHALL ejecutarse sin copia verificada ni aprobación escrita, y cada historia SHALL quedar marcada como migrada.
 
 #### Scenario: Migración correcta
 - **WHEN** la acción se ejecuta con aprobación y copia verificada sobre una historia con nombre "Ana Quispe" y nacimiento 2012-05-20 e inicio 2026-05-19
-- **THEN** la historia queda con alias "Ana" y edad 13, y se borran nombre completo, documento, nacimiento, lugar, domicilio, celular, texto de búsqueda y nombres de firma
+- **THEN** la historia queda con alias "Ana Q" y edad 13, y se borran nombre completo, documento, nacimiento, lugar, domicilio, celular, texto de búsqueda y nombres de firma
+
+#### Scenario: Cuentas deshabilitadas o de alumnos que se fueron
+- **WHEN** la acción llega a historias de una cuenta deshabilitada o de un alumno que ya no está en la institución
+- **THEN** sus datos de identidad se borran sin copia previa y la historia queda identificada por alias y número
+
+#### Scenario: Autor que no copia antes de la fecha límite
+- **WHEN** pasa la fecha límite de copia y un autor no respaldó sus historias
+- **THEN** la acción borra los datos antiguos igual, sin esperar al autor, y esos datos quedan solo en el papel firmado
 
 #### Scenario: Historia sin fecha de nacimiento
 - **WHEN** la historia no tiene fecha de nacimiento
 - **THEN** su edad queda vacía y el resto de la migración se aplica igual
 
 #### Scenario: Nombre vacío, de una palabra o con partículas
-- **WHEN** el nombre guardado es nulo, vacío, solo espacios, "Ana" o "de la Cruz Rojas"
-- **THEN** los alias resultan "Paciente", "Paciente", "Paciente", "Ana" y "Cruz", y ninguna historia queda sin alias
+- **WHEN** el nombre guardado es nulo, vacío, solo espacios, "Ana", "de la Cruz Rojas" o "María José Quispe"
+- **THEN** los alias resultan "Paciente", "Paciente", "Paciente", "Ana", "Cruz R" y "María J", y ninguna historia queda sin alias
+- **AND** el alias propuesto es un valor inicial que el tratante puede cambiar
 
 #### Scenario: Reejecución e interrupción
 - **WHEN** la acción se interrumpe a la mitad y se ejecuta de nuevo, incluso con historias que quedaron sin edad por no tener fecha de nacimiento
