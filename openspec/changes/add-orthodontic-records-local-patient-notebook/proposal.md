@@ -11,7 +11,7 @@
 - Avisos: la libreta es del dispositivo, el navegador puede borrarla (por ejemplo Safari tras 7 días sin uso), el papel firmado es el registro oficial; recordatorio de exportar tras 7 días con cambios; petición de almacenamiento persistente.
 - **Equipo compartido:** borrar la libreta, y modo que la borra al cerrar sesión y tras 15 minutos de inactividad.
 - **Búsqueda por nombre o documento solo en el dispositivo**; el listado de coincidencias se pide por identificadores.
-- **Copia de las historias existentes:** hasta una fecha límite fijada por el responsable, el servidor devuelve los datos antiguos solo al autor; el autor los copia a su libreta, exporta un archivo cifrado y la aplicación lo verifica antes de marcar la historia como respaldada. La migración del change del alias no borra sin ese respaldo, salvo decisión escrita.
+- **Copia de las historias existentes:** hasta una fecha límite fijada por el responsable, el servidor devuelve los datos antiguos solo al autor; el autor los copia a su libreta, exporta un archivo cifrado y la aplicación lo verifica antes de marcar la historia como respaldada. Pasada la fecha límite, la migración del change del alias borra igual los datos de quien no los respaldó (quedan solo en el papel firmado), y las cuentas deshabilitadas o de alumnos que ya no están se borran sin copia.
 - Entradas ligadas al número de historia, orden de importación por número de revisión (no por reloj), límites de importación, un único mensaje de error, coordinación entre pestañas y mensajes claros cuando el navegador no ofrece IndexedDB o `crypto.subtle`.
 
 ## Capabilities

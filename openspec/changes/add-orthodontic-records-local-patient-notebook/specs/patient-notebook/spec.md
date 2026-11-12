@@ -161,6 +161,21 @@ El usuario SHALL poder borrar la libreta del dispositivo y marcar el equipo como
 - **THEN** el borrado espera a que esa operación termine, o la operación se cancela sin generar un archivo parcial, y nunca queda un archivo incompleto
 - **AND** la actividad de cualquier pestaña reinicia el plazo en todas
 
+### Requirement: Alias sugerido desde la libreta
+Cuando el usuario escribe el nombre completo en la libreta, el formulario SHALL proponer como alias el nombre de pila más la inicial del primer apellido, sin partículas (por ejemplo "Ana Q"), calculado en el navegador y editable. El nombre NO SHALL enviarse: solo se envía el alias cuando el usuario guarda la historia.
+
+#### Scenario: Propuesta de alias
+- **WHEN** el usuario escribe "Ana Quispe Rojas" en el nombre de la libreta
+- **THEN** el formulario propone el alias "Ana Q" y ninguna petición contiene el nombre
+
+#### Scenario: Alias cambiado por el usuario
+- **WHEN** el usuario reemplaza la propuesta por "Anita" y guarda
+- **THEN** el servidor guarda "Anita" y la libreta conserva el nombre completo
+
+#### Scenario: Nombre de una palabra o vacío
+- **WHEN** el nombre tiene una sola palabra o está vacío
+- **THEN** la propuesta es esa palabra, o no hay propuesta, y el alias lo escribe el usuario
+
 ### Requirement: Búsqueda local por nombre o documento
 La búsqueda por nombre o documento SHALL resolverse solo en el dispositivo sobre la libreta, sin distinguir mayúsculas ni tildes, y mostrar las historias coincidentes; el texto buscado NO SHALL enviarse. El listado de las coincidencias SHALL pedirse al servidor por identificadores de historia, hasta 50.
 
@@ -194,6 +209,10 @@ Hasta la fecha límite de copia, el servidor SHALL devolver al autor, y solo a �
 #### Scenario: Fecha límite vencida
 - **WHEN** pasa la fecha límite de copia o la historia ya se migró
 - **THEN** la API deja de devolver los datos antiguos y la copia no está disponible
+
+#### Scenario: Historias sin respaldar tras la fecha límite
+- **WHEN** pasa la fecha límite de copia y una historia no tiene respaldo
+- **THEN** la migración del alias borra sus datos antiguos igual y la historia sigue funcionando con los campos de la libreta vacíos
 
 #### Scenario: Cambio de autor durante la copia
 - **WHEN** la historia deja de ser del usuario mientras copia

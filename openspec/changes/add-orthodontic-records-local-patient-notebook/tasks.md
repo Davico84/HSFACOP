@@ -12,6 +12,7 @@
 - [ ] 1.1c Entrada con `recordNumber` y `revision`; ignorar la entrada si el número no coincide con el de la historia; verificar con el Scenario "Entrada de otra historia con el mismo identificador"
 - [ ] 1.2 Paso 1: campos "solo en este dispositivo" (nombre, documento, nacimiento, lugar, domicilio, celular) y datos de quien firma en el paso de firmas, con aviso de que no se envían; verificar con los Scenario "Historia sin libreta" y "Guardar en la libreta" (Vitest + MSW comprobando que ninguna petición los lleva)
 - [ ] 1.3 Aviso del primer guardado, petición de `navigator.storage.persist()` y recordatorio de exportar tras 7 días; verificar con los Scenario "Primer uso", "Recordatorio" y "El navegador borró la libreta"
+- [ ] 1.4 Alias sugerido desde el nombre de la libreta (nombre de pila más inicial del primer apellido, sin partículas), editable y calculado en el navegador; verificar con los Scenario de "Alias sugerido desde la libreta" y que ninguna petición lleva el nombre
 
 ## 2. Frontend: impresión
 
@@ -41,7 +42,7 @@
 ## 6. Copia de las historias existentes
 
 - [ ] 6.1 Acción "Pasar a mi libreta": lectura de `legacyIdentity`, escritura local, exportación del archivo cifrado, descifrado en memoria y comparación campo por campo, y solo entonces marca de respaldada; verificar con los Scenario "Copiar, exportar y verificar", "Copia sin respaldo", "Historia ya migrada" y "Cambio de autor durante la copia"
-- [ ] 6.2 Informe para el responsable (el borrado administrativo no corre si quedan historias sin respaldar salvo decisión escrita) con cuántas historias por autor siguen sin copiar, sin datos del paciente, para consultarlo antes de la migración administrativa; verificar que el informe no muestra ningún valor del paciente
+- [ ] 6.2 Informe para el responsable (solo informativo; pasada la fecha límite se borra igual) con cuántas historias por autor siguen sin copiar, sin datos del paciente, para consultarlo antes de la migración administrativa; verificar que el informe no muestra ningún valor del paciente
 
 ## 7. Integración
 
