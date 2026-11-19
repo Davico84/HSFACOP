@@ -26,7 +26,7 @@
 - [x] 2.3 Paso de firmas sin campos de nombre ni parentesco; verificar con el Scenario "Apoderado firma por el paciente menor de edad"
 - [x] 2.4 Listado y tarjetas con el alias, sin documento, y búsqueda por alias o número con el transporte de `update-backend-logging-no-patient-data`; verificar con los Scenario "Listado en tarjetas" y "Búsqueda por documento o número" y con una prueba de red que ni el alias ni el número viajan en la URL, ni en los errores
 - [x] 2.4b Hojas de Moyers, Nance, Tanaka-Johnston y Wolford con el alias en lugar del nombre; nombre del archivo y título del PDF sin alias; verificar con los Scenario de "Análisis de Moyers", "Análisis de Nance" y "Hojas impresas de Tanaka-Johnston y Wolford" y comparando el PDF
-- [ ] 2.5 Hoja 1 impresa con alias, sexo, edad y fecha de inicio, y líneas en blanco para los datos a mano; hoja de firmas con líneas en blanco; verificar con los Scenario "Datos del paciente a mano" y "Datos escritos sin líneas de llenado a mano" y comparando el PDF con Edge headless
+- [x] 2.5 Hoja 1 impresa con alias, sexo, edad y fecha de inicio, y líneas en blanco para los datos a mano; hoja de firmas con líneas en blanco; verificar con los Scenario "Datos del paciente a mano" y "Datos escritos sin líneas de llenado a mano" y comparando el PDF con Edge headless
 - [x] 2.6 Diálogo de desbloqueo con motivos del catálogo, sin texto libre; verificar con "Motivo fuera del catálogo" (Vitest + MSW)
 - [x] 2.7 Prueba e2e (Playwright) de crear una historia con alias, imprimir y reimprimir; comprobar en la red que ninguna petición lleva campos retirados; verificar que pasa
 
@@ -41,8 +41,8 @@
 
 ## 4. Integración
 
-- [ ] 4.1 Actualizar `docs/domain.md` (glosario y ER del paciente) y `docs/vision.md` ("Estado de capacidades"); verificar que enlazan este change
-- [ ] 4.2 `openspec validate update-orthodontic-records-pseudonymous-patient --strict`, `mvn verify` y `pnpm validate` en verde; verificar la salida de los tres
+- [x] 4.1 Actualizar `docs/domain.md` (glosario y ER del paciente) y `docs/vision.md` ("Estado de capacidades"); verificar que enlazan este change
+- [x] 4.2 `openspec validate update-orthodontic-records-pseudonymous-patient --strict`, `mvn verify` y `pnpm validate` en verde; verificar la salida de los tres
 
 ## 5. Ventana de copia a la libreta
 
