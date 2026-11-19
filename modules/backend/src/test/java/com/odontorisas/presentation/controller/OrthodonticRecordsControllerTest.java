@@ -55,6 +55,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -581,6 +582,50 @@ class OrthodonticRecordsControllerTest {
     }
 
     /** Scenario "Cuerpo inválido": vacío, no objeto o con campos desconocidos responden 400. */
+    /** Scenarios "Buscar por identificadores", "Más de 50 identificadores" y "Texto e identificadores a la vez". */
+    @Test
+    void search_by_ids_takes_them_from_the_body_without_text_and_is_never_cached() throws Exception {
+        when(service.listByIds(any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of(sampleRow())));
+
+        search("{\"recordIds\":[10,11,12]}", "USER")
+            .andExpect(status().isOk())
+            .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+            .andExpect(jsonPath("$.content[0].recordNumber").value("AEO-0015"));
+
+        verify(service).listByIds(eq(new RecordActor(1L, Role.USER)), eq(List.of(10L, 11L, 12L)), isNull(), any());
+        verify(service, never()).list(any(), any(), any(), any());
+    }
+
+    @Test
+    void a_text_search_is_not_cached_either() throws Exception {
+        when(service.list(any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of(sampleRow())));
+        search("{\"q\":\"mateo\"}", "USER")
+            .andExpect(status().isOk())
+            .andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")));
+    }
+
+    @Test
+    void search_by_ids_accepts_up_to_50_and_rejects_51() throws Exception {
+        when(service.listByIds(any(), any(), any(), any())).thenReturn(new PageImpl<>(List.of()));
+        String fifty = java.util.stream.IntStream.rangeClosed(1, 50).mapToObj(String::valueOf).collect(java.util.stream.Collectors.joining(","));
+        String fiftyOne = fifty + ",51";
+
+        search("{\"recordIds\":[" + fifty + "]}", "USER").andExpect(status().isOk());
+        search("{\"recordIds\":[" + fiftyOne + "]}", "USER").andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void search_needs_exactly_text_or_ids_and_valid_ids() throws Exception {
+        search("{\"q\":\"mateo\",\"recordIds\":[10]}", "USER").andExpect(status().isBadRequest());
+        search("{}", "USER").andExpect(status().isBadRequest());
+        search("{\"recordIds\":[0]}", "USER").andExpect(status().isBadRequest());
+        search("{\"recordIds\":[-3]}", "USER").andExpect(status().isBadRequest());
+        search("{\"recordIds\":[null]}", "USER").andExpect(status().isBadRequest());
+        search("{\"recordIds\":\"10\"}", "USER").andExpect(status().isBadRequest());
+        search("{\"recordIds\":[10],\"extra\":1}", "USER").andExpect(status().isBadRequest());
+        verify(service, never()).listByIds(any(), any(), any(), any());
+    }
+
     @Test
     void search_rejects_empty_non_object_and_unknown_field_bodies() throws Exception {
         search(null, "USER").andExpect(status().isBadRequest());

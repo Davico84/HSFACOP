@@ -229,7 +229,7 @@ class OpenApiContractIT extends AbstractIntegrationTest {
         List<String> ids = allOperations().stream().map(op -> op.get("operationId").stringValue()).toList();
         assertThat(ids).doesNotHaveDuplicates()
             .containsExactlyInAnyOrder("register", "login", "refresh", "logout", "listUsers", "changeUserStatus",
-                "listRecords", "searchRecords", "createRecord", "getRecord", "getLegacyIdentity", "updateRecord", "changeRecordQuota", "getRecordQuota",
+                "listRecords", "searchRecords", "createRecord", "getRecord", "getLegacyIdentity", "confirmNotebookBackup", "updateRecord", "changeRecordQuota", "getRecordQuota",
                 "getMyDashboard", "getAdminDashboard", "getCoordinatorDashboard",
                 "listCohorts", "createCohort", "renameCohort", "changeUserCohort", "changeUserRole",
                 "regenerateCohortCode", "changeCohortRegistration", "getMyProfile", "updateMyProfile",

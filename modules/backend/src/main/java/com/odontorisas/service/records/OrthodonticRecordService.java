@@ -318,6 +318,56 @@ public class OrthodonticRecordService {
      */
     @Transactional(readOnly = true)
     public Page<RecordSummaryView> list(RecordActor actor, String query, Long cohortId, Pageable pageable) {
+        Specification<OrthodonticRecord> spec = scope(actor, cohortId);
+        if (spec == null) {
+            return Page.empty(pageable);
+        }
+        String term = SearchNormalizer.normalize(query);
+        if (!term.isEmpty()) {
+            spec = spec.and(OrthodonticRecordSpecifications.searchTextContains(term));
+        }
+        return records.findAll(spec, pageable).map(OrthodonticRecordService::toSummary);
+    }
+
+    /**
+     * Listado de las historias con esos identificadores (la búsqueda local de la libreta), con el mismo
+     * alcance por rol y el mismo orden que el listado normal: las que no están al alcance del actor no
+     * aparecen. Lista vacía = página vacía.
+     */
+    @Transactional(readOnly = true)
+    public Page<RecordSummaryView> listByIds(RecordActor actor, List<Long> ids, Long cohortId, Pageable pageable) {
+        if (ids == null || ids.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        Specification<OrthodonticRecord> spec = scope(actor, cohortId);
+        if (spec == null) {
+            return Page.empty(pageable);
+        }
+        return records.findAll(spec.and(OrthodonticRecordSpecifications.idIn(ids)), pageable)
+            .map(OrthodonticRecordService::toSummary);
+    }
+
+    /**
+     * El autor marca su historia como respaldada: copió los datos antiguos a su libreta local, exportó un
+     * archivo cifrado y lo verificó. Idempotente (marcar de nuevo no cambia nada); solo el autor y solo
+     * mientras la ventana de copia siga abierta y la historia no esté migrada; si no, responde como una
+     * historia inexistente. La marca no lleva ningún dato del paciente.
+     */
+    @Transactional
+    public void confirmNotebookBackup(RecordActor actor, Long id) {
+        OrthodonticRecord record = records.findByIdForUpdate(id).orElseThrow(RecordNotFoundException::new);
+        boolean author = record.getAuthor().getId().equals(actor.userId());
+        if (!author || actor.coordinator() || record.getIdentityMigratedAt() != null || !legacyCopy.isOpenAt(clock.instant())) {
+            throw new RecordNotFoundException();
+        }
+        if (record.getNotebookBackupConfirmedAt() == null) {
+            record.setNotebookBackupConfirmedAt(clock.instant());
+            records.saveAndFlush(record);
+        }
+    }
+
+    /** Filtro de alcance del actor sobre el listado; {@code null} = nada a su alcance (p. ej. coordinación sin turmas). */
+    private Specification<OrthodonticRecord> scope(RecordActor actor, Long cohortId) {
         Specification<OrthodonticRecord> spec = Specification.unrestricted();
         if (actor.coordinator()) {
             Set<Long> scope = new HashSet<>(cohorts.findCoordinatorCohortIds(actor.userId()));
@@ -325,17 +375,14 @@ public class OrthodonticRecordService {
                 scope.retainAll(Set.of(cohortId));
             }
             if (scope.isEmpty()) {
-                return Page.empty(pageable);
+                return null;
             }
-            spec = spec.and(OrthodonticRecordSpecifications.authorInCohorts(scope));
-        } else if (!actor.admin()) {
-            spec = spec.and(OrthodonticRecordSpecifications.authoredBy(actor.userId()));
+            return spec.and(OrthodonticRecordSpecifications.authorInCohorts(scope));
         }
-        String term = SearchNormalizer.normalize(query);
-        if (!term.isEmpty()) {
-            spec = spec.and(OrthodonticRecordSpecifications.searchTextContains(term));
+        if (!actor.admin()) {
+            return spec.and(OrthodonticRecordSpecifications.authoredBy(actor.userId()));
         }
-        return records.findAll(spec, pageable).map(OrthodonticRecordService::toSummary);
+        return spec;
     }
 
     /** Historia al alcance del actor, o 404 (sin revelar si existe). */

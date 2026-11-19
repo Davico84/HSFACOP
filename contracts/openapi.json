@@ -1179,12 +1179,78 @@
         }
       }
     },
+    "/api/orthodontic-records/{id}/notebook-backup": {
+      "post": {
+        "tags": [
+          "orthodontic-records"
+        ],
+        "summary": "El autor marca su historia como respaldada en su libreta local",
+        "description": "Sin datos del paciente. Idempotente. Solo el autor, hasta la fecha límite de copia y mientras la historia no se migre; si no, responde 404.",
+        "operationId": "confirmNotebookBackup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Historia marcada como respaldada (o ya lo estaba)"
+          },
+          "404": {
+            "description": "No existe, no es tuya, ya pasó la fecha límite o ya se migró",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error inesperado",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso para realizar esta acción",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/orthodontic-records/search": {
       "post": {
         "tags": [
           "orthodontic-records"
         ],
-        "summary": "Buscar historias por texto (el texto va en el cuerpo, no en la URL)",
+        "summary": "Buscar historias por texto o por identificadores (van en el cuerpo, no en la URL)",
         "operationId": "searchRecords",
         "parameters": [
           {
@@ -4427,15 +4493,28 @@
         "type": "object",
         "properties": {
           "q": {
-            "type": "string",
-            "description": "Busca en paciente, documento y número (sin distinguir tildes ni mayúsculas); vacío lista sin filtrar",
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Busca en alias y número (sin distinguir tildes ni mayúsculas); vacío lista sin filtrar. No va con recordIds",
             "maxLength": 120,
             "minLength": 0
+          },
+          "recordIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "description": "Identificadores de historias (hasta 50), de la búsqueda local de la libreta. No va con q",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "maxItems": 50,
+            "minItems": 0
           }
-        },
-        "required": [
-          "q"
-        ]
+        }
       },
       "PageResponseRecordSummaryResponse": {
         "type": "object",

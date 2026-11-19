@@ -84,6 +84,11 @@ public class OrthodonticRecord {
     @Column(name = "identity_migrated_at")
     private Instant identityMigratedAt;
 
+    /** El autor copió los datos antiguos a su libreta local y verificó el archivo exportado (sin datos del paciente). */
+    @OptimisticLock(excluded = true)
+    @Column(name = "notebook_backup_confirmed_at")
+    private Instant notebookBackupConfirmedAt;
+
     /** Contenido clínico serializado (JSON). */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "jsonb")
