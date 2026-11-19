@@ -7,7 +7,7 @@
 
 ## 1. Frontend: libreta local
 
-- [ ] 1.1 Módulo `patientNotebook` (`modules/frontend/src/modules/records/notebook/`): envoltorio de IndexedDB, esquema Zod de la entrada (con reglas de documento), clave `[accountId, recordId]`, lectura, escritura, borrado y listado; verificar con tests (Vitest + `fake-indexeddb`) de los Scenario "Guardar en la libreta", "Documento con formato incorrecto" y "Otra cuenta en el mismo dispositivo"
+- [x] 1.1 Módulo `patientNotebook` (`modules/frontend/src/modules/records/notebook/`): envoltorio de IndexedDB, esquema Zod de la entrada (con reglas de documento), clave `[accountId, recordId]`, lectura, escritura, borrado y listado; verificar con tests (Vitest + `fake-indexeddb`) de los Scenario "Guardar en la libreta", "Documento con formato incorrecto" y "Otra cuenta en el mismo dispositivo"
 - [ ] 1.1b Matriz de capacidades: sin IndexedDB, sin `crypto.subtle`, cuota llena, modo privado, actualización bloqueada por otra pestaña y `storage.persist` denegado, con mensajes visibles y sin guardado alternativo; verificar con los Scenario de "Libreta no disponible en el navegador" y con una prueba de actualización bloqueada con dos pestañas
 - [ ] 1.1c Entrada con `recordNumber` y `revision`; ignorar la entrada si el número no coincide con el de la historia; verificar con el Scenario "Entrada de otra historia con el mismo identificador"
 - [ ] 1.2 Paso 1: campos "solo en este dispositivo" (nombre, documento, nacimiento, lugar, domicilio, celular) y datos de quien firma en el paso de firmas, con aviso de que no se envían; verificar con los Scenario "Historia sin libreta" y "Guardar en la libreta" (Vitest + MSW comprobando que ninguna petición los lleva)

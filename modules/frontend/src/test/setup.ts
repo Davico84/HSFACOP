@@ -1,5 +1,7 @@
 // Matchers de jest-dom (toBeInTheDocument, etc.) para el `expect` de Vitest.
 import "@testing-library/jest-dom/vitest";
+import { IDBFactory } from "fake-indexeddb";
+import "fake-indexeddb/auto";
 import { afterAll, afterEach, beforeAll } from "vitest";
 import { cleanup, configure } from "@testing-library/react";
 import { server } from "./mocks/server";
@@ -27,6 +29,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
   server.resetHandlers();
   useRecordsSearchStore.getState().clear(); // el texto buscado vive en sessionStorage: no pasa de un test a otro.
+  globalThis.indexedDB = new IDBFactory(); // la libreta local no pasa de un test a otro.
   cleanup(); // con globals desactivados, RTL no limpia solo entre tests.
 });
 
