@@ -17,9 +17,9 @@
 ## 2. Frontend: impresión
 
 - [ ] 2.1 La hoja 1 y la hoja de firmas leen la libreta y completan nombre, documento, nacimiento, domicilio, celular y firmantes; sin entrada, líneas en blanco; verificar con los Scenario "Imprimir con libreta" e "Imprimir sin libreta" y comparando el PDF con Edge headless
-- [ ] 2.2 Título del documento y nombre propuesto del PDF sin datos del paciente ni alias; verificar con el Scenario "Título y archivo del PDF"
-- [ ] 2.3 Comprobar que la petición que registra la impresión lleva solo el identificador y la marca de avance; verificar con el Scenario "Registro de la impresión"
-- [ ] 2.4 Tomar una copia de la entrada antes de registrar la impresión, abortar sin registrar ni fijar si la lectura falla, y escapar todos los campos al imprimir (sin HTML ni scripts); verificar con los Scenario "Fallo de lectura de la libreta al imprimir" y "Entrada que cambia mientras se imprime" y con un test de entradas con `<script>` e imágenes
+- [x] 2.2 Título del documento y nombre propuesto del PDF sin datos del paciente ni alias; verificar con el Scenario "Título y archivo del PDF"
+- [x] 2.3 Comprobar que la petición que registra la impresión lleva solo el identificador y la marca de avance; verificar con el Scenario "Registro de la impresión"
+- [x] 2.4 Tomar una copia de la entrada antes de registrar la impresión, abortar sin registrar ni fijar si la lectura falla, y escapar todos los campos al imprimir (sin HTML ni scripts); verificar con los Scenario "Fallo de lectura de la libreta al imprimir" y "Entrada que cambia mientras se imprime" y con un test de entradas con `<script>` e imágenes
 
 ## 3. Frontend: exportar e importar
 

@@ -6,17 +6,22 @@ import { PrintField } from "./PrintField";
 import { PrintLines } from "./PrintLines";
 import { PrintPage } from "./PrintPage";
 import { PrintTitle } from "./PrintTitle";
+import type { NotebookEntry } from "../../notebook/notebookSchema";
+import { formatBirth, formatNotebookDocument } from "../../notebook/notebookDisplay";
 
 interface PrintPatientSectionProps {
   record: RecordResponse;
+  /** Entrada de la libreta local (copia tomada antes de imprimir); sin ella las líneas quedan en blanco. */
+  notebook?: NotebookEntry | null;
 }
 
 /**
  * Pág. 1: odontólogo tratante, datos del paciente y anamnesis (texto vacío → "No refiere"). El sistema
  * guarda alias, sexo y edad; el nombre y apellidos, el documento, el nacimiento, el domicilio y el celular
- * quedan en blanco para escribirlos a mano.
+ * quedan en blanco para escribirlos a mano, o los completa la libreta local del dispositivo si tiene
+ * entrada de esa historia (el navegador los une al imprimir; el servidor nunca los recibe).
  */
-export function PrintPatientSection({ record }: PrintPatientSectionProps) {
+export function PrintPatientSection({ record, notebook = null }: PrintPatientSectionProps) {
   const a = record.content.anamnesis;
   const sex = sexOptions.find((option) => option.value === record.patientSex)?.label ?? "";
   return (
@@ -28,16 +33,16 @@ export function PrintPatientSection({ record }: PrintPatientSectionProps) {
         <PrintField label="Edad:" value={formatAge(record.patientAge)} lined center />
         <PrintField label="Sexo:" value={sex} lined center />
       </div>
-      <div className="flex"><PrintField label="Nombre y apellidos" value="" lined /></div>
+      <div className="flex"><PrintField label="Nombre y apellidos" value={notebook?.fullName ?? ""} lined /></div>
       <div className="flex gap-4">
         <PrintField label="Fecha de inicio de tratamiento:" value={formatDate(record.treatmentStartDate)} grow={2} lined center />
-        <PrintField label="Documento" value="" lined center />
+        <PrintField label="Documento" value={notebook ? formatNotebookDocument(notebook.documentType, notebook.documentNumber) : ""} lined center />
       </div>
       <div className="flex gap-4">
-        <PrintField label="Lugar y fecha de nacimiento del paciente" value="" grow={2} lined center />
-        <PrintField label="Celular" value="" lined center />
+        <PrintField label="Lugar y fecha de nacimiento del paciente" value={notebook ? formatBirth(notebook) : ""} grow={2} lined center />
+        <PrintField label="Celular" value={notebook?.phone ?? ""} lined center />
       </div>
-      <div className="flex"><PrintField label="Domicilio" value="" lined /></div>
+      <div className="flex"><PrintField label="Domicilio" value={notebook?.address ?? ""} lined /></div>
       <PrintLines label="Queja principal - ¿Por qué buscó tratamiento?" value={a.chiefComplaint} emptyText={NOT_REPORTED} lines={2} />
       <PrintLines label="Gustos personales (color, canal preferido en YouTube, juguetes)." value={a.personalPreferences} emptyText={NOT_REPORTED} lines={1} />
       <PrintChoice label="Índice de colaboración/cooperación:" options={cooperationOptions} value={a.cooperation} />
