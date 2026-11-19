@@ -141,10 +141,20 @@ export async function putEntries(entries: NotebookEntry[]): Promise<void> {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE, "readwrite");
       const store = tx.objectStore(STORE);
-      for (const entry of entries) store.put(entry);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(classify(tx.error));
       tx.onabort = () => reject(classify(tx.error));
+      try {
+        for (const entry of entries) store.put(entry);
+      } catch (error) {
+        // Un fallo a mitad (cuota, datos) cancela la transacción entera: todo o nada.
+        reject(classify(error));
+        try {
+          tx.abort();
+        } catch {
+          /* ya terminó */
+        }
+      }
     });
   } catch (error) {
     throw classify(error);
