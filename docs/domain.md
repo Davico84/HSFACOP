@@ -45,6 +45,8 @@ Dimensión de **negocio** (sustituible por proyecto). Base de conocimiento del d
 | Análisis de Wolford | Discrepancia de tamaño dentario: total = suma 12 maxilares (16→26) − suma 12 mandibulares (46→36) × 1,1; parcial = suma 6 maxilares (13→23) − suma 6 mandibulares (43→33) × 1,3 (mm, un decimal, con signo). Las sumas se sugieren de los anchos de Bolton (incisivos y 1eros molares) y Nance (caninos y premolares) y el tratante puede escribir otras. |
 | Predisposición de apiñamiento | Tabla 2 de la ficha de Moyers: el odontólogo anota qué arcada/lado resulta positivo (sobra espacio), nulo o negativo (falta espacio). |
 | Apoderado | Quien firma por un paciente menor de 18 años. |
+| Libreta local | Datos del paciente que el servidor ya no guarda (nombre completo, documento, fecha y lugar de nacimiento, domicilio, celular, y nombre y parentesco de quien firma), guardados **solo en el navegador** de cada dispositivo (IndexedDB), por cuenta e historia. El navegador los une al imprimir; el servidor nunca los recibe. Se respalda y se pasa de un dispositivo a otro con un archivo cifrado (`add-orthodontic-records-local-patient-notebook`). |
+| Archivo de la libreta | Archivo `.hsflibreta` con las entradas de la libreta cifradas en el navegador (AES-GCM, clave PBKDF2 de una frase de 6 palabras generada por la aplicación y mostrada una sola vez). Sin él y su frase no hay recuperación. |
 | Cupo de historias | Máximo de historias clínicas que un tratante (`USER`) puede crear; toda cuenta nueva nace con el cupo inicial (1 por defecto) y el `ADMIN` lo ajusta por cuenta. Sin cupo = sin límite. Al llegar al tope no crea más, pero edita e imprime las suyas. |
 | Historia completa | Historia con datos en los 7 pasos clínicos (1–7); Firmas (paso 8) no cuenta. Una historia anterior a las métricas, aún no vuelta a guardar, figura "sin calcular". |
 | Alias del paciente | Una o dos palabras, sin apellidos (máx. 30 caracteres), con el que se identifica al paciente en el sistema. El nombre completo, el documento, el nacimiento, el domicilio y el celular **no se guardan en el servidor**: se escriben a mano en la hoja impresa o viven en la libreta local del navegador (`add-orthodontic-records-local-patient-notebook`). |
@@ -99,6 +101,13 @@ Enlace de restablecimiento de contraseña (`add-password-change-reset`).
 ### `authentication` → **RefreshToken** *(construida)*
 Token de refresco persistido para rotación y revocación real (logout). Se guarda el **hash** del token, nunca el valor en claro.
 - `user` (FK), `tokenHash` (único), `expiresAt`, `revoked`, `createdAt`. El access token es JWT stateless (no se persiste).
+
+### `patient-notebook` → **Entrada de la libreta** *(construida; solo en el navegador, nunca en la base)*
+Entrada local de una historia, en IndexedDB (`hsfacop-notebook`, almacén `entries`, clave `[accountId, recordId]`). No hay tabla en el servidor.
+- Datos (todos opcionales, ≤ 200 caracteres cada uno): `fullName`, `documentType` (`DNI` 8 dígitos | `FOREIGNER_CARD` 9 | `PASSPORT` 6–12, solo dígitos) + `documentNumber`, `birthDate`, `birthPlace`, `address`, `phone`, `signerName` y `signerRelationship` (quien firma, paciente o apoderado).
+- Metadatos: `recordNumber` (el `AEO-NNNN`: si no coincide con el que devuelve el servidor para ese identificador, la entrada se ignora), `revision` (sube en cada guardado y ordena las versiones al importar; nunca el reloj), `updatedAt` (solo informativo), `exportedAt` (alimenta el recordatorio de los 7 días) y `schemaVersion`.
+- Marca en el servidor (sin datos del paciente): `OrthodonticRecord.notebookBackupConfirmedAt`, que el autor pone al copiar los datos antiguos de una historia a su libreta y verificar el archivo exportado (`POST /{id}/notebook-backup`, idempotente, solo el autor y solo hasta `LEGACY_COPY_DEADLINE`).
+- Equipo compartido (ajuste del dispositivo): al cerrar sesión y tras 15 minutos sin actividad se ofrece exportar y se borra la libreta.
 
 ### `orthodontic-records` → **OrthodonticRecord** *(construida, fases 1 y 2)*
 Historia clínica de ortodoncia de un paciente. Columnas para lo que se lista o busca; el contenido clínico va en JSON (JSONB) tipado por paso.

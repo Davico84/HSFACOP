@@ -375,3 +375,15 @@ Cuando un componente impone **estructura** pero el **contenido** lo decide quien
 
 > [!NOTE]
 > Las **pantallas** (`screens/**`) son hojas de composición: montan una feature en un layout. **No** son lugar para slots/children — el patrón rinde en componentes **reutilizables** de `core`. Señal de mal uso: envolver una **única** vista en un contenedor multivista con `onViewChange={() => {}}` (no-op).
+
+## 5. Libreta local del paciente (IndexedDB)
+
+Capacidad `patient-notebook` (`modules/records/notebook/`): los datos del paciente que el servidor ya no guarda viven **solo en el navegador**. Reglas para tocarla:
+
+- **Nada de la libreta entra en el formulario de la historia ni en una petición.** Los campos "Solo en este dispositivo" usan su propio `useForm` (`useNotebookDraft`) que guarda en IndexedDB al dejar de escribir y solo si es válido; los botones que haya dentro del `<form>` de la historia llevan `type="button"`. Una prueba de red (MSW y Playwright) comprueba que ni la dirección, ni las cabeceras, ni el cuerpo llevan fragmentos del paciente.
+- **Un envoltorio mínimo** (`notebookDb.ts`, sin librerías) con errores clasificados (`unavailable`, `quota`, `blocked`): si algo falla se dice y **no se guarda en otro lugar**. `fake-indexeddb` y un `IDBFactory` nuevo por test (en `test/setup.ts`).
+- **Cifrado** (`notebookFile.ts`, `passphrase.ts`): AES-GCM, PBKDF2-SHA256 (≥ 600 000 iteraciones), IV de 96 bits y sal de 16 bytes nuevos en cada exportación, AAD con versión, cuenta, KDF, iteraciones, sal, algoritmo e IV, todo en base64url sin relleno. La frase de 6 palabras se genera con `crypto.getRandomValues` y se muestra una sola vez. Importar valida tamaño, parámetros, límites (5 MiB, 5 000 entradas, 200 caracteres, 5 niveles) y fechas, omite historias ajenas, combina por `revision` y escribe todo o nada; **todo fallo es el mismo mensaje**.
+- **Bloqueo** (`notebookLocks.ts`): exportar, importar, imprimir y borrar toman un bloqueo exclusivo (Web Locks; sin ellos, se encadenan en la pestaña). La actividad se comparte entre pestañas con `BroadcastChannel`.
+- **Impresión**: la copia de la entrada se toma **antes** de registrar la impresión; si la lectura falla no se registra ni se fija nada y se ofrece reintentar o imprimir en blanco (que registra con normalidad). El título del documento es genérico y todos los campos se imprimen como texto.
+- **Búsqueda**: nombre y documento se buscan en el dispositivo y las historias se piden por identificadores (`POST`, hasta 50, sin texto); un nombre completo sin coincidencias no sale del navegador.
+- Rutas y menú: `/libreta` ("Mi libreta") para `ADMIN` y `USER`; la coordinación es de solo lectura y no tiene libreta.

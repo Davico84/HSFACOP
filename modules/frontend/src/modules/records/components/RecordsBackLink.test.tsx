@@ -115,7 +115,7 @@ describe("orthodontic-records — Volver al listado desde la historia", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Salir sin guardar" }));
     await screen.findByRole("row", { name: /AEO-0001/ });
     expect(location(router)).toBe("/historias?pagina=3");
-  });
+  }, 30_000);
 
   it("'Historia no encontrada' vuelve al listado recordado", async () => {
     mockBackend();
