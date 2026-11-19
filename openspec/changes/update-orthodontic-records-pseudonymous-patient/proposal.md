@@ -39,3 +39,8 @@ La historia clínica guarda hoy el nombre completo, el documento, la fecha y el 
 - Detectar con certeza que un alias es un nombre real: solo se avisa.
 - Identificar a la misma persona en dos historias (ya no hay documento).
 - Revisión legal bajo la Ley 29733: el responsable decidió el 2026-11-19 no hacerla y asumir el riesgo; la identificabilidad de alias, sexo y edad se analiza en el propio diseño.
+
+## Decisiones del responsable (2026-11-19)
+- El servidor deja de recibir y de imprimir nombre completo, documento, nacimiento, domicilio y celular. Al imprimir, el navegador completa esas líneas con la libreta local del dispositivo (`add-orthodontic-records-local-patient-notebook`); sin entrada en la libreta, quedan en blanco para escribirlas a mano. El papel firmado es el registro oficial (tarea 0.1).
+- Este change y la libreta local se **despliegan en la misma entrega**: no debe haber un periodo en que todos impriman en blanco.
+- `update-orthodontic-records-encrypt-patient-identity` y `update-orthodontic-records-migrate-patient-identity` quedan sin aplicar, como propuestas de reserva; cada uno lo anota en su `proposal.md` (tarea 0.2).
