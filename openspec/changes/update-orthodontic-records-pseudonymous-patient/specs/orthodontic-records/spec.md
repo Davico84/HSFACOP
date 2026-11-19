@@ -162,7 +162,8 @@ El sistema SHALL ofrecer la sección "Historias clínicas" con un listado pagina
 
 #### Scenario: Búsqueda y página en la dirección
 - **WHEN** el usuario busca "mateo" y pasa a la página 2 del listado
-- **THEN** la dirección queda `/historias?q=mateo&pagina=2` y recargar o volver de otra pantalla conserva la búsqueda y la página
+- **THEN** la dirección queda `/historias?pagina=2`, sin el texto buscado, y recargar o volver de otra pantalla conserva la búsqueda y la página
+- **AND** el texto buscado se conserva solo en la pestaña, no en la dirección ni en las peticiones a la API
 
 #### Scenario: Sin resultados
 - **WHEN** la búsqueda no coincide con ninguna historia

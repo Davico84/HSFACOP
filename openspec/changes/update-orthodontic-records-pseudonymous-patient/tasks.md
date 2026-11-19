@@ -2,7 +2,7 @@
 
 - [x] 0.1 Confirmar con el responsable (por escrito en este change, sin datos sensibles) que el sistema deja de imprimir el nombre completo y los demás datos retirados, y que se escriben a mano; verificar que la nota existe
 - [x] 0.2 Decidir qué ocurre con `update-orthodontic-records-encrypt-patient-identity` y `update-orthodontic-records-migrate-patient-identity` si este change se aplica primero, y anotarlo en el `proposal.md` de ambos; verificar que las notas existen
-- [ ] 0.3 Aplicar y archivar `update-backend-logging-no-patient-data` si no lo está, rebasar los deltas de este change con `MODIFIED` sobre los specs resultantes y volver a ejecutar `openspec validate update-orthodontic-records-pseudonymous-patient --strict`; verificar que pasa
+- [x] 0.3 Aplicar y archivar `update-backend-logging-no-patient-data` si no lo está, rebasar los deltas de este change con `MODIFIED` sobre los specs resultantes y volver a ejecutar `openspec validate update-orthodontic-records-pseudonymous-patient --strict`; verificar que pasa
 - [x] 0.4 **Criterio de salida:** redactar el análisis de reidentificación de lo que queda (alias, sexo, edad, turma, tratante, fechas de modificación, fecha de inicio, texto libre), decidir por campo si se acepta, se limita o se elimina, y obtener la aceptación escrita del responsable con la afirmación exacta que puede sostener; sin este documento no se aplica ni se archiva el change; verificar que existe y está fechado
 
 ## 1. Backend: modelo y validación
