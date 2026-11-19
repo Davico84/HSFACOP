@@ -54,7 +54,7 @@ Hasta la **fecha límite de copia** que fija el responsable, el servidor devuelv
 
 ## Open Questions
 
-1. **Fecha límite de copia.** La fija el responsable antes de empezar; mientras dura, el servidor conserva y devuelve datos antiguos al autor. Cuanto más corta, menos tiempo de exposición.
+1. **Fecha límite de copia.** Decidido (2026-11-19): la ventana dura **14 días** desde el despliegue de la libreta; la fecha exacta se escribe al desplegar. Mientras dura, el servidor conserva y devuelve datos antiguos al autor. Cuanto más corta, menos tiempo de exposición; 14 días permiten que cada tratante entre al menos una vez y exporte su respaldo. Falta fijarla por escrito en este change y en el del alias (tarea 0.1).
 2. **Frase de exportación generada.** Si más adelante se aplica el change de cifrado, conviene compartir la lista de palabras y el código de generación para no duplicarlos.
 3. **Límite de entradas.** El tope de 5 000 se revisa tras medir memoria y tiempo de importación con cientos de entradas.
 
