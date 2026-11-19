@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Libreta local de datos del paciente
-El navegador SHALL poder guardar, por cuenta y por historia, el nombre completo, el documento (tipo y número), la fecha y el lugar de nacimiento, el domicilio, el celular del paciente y el nombre y parentesco de quien firma, en una libreta local del dispositivo. Estos datos NO SHALL enviarse al servidor en ninguna petición, dirección, registro, evento ni archivo, y perderlos NO SHALL afectar a la historia del servidor.
+El navegador SHALL poder guardar, por cuenta y por historia, el nombre completo, el documento (tipo y número), la fecha y el lugar de nacimiento, el domicilio, el celular del paciente y el nombre y parentesco de quien firma, en una libreta local del dispositivo. Estos datos NO SHALL enviarse al servidor en ninguna petición, dirección, registro, evento ni archivo del servidor (solo existe el archivo cifrado que exporta el usuario), y perderlos NO SHALL afectar a la historia del servidor.
 
 #### Scenario: Guardar en la libreta
 - **WHEN** el tratante escribe el nombre completo y el DNI "74125896" en el paso 1 de su historia y guarda
@@ -65,7 +65,7 @@ Al imprimir, el navegador SHALL completar con la libreta, si hay entrada para es
 
 #### Scenario: Fallo de lectura de la libreta al imprimir
 - **WHEN** la lectura de la libreta falla antes de imprimir
-- **THEN** la aplicación muestra el error, no registra la impresión ni fija los datos, y ofrece imprimir con las líneas en blanco de forma explícita
+- **THEN** la aplicación muestra el error, no imprime todavía y ofrece reintentar o imprimir con las líneas en blanco; imprimir en blanco sigue el flujo normal: registra la impresión y fija los datos
 
 #### Scenario: Entrada que cambia mientras se imprime
 - **WHEN** la entrada se edita en otra pestaña después de que el usuario abrió la vista de impresión
@@ -177,7 +177,11 @@ Cuando el usuario escribe el nombre completo en la libreta, el formulario SHALL 
 - **THEN** la propuesta es esa palabra, o no hay propuesta, y el alias lo escribe el usuario
 
 ### Requirement: Búsqueda local por nombre o documento
-La búsqueda por nombre o documento SHALL resolverse solo en el dispositivo sobre la libreta, sin distinguir mayúsculas ni tildes, y mostrar las historias coincidentes; el texto buscado NO SHALL enviarse. El listado de las coincidencias SHALL pedirse al servidor por identificadores de historia, hasta 50.
+La búsqueda por nombre o documento SHALL resolverse solo en el dispositivo sobre la libreta, sin distinguir mayúsculas ni tildes, y mostrar las historias coincidentes; el texto buscado NO SHALL enviarse. El listado de las coincidencias SHALL pedirse al servidor por identificadores de historia, hasta 50, con `POST`, sin identificadores en la dirección, con `Cache-Control: no-store` y sin registrarlos ni enviarlos a eventos o analítica.
+
+#### Scenario: Petición por identificadores
+- **WHEN** el usuario busca por nombre y hay coincidencias
+- **THEN** la petición es un `POST` cuya dirección no contiene identificadores ni texto, la respuesta lleva `Cache-Control: no-store` y ningún registro del servidor contiene los identificadores consultados
 
 #### Scenario: Buscar por nombre
 - **WHEN** el usuario busca "quispe" y su libreta tiene a "Ana QUÍSPE" en la historia AEO-0015

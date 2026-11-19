@@ -43,6 +43,7 @@
 
 - [ ] 6.1 Acción "Pasar a mi libreta": lectura de `legacyIdentity`, escritura local, exportación del archivo cifrado, descifrado en memoria y comparación campo por campo, y solo entonces marca de respaldada; verificar con los Scenario "Copiar, exportar y verificar", "Copia sin respaldo", "Historia ya migrada" y "Cambio de autor durante la copia"
 - [ ] 6.2 Informe para el responsable (solo informativo; pasada la fecha límite se borra igual) con cuántas historias por autor siguen sin copiar, sin datos del paciente, para consultarlo antes de la migración administrativa; verificar que el informe no muestra ningún valor del paciente
+- [ ] 6.3 Prueba e2e de la secuencia copia local → marca de respaldo → fin de la fecha límite → migración, con fallo de red al marcar y migración concurrente: la marca es idempotente, no se borra nada antes de la fecha límite y la operación del autor se cierra al migrar; verificar el resultado de cada paso
 
 ## 7. Integración
 
