@@ -46,4 +46,4 @@
 
 ## 5. Ventana de copia a la libreta
 
-- [ ] 5.1 Operación exclusiva del autor que devuelve `legacyIdentity` hasta la fecha límite de copia, leída de la configuración `LEGACY_COPY_DEADLINE` (nunca a `ADMIN` ni a coordinación en historias ajenas), con `Cache-Control: no-store`, sin registro del cuerpo ni de la caché del cliente, y cierre automático en la fecha límite o al migrar la historia; verificar con tests de slice de `403`/`404` en historia ajena, de fecha límite vencida, de historia migrada y de que el cuerpo no aparece en los registros
+- [x] 5.1 Operación exclusiva del autor que devuelve `legacyIdentity` hasta la fecha límite de copia, leída de la configuración `LEGACY_COPY_DEADLINE` (nunca a `ADMIN` ni a coordinación en historias ajenas), con `Cache-Control: no-store`, sin registro del cuerpo ni de la caché del cliente, y cierre automático en la fecha límite o al migrar la historia; verificar con tests de slice de `403`/`404` en historia ajena, de fecha límite vencida, de historia migrada y de que el cuerpo no aparece en los registros
