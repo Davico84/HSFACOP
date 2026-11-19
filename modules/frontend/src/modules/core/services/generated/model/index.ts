@@ -155,6 +155,8 @@ export * from './registerRequestPhone';
 export * from './resetPasswordRequest';
 export * from './searchRecordsParams';
 export * from './searchRecordsRequest';
+export * from './searchRecordsRequestQ';
+export * from './searchRecordsRequestRecordIds';
 export * from './sideRelations';
 export * from './signatures';
 export * from './tanakaAnalysis';
