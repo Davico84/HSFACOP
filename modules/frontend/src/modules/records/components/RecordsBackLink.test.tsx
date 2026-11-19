@@ -54,7 +54,7 @@ describe("orthodontic-records — Volver al listado desde la historia", () => {
     await userEvent.click(await backLink());
     await screen.findByRole("row", { name: /AEO-0001/ });
     expect(location(router)).toBe("/historias?pagina=2");
-  });
+  }, 30_000); // recorre tres pantallas: bajo carga de toda la suite rozaba los 15 s por defecto
 
   it("después de crear una historia vuelve al listado con la búsqueda", async () => {
     mockBackend();
