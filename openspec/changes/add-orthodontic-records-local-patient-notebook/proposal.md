@@ -36,3 +36,6 @@
 - Proteger contra un frontend comprometido o una extensión del navegador con acceso a la página.
 - Recuperar una libreta perdida: sin archivo exportado no hay copia.
 - Revisión legal bajo la Ley 29733: el responsable decidió el 2026-11-19 no hacerla y asumir el riesgo; los datos guardados en el dispositivo del tratante siguen siendo datos personales de salud (tarea 0.4).
+
+## Decisión del responsable (2026-11-19)
+Este change y `update-orthodontic-records-pseudonymous-patient` se despliegan en la misma entrega, para que la hoja impresa salga con el nombre real desde el primer día.
