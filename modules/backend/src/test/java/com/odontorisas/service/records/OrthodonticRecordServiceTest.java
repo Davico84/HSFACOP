@@ -2,6 +2,8 @@ package com.odontorisas.service.records;
 
 import com.odontorisas.persistence.repository.RecordUnlockEventRepository;
 import com.odontorisas.common.PatientSex;
+import com.odontorisas.infra.config.LegacyCopyProperties;
+import com.odontorisas.persistence.repository.LegacyIdentityQueries;
 import com.odontorisas.common.Role;
 import com.odontorisas.persistence.entity.OrthodonticRecord;
 import com.odontorisas.persistence.entity.User;
@@ -21,6 +23,7 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -30,6 +33,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,7 +60,7 @@ class OrthodonticRecordServiceTest {
     void setUp() {
         Clock clock = Clock.fixed(LocalDate.of(2026, 10, 1).atStartOfDay().toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
         service = new OrthodonticRecordService(records, users, JsonMapper.builder().build(),
-            unlockEvents, clock, cohorts);
+            unlockEvents, clock, cohorts, new LegacyCopyProperties(null), mock(LegacyIdentityQueries.class));
     }
 
     private static User user(Long id, String name) {
@@ -220,5 +225,59 @@ class OrthodonticRecordServiceTest {
         assertThat(view.content().anamnesis().chiefComplaint()).isEqualTo("Dientes salidos");
         assertThat(view.content().anamnesis().menarche()).isNull();
         assertThat(saved.getValue().getContent()).doesNotContain("menarche\":\"NO");
+    }
+
+    // --- Copia de los datos antiguos (solo el autor, hasta la fecha límite) ---
+
+    private OrthodonticRecordService withDeadline(Instant deadline, LegacyIdentityQueries queries) {
+        Clock clock = Clock.fixed(LocalDate.of(2026, 10, 1).atStartOfDay().toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
+        return new OrthodonticRecordService(records, users, JsonMapper.builder().build(), unlockEvents, clock, cohorts,
+            new LegacyCopyProperties(deadline), queries);
+    }
+
+    private static final Instant OPEN_UNTIL = Instant.parse("2026-10-15T00:00:00Z");
+    private static final LegacyIdentityQueries.LegacyIdentityRow LEGACY = new LegacyIdentityQueries.LegacyIdentityRow(
+        "Ana Lucía Quispe", null, null, null, null, null, null, null, null, null);
+
+    @Test
+    void the_author_reads_the_legacy_identity_while_the_window_is_open() {
+        LegacyIdentityQueries queries = mock(LegacyIdentityQueries.class);
+        when(queries.find(10L)).thenReturn(Optional.of(LEGACY));
+        when(records.findWithAuthorById(10L)).thenReturn(Optional.of(stored(torres, 0)));
+
+        assertThat(withDeadline(OPEN_UNTIL, queries).legacyIdentity(torresActor, 10L).patientName())
+            .isEqualTo("Ana Lucía Quispe");
+    }
+
+    @Test
+    void nobody_else_reads_it_not_even_an_admin_or_a_coordinator() {
+        LegacyIdentityQueries queries = mock(LegacyIdentityQueries.class);
+        when(records.findWithAuthorById(10L)).thenReturn(Optional.of(stored(torres, 0)));
+        OrthodonticRecordService open = withDeadline(OPEN_UNTIL, queries);
+
+        assertThatThrownBy(() -> open.legacyIdentity(medinaActor, 10L)).isInstanceOf(RecordNotFoundException.class);
+        assertThatThrownBy(() -> open.legacyIdentity(admin, 10L)).isInstanceOf(RecordNotFoundException.class);
+        assertThatThrownBy(() -> open.legacyIdentity(new RecordActor(1L, Role.COORDINATOR), 10L))
+            .isInstanceOf(RecordNotFoundException.class);
+        verify(queries, never()).find(anyLong());
+    }
+
+    @Test
+    void it_is_closed_after_the_deadline_without_a_deadline_and_once_the_record_is_migrated() {
+        LegacyIdentityQueries queries = mock(LegacyIdentityQueries.class);
+        OrthodonticRecord migrated = stored(torres, 0);
+        migrated.setIdentityMigratedAt(Instant.parse("2026-09-30T00:00:00Z"));
+        when(records.findWithAuthorById(10L)).thenReturn(Optional.of(stored(torres, 0)));
+        when(records.findWithAuthorById(11L)).thenReturn(Optional.of(migrated));
+
+        assertThatThrownBy(() -> withDeadline(Instant.parse("2026-10-01T00:00:00Z"), queries).legacyIdentity(torresActor, 10L))
+            .isInstanceOf(RecordNotFoundException.class);
+        assertThatThrownBy(() -> withDeadline(Instant.parse("2026-09-30T00:00:00Z"), queries).legacyIdentity(torresActor, 10L))
+            .isInstanceOf(RecordNotFoundException.class);
+        assertThatThrownBy(() -> withDeadline(null, queries).legacyIdentity(torresActor, 10L))
+            .isInstanceOf(RecordNotFoundException.class);
+        assertThatThrownBy(() -> withDeadline(OPEN_UNTIL, queries).legacyIdentity(torresActor, 11L))
+            .isInstanceOf(RecordNotFoundException.class);
+        verify(queries, never()).find(anyLong());
     }
 }

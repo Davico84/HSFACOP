@@ -8,6 +8,8 @@ import com.odontorisas.persistence.entity.RecordUnlockEvent;
 import com.odontorisas.common.UnlockAction;
 import com.odontorisas.common.Role;
 import com.odontorisas.common.UnlockReason;
+import com.odontorisas.infra.config.LegacyCopyProperties;
+import com.odontorisas.persistence.repository.LegacyIdentityQueries;
 import com.odontorisas.common.text.SearchNormalizer;
 import com.odontorisas.persistence.entity.Cohort;
 import com.odontorisas.persistence.entity.OrthodonticRecord;
@@ -50,17 +52,42 @@ public class OrthodonticRecordService {
     private final RecordUnlockEventRepository unlockEvents;
     private final Clock clock;
     private final CohortRepository cohorts;
+    private final LegacyCopyProperties legacyCopy;
+    private final LegacyIdentityQueries legacyIdentity;
 
     public OrthodonticRecordService(OrthodonticRecordRepository records, UserRepository users,
                                     JsonMapper json,
                                     RecordUnlockEventRepository unlockEvents, Clock clock,
-                                    CohortRepository cohorts) {
+                                    CohortRepository cohorts, LegacyCopyProperties legacyCopy,
+                                    LegacyIdentityQueries legacyIdentity) {
         this.records = records;
         this.users = users;
         this.json = json;
         this.unlockEvents = unlockEvents;
         this.clock = clock;
         this.cohorts = cohorts;
+        this.legacyCopy = legacyCopy;
+        this.legacyIdentity = legacyIdentity;
+    }
+
+    /**
+     * Datos antiguos del paciente para que el autor los copie a su libreta local. Solo el autor (ni un
+     * ADMIN ni la coordinación en historias ajenas), solo hasta la fecha límite de copia y mientras la
+     * historia no se haya migrado; en cualquier otro caso responde como una historia inexistente.
+     */
+    @Transactional(readOnly = true)
+    public LegacyIdentityView legacyIdentity(RecordActor actor, Long id) {
+        OrthodonticRecord record = records.findWithAuthorById(id).orElseThrow(RecordNotFoundException::new);
+        boolean author = record.getAuthor().getId().equals(actor.userId());
+        if (!author || actor.coordinator() || record.getIdentityMigratedAt() != null
+                || !legacyCopy.isOpenAt(clock.instant())) {
+            throw new RecordNotFoundException();
+        }
+        return legacyIdentity.find(id)
+            .map(r -> new LegacyIdentityView(r.patientName(), r.documentType(), r.documentNumber(), r.birthDate(),
+                r.birthPlace(), r.address(), r.phone(), r.patientSignatureName(), r.guardianName(),
+                r.guardianRelationship()))
+            .orElseThrow(RecordNotFoundException::new);
     }
 
     /**

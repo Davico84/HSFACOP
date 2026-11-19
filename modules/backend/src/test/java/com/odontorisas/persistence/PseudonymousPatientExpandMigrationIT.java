@@ -64,4 +64,35 @@ class PseudonymousPatientExpandMigrationIT extends AbstractIntegrationTest {
 
         jdbc.execute("DROP SCHEMA " + schema + " CASCADE");
     }
+
+    @Test
+    void v22_keeps_the_original_name_and_the_signature_names_for_the_copy() {
+        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+        String schema = "v22_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        flyway(schema, "21").migrate();
+        long author = jdbc.queryForObject("INSERT INTO " + schema + ".users (email, password_hash, role, full_name) "
+            + "VALUES (?, 'h', 'USER', 'Dra. Torres') RETURNING id", Long.class, "v22-" + UUID.randomUUID() + "@empresa.test");
+        long withNames = jdbc.queryForObject("INSERT INTO " + schema + ".orthodontic_records "
+            + "(author_id, record_number, patient_name, search_text, content) VALUES (?, 'AEO-0001', 'Ana Quispe', 'x', "
+            + "CAST('{\"signatures\":{\"guardianName\":\"Rosa Mamani\",\"guardianRelationship\":\"Madre\",\"supervisor1Name\":\"Dr. Medina\"}}' AS jsonb)) RETURNING id",
+            Long.class, author);
+        long withoutSignatures = jdbc.queryForObject("INSERT INTO " + schema + ".orthodontic_records "
+            + "(author_id, record_number, patient_name, search_text, content) VALUES (?, 'AEO-0002', 'Luis Rojas', 'y', "
+            + "CAST('{}' AS jsonb)) RETURNING id", Long.class, author);
+
+        flyway(schema, "22").migrate();
+
+        Map<String, Object> first = jdbc.queryForMap("SELECT legacy_patient_name, legacy_signatures::text AS sig FROM "
+            + schema + ".orthodontic_records WHERE id = ?", withNames);
+        assertThat(first.get("legacy_patient_name")).isEqualTo("Ana Quispe");
+        // Solo los tres nombres retirados; el supervisor no es un dato del paciente.
+        assertThat(first.get("sig").toString()).contains("guardianName").contains("Rosa Mamani").contains("Madre")
+            .doesNotContain("Dr. Medina");
+        Map<String, Object> second = jdbc.queryForMap("SELECT legacy_patient_name, legacy_signatures FROM "
+            + schema + ".orthodontic_records WHERE id = ?", withoutSignatures);
+        assertThat(second.get("legacy_patient_name")).isEqualTo("Luis Rojas");
+        assertThat(second.get("legacy_signatures")).isNull();
+
+        jdbc.execute("DROP SCHEMA " + schema + " CASCADE");
+    }
 }

@@ -8,6 +8,7 @@ import com.odontorisas.presentation.dto.RecordQuotaResponse;
 import com.odontorisas.common.Role;
 import com.odontorisas.presentation.dto.ApiProblem;
 import com.odontorisas.presentation.dto.CreateRecordRequest;
+import com.odontorisas.presentation.dto.LegacyIdentityResponse;
 import com.odontorisas.presentation.dto.PageResponse;
 import com.odontorisas.presentation.dto.RecordResponse;
 import com.odontorisas.presentation.dto.RecordSummaryResponse;
@@ -26,6 +27,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -132,6 +134,20 @@ public class OrthodonticRecordsController {
     @GetMapping("/{id}")
     public ResponseEntity<RecordResponse> getRecord(@PathVariable Long id) {
         return ResponseEntity.ok(RecordResponse.from(service.get(currentActor(), id)));
+    }
+
+    @Operation(operationId = "getLegacyIdentity", summary = "Datos antiguos del paciente, solo para su autor y hasta la fecha límite de copia",
+        description = "Para copiarlos a la libreta local. Responde 404 a cualquiera que no sea el autor, tras la fecha límite "
+            + "de copia o con la historia ya migrada. Nunca se cachea (Cache-Control: no-store) ni se registra.")
+    @ApiResponse(responseCode = "200", description = "Datos antiguos del paciente",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = LegacyIdentityResponse.class)))
+    @ApiResponse(responseCode = "404", description = "No existe, no es tuya, ya pasó la fecha límite o ya se migró",
+        content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = ApiProblem.class)))
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @GetMapping(value = "/{id}/legacy-identity", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<LegacyIdentityResponse> getLegacyIdentity(@PathVariable Long id) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+            .body(LegacyIdentityResponse.from(service.legacyIdentity(currentActor(), id)));
     }
 
     @Operation(operationId = "updateRecord", summary = "Guardar la historia completa (con la versión cargada)")
