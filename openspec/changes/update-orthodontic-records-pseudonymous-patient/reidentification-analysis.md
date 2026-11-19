@@ -1,6 +1,6 @@
 # Análisis de reidentificación (tarea 0.4)
 
-Fecha del borrador: 2026-11-19 · Estado: **pendiente de aceptación escrita del responsable**.
+Fecha del borrador: 2026-11-19 · Estado: **aceptado por el responsable el 2026-11-19**.
 
 ## Alcance
 Qué puede identificar a un paciente con lo que el servidor guarda tras este change: alias, sexo, edad en años, número de historia, tratante, turma, fechas y contenido clínico. No incluye el papel firmado ni la libreta local, que están fuera del servidor.
@@ -38,5 +38,5 @@ Qué puede identificar a un paciente con lo que el servidor guarda tras este cha
 ## Aceptación
 El responsable acepta por escrito el análisis, las decisiones y la afirmación de arriba.
 
-- Responsable: ____________________
-- Fecha: ____________________
+- Responsable: David Velarde Alvarado
+- Fecha: 2026-11-19
