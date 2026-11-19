@@ -62,7 +62,7 @@ La historia SHALL identificar al paciente solo por un alias, su sexo y su edad e
 - **THEN** se trata como adulta, la edad se imprime vacía y no hay error
 
 ### Requirement: Migración de las historias existentes al alias
-Las historias existentes SHALL pasar al formato con alias con una acción administrativa única fuera de la API: el alias es el nombre de pila más la inicial del primer apellido, sin partículas, la edad se calcula una vez y solo entonces se borran las columnas retiradas y los nombres del paciente y apoderado en las firmas. La acción NO SHALL ejecutarse sin copia verificada ni aprobación escrita, y cada historia SHALL quedar marcada como migrada.
+Las historias existentes SHALL pasar al formato con alias con una acción administrativa única fuera de la API. La acción NO SHALL ejecutarse sin una copia de seguridad de la base verificada, sin aprobación escrita ni antes de la fecha límite de copia; el respaldo individual del autor no es condición, porque pasada la fecha se borra igual. Cada historia SHALL quedar marcada como migrada; el alias, la edad y el borrado se detallan en los escenarios.
 
 #### Scenario: Migración correcta
 - **WHEN** la acción se ejecuta con aprobación y copia verificada sobre una historia con nombre "Ana Quispe" y nacimiento 2012-05-20 e inicio 2026-05-19
@@ -194,7 +194,7 @@ Los datos escritos SHALL imprimirse como texto, sin las líneas del PDF; los cam
 #### Scenario: Datos escritos sin líneas de llenado a mano
 - **WHEN** se imprime una historia con diagnóstico general y lista de problemas escritos
 - **THEN** esos datos salen como texto sin subrayado ni renglones debajo
-- **AND** conservan su línea solo "FECHA:", las líneas "Firma" y la hoja 1 (ALIAS, Edad, Sexo y Fecha de inicio con su dato; Nombre y apellidos, Documento, Lugar y fecha de nacimiento, Domicilio y Celular en blanco)
+- **AND** conservan su línea solo "FECHA:", las líneas "Firma" y la hoja 1 (ALIAS, Edad, Sexo y Fecha de inicio con su dato; Nombre y apellidos, Documento, Lugar y fecha de nacimiento, Domicilio y Celular en blanco, o completados con la libreta local del dispositivo cuando tiene entrada de esa historia)
 
 #### Scenario: Textos largos
 - **WHEN** un campo de texto libre ocupa más de lo que el PDF reserva
@@ -202,7 +202,7 @@ Los datos escritos SHALL imprimirse como texto, sin las líneas del PDF; los cam
 
 
 #### Scenario: Datos del paciente a mano
-- **WHEN** se imprime la hoja 1 de una historia con alias "Mateo", sexo masculino y edad 13
+- **WHEN** se imprime la hoja 1 de una historia con alias "Mateo", sexo masculino y edad 13, sin entrada en la libreta local
 - **THEN** la hoja muestra el alias, el sexo y la edad, y deja líneas en blanco para el nombre completo, el documento, el lugar y fecha de nacimiento, el domicilio y el celular
 - **AND** el servidor no guarda ningún valor para esas líneas (`add-orthodontic-records-local-patient-notebook` puede completarlas desde el navegador)
 
