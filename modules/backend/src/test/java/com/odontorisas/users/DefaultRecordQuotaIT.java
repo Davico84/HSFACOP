@@ -54,7 +54,7 @@ class DefaultRecordQuotaIT extends AbstractIntegrationTest {
     private MvcResult create(Session as) throws Exception {
         return mockMvc.perform(post("/api/orthodontic-records").header("Authorization", "Bearer " + as.token())
             .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"recordNumber\":\"" + TestRecordNumbers.next() + "\",\"patientName\":\"Paciente\"}")).andReturn();
+            .content("{\"recordNumber\":\"" + TestRecordNumbers.next() + "\",\"patientAlias\":\"Paciente\"}")).andReturn();
     }
 
     @Test

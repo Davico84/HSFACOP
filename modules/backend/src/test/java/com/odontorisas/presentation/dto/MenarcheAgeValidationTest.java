@@ -46,13 +46,13 @@ class MenarcheAgeValidationTest {
         factory.close();
     }
 
-    private static UpdateRecordRequest request(LocalDate birthDate, Integer menarcheAge) {
+    private static UpdateRecordRequest request(Integer age, Integer menarcheAge) {
         RecordContent e = RecordContent.empty();
         Anamnesis anamnesis = new Anamnesis(null, null, null, null, null, YesNo.YES, menarcheAge,
             null, null, null, null, null);
         RecordContent content = new RecordContent(null, anamnesis, e.facial(), e.functional(), e.occlusal(), e.models(),
             e.radiographic(), e.diagnosis(), e.signatures());
-        return new UpdateRecordRequest(0L, "AEO-0015", null, "Ana", null, null, PatientSex.FEMALE, birthDate, null, null,
+        return new UpdateRecordRequest(0L, "AEO-0015", null, "Ana", PatientSex.FEMALE, age, null, null, null, null, null,
             null, null, content, null, null);
     }
 
@@ -80,10 +80,9 @@ class MenarcheAgeValidationTest {
 
     @Test
     void under_the_minimum_age_the_answer_cannot_be_yes() {
-        // El 19/05/2026 en Lima, quien nació el 20/05/2018 tiene 7 años; la del 19/05/2018, 8.
-        assertThat(messagesOn("menarche", request(LocalDate.of(2018, 5, 20), null)))
+        assertThat(messagesOn("menarche", request(7, null)))
             .containsExactly("Antes de los 8 años la primera menstruación no aplica.");
-        assertThat(messagesOn("menarche", request(LocalDate.of(2018, 5, 19), null))).isEmpty();
+        assertThat(messagesOn("menarche", request(8, null))).isEmpty();
         assertThat(messagesOn("menarche", request(null, null))).isEmpty();
     }
 
@@ -93,16 +92,20 @@ class MenarcheAgeValidationTest {
         Anamnesis anamnesis = new Anamnesis(null, null, null, null, null, YesNo.YES, 30, null, null, null, null, null);
         RecordContent content = new RecordContent(null, anamnesis, e.facial(), e.functional(), e.occlusal(), e.models(),
             e.radiographic(), e.diagnosis(), e.signatures());
-        UpdateRecordRequest male = new UpdateRecordRequest(0L, "AEO-0015", null, "Juan", null, null, PatientSex.MALE,
-            LocalDate.of(2020, 1, 1), null, null, null, null, content, null, null);
+        UpdateRecordRequest male = new UpdateRecordRequest(0L, "AEO-0015", null, "Juan", PatientSex.MALE, 5,
+            null, null, null, null, null, null, null, content, null, null);
         assertThat(validator.validate(male)).isEmpty();
     }
 
     @Test
-    void it_cannot_be_above_the_current_age_in_lima() {
-        LocalDate birth = LocalDate.of(2013, 5, 20); // en Lima todavía tiene 12
-        assertThat(messagesOnMenarcheAge(request(birth, 12))).isEmpty();
-        assertThat(messagesOnMenarcheAge(request(birth, 13)))
-            .containsExactly("La edad de la primera menstruación no puede superar la edad actual de la paciente.");
+    void it_cannot_be_above_the_registered_age() {
+        assertThat(messagesOnMenarcheAge(request(12, 12))).isEmpty();
+        assertThat(messagesOnMenarcheAge(request(12, 13)))
+            .containsExactly("La edad de la primera menstruación no puede superar la edad registrada de la paciente.");
+    }
+
+    @Test
+    void without_a_registered_age_there_is_no_upper_bound() {
+        assertThat(messagesOnMenarcheAge(request(null, 18))).isEmpty();
     }
 }

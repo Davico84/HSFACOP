@@ -67,7 +67,7 @@ public class DashboardService {
         return new UserDashboardView(totals.total(), totals.createdThisMonth(), quota,
             new Completeness(totals.complete(), totals.inProgress(), totals.notComputed(),
                 round(totals.averageFilled())),
-            new UserDashboardView.Missing(totals.withoutDocument(), totals.withoutBirthDate(),
+            new UserDashboardView.Missing(totals.withoutAge(),
                 totals.withoutTreatmentStart(), emptySteps),
             resume);
     }

@@ -1,5 +1,6 @@
 package com.odontorisas.presentation.dto;
 
+import com.odontorisas.common.UnlockReason;
 import com.odontorisas.common.UserStatus;
 import com.odontorisas.service.dashboard.AdminDashboardView;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -80,7 +81,7 @@ public record AdminDashboardResponse(
         @Schema(requiredMode = REQUIRED) String patientName,
         @Schema(requiredMode = REQUIRED, description = "Tratante (autor de la historia)") String authorName,
         @Schema(requiredMode = REQUIRED) Instant requestedAt,
-        @Schema(requiredMode = REQUIRED) String reason) {
+        @Schema(requiredMode = REQUIRED, description = "Motivo del catálogo cerrado") UnlockReason reason) {
     }
 
     public static AdminDashboardResponse from(AdminDashboardView v) {
@@ -95,6 +96,6 @@ public record AdminDashboardResponse(
                 .map(q -> new QuotaItem(q.userId(), q.fullName(), q.used(), q.limit(), q.reached())).toList()),
             new UnlockRequests(v.unlockRequests().total(), v.unlockRequests().items().stream()
                 .map(r -> new UnlockRequestItem(r.recordId(), r.recordNumber(), r.patientName(), r.authorName(),
-                    r.requestedAt(), r.reason())).toList()));
+                    r.requestedAt(), UnlockReason.fromStored(r.reason()))).toList()));
     }
 }

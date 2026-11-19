@@ -1,40 +1,23 @@
 package com.odontorisas.service.records;
 
-import org.springframework.stereotype.Component;
-
-import java.time.Clock;
-import java.time.LocalDate;
-import java.time.Period;
-
 /**
- * Edad del paciente en años cumplidos (design D8): a la fecha de inicio de tratamiento o, si no
- * la hay, a hoy. Sin fecha de nacimiento no hay edad. Única fuente de la regla en el backend.
+ * Edad escrita del paciente (design D3): años cumplidos al inicio del tratamiento. El servidor ya
+ * no la calcula, solo valida el rango y decide con ella si firma un apoderado. Única fuente de la
+ * regla en el backend.
  */
-@Component
-public class RecordAgeCalculator {
+public final class RecordAgeCalculator {
 
     /** Mayoría de edad: por debajo firma el apoderado. */
     public static final int ADULT_AGE = 18;
+    public static final int MIN_AGE = 0;
+    public static final int MAX_AGE = 99;
 
-    private final Clock clock;
-
-    public RecordAgeCalculator(Clock clock) {
-        this.clock = clock;
+    private RecordAgeCalculator() {
     }
 
-    public Integer ageYears(LocalDate birthDate, LocalDate treatmentStartDate) {
-        if (birthDate == null) {
-            return null;
-        }
-        LocalDate reference = treatmentStartDate != null ? treatmentStartDate : LocalDate.now(clock);
-        if (reference.isBefore(birthDate)) {
-            return null;
-        }
-        return Period.between(birthDate, reference).getYears();
-    }
-
-    public LocalDate today() {
-        return LocalDate.now(clock);
+    /** ¿Es una edad válida? Sin edad (nula) también lo es: el campo es opcional. */
+    public static boolean isInRange(Integer ageYears) {
+        return ageYears == null || (ageYears >= MIN_AGE && ageYears <= MAX_AGE);
     }
 
     /** ¿Firma un apoderado? Solo si se conoce la edad y es menor de 18. */

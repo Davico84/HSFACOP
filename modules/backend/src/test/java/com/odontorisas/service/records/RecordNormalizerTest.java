@@ -1,6 +1,5 @@
 package com.odontorisas.service.records;
 
-import com.odontorisas.common.DocumentType;
 import com.odontorisas.common.PatientSex;
 import com.odontorisas.service.records.content.AfaiChange;
 import com.odontorisas.service.records.content.Anamnesis;
@@ -66,8 +65,7 @@ class RecordNormalizerTest {
     }
 
     private static RecordData data(PatientSex sex, RecordContent content) {
-        return new RecordData(" AEO-0015 ", "  Dra. Torres ", " Ana Quispe ", DocumentType.DNI, " 74125896 ", sex,
-            null, "", "   ", null, null, content);
+        return new RecordData(" AEO-0015 ", "  Dra. Torres ", "  Ana    Q ", sex, 13, null, content);
     }
 
     // --- Datos del paciente ---
@@ -75,11 +73,9 @@ class RecordNormalizerTest {
     @Test
     void trims_texts_and_blank_becomes_null() {
         RecordData out = RecordNormalizer.normalize(data(PatientSex.FEMALE, null), null);
-        assertThat(out.patientName()).isEqualTo("Ana Quispe");
+        assertThat(out.patientAlias()).isEqualTo("Ana Q");
         assertThat(out.treatingDentist()).isEqualTo("Dra. Torres");
-        assertThat(out.documentNumber()).isEqualTo("74125896");
-        assertThat(out.birthPlace()).isNull();
-        assertThat(out.address()).isNull();
+        assertThat(out.patientAge()).isEqualTo(13);
     }
 
     @Test
@@ -387,15 +383,15 @@ class RecordNormalizerTest {
     }
 
     @Test
-    void guardian_signs_for_minors_and_patient_otherwise() {
-        Signatures s = new Signatures("Ana", "Rosa Mamani", "Madre", "Dr. Medina", null, "Dra. Torres");
-        Signatures minor = RecordNormalizer.signatures(s, 13);
-        assertThat(minor.patientSignatureName()).isNull();
-        assertThat(minor.guardianName()).isEqualTo("Rosa Mamani");
-        Signatures adult = RecordNormalizer.signatures(s, 18);
-        assertThat(adult.patientSignatureName()).isEqualTo("Ana");
-        assertThat(adult.guardianName()).isNull();
-        assertThat(adult.guardianRelationship()).isNull();
-        assertThat(RecordNormalizer.signatures(s, null).patientSignatureName()).isEqualTo("Ana");
+    void patient_and_guardian_names_are_never_kept_in_signatures() {
+        Signatures s = new Signatures("Ana", "Rosa Mamani", "Madre", " Dr. Medina ", null, "Dra. Torres");
+        for (Integer age : new Integer[] {13, 18, null}) {
+            Signatures out = RecordNormalizer.signatures(s, age);
+            assertThat(out.patientSignatureName()).isNull();
+            assertThat(out.guardianName()).isNull();
+            assertThat(out.guardianRelationship()).isNull();
+            assertThat(out.supervisor1Name()).isEqualTo("Dr. Medina");
+            assertThat(out.treatingSignatureName()).isEqualTo("Dra. Torres");
+        }
     }
 }

@@ -55,18 +55,12 @@ public final class RecordNormalizer {
 
     /** {@code ageYears} decide quién firma (apoderado si es menor de edad). */
     public static RecordData normalize(RecordData data, Integer ageYears) {
-        String documentNumber = text(data.documentNumber());
         return new RecordData(
             text(data.recordNumber()),
             text(data.treatingDentist()),
-            text(data.patientName()),
-            documentNumber == null ? null : data.documentType(),
-            data.documentType() == null ? null : documentNumber,
+            PatientAlias.normalize(data.patientAlias()),
             data.patientSex(),
-            data.birthDate(),
-            text(data.birthPlace()),
-            text(data.address()),
-            text(data.phone()),
+            data.patientAge(),
             data.treatmentStartDate(),
             content(data.content(), data.patientSex(), ageYears));
     }
@@ -227,12 +221,9 @@ public final class RecordNormalizer {
     }
 
     /** Firma el apoderado si el paciente es menor; si no (o sin edad), el paciente. */
+    /** El servidor ya no guarda los nombres del paciente ni del apoderado: se escriben a mano. */
     static Signatures signatures(Signatures s, Integer ageYears) {
-        boolean minor = RecordAgeCalculator.isMinor(ageYears);
-        return new Signatures(
-            minor ? null : text(s.patientSignatureName()),
-            minor ? text(s.guardianName()) : null,
-            minor ? text(s.guardianRelationship()) : null,
+        return new Signatures(null, null, null,
             text(s.supervisor1Name()), text(s.supervisor2Name()), text(s.treatingSignatureName()));
     }
 

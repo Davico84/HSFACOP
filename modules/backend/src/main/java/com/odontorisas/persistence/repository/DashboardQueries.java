@@ -38,8 +38,7 @@ public class DashboardQueries {
             + " count(*) FILTER (WHERE filled_steps IS NOT NULL AND " + CLINICAL + " <> 127) AS in_progress,"
             + " count(*) FILTER (WHERE filled_steps IS NULL) AS not_computed,"
             + " avg(" + FILLED_COUNT + ") FILTER (WHERE filled_steps IS NOT NULL) AS average_filled,"
-            + " count(*) FILTER (WHERE document_number IS NULL) AS without_document,"
-            + " count(*) FILTER (WHERE birth_date IS NULL) AS without_birth_date,"
+            + " count(*) FILTER (WHERE patient_age IS NULL) AS without_age,"
             + " count(*) FILTER (WHERE treatment_start_date IS NULL) AS without_treatment_start");
         for (int step = 1; step <= 7; step++) {
             sql.append(", count(*) FILTER (WHERE filled_steps IS NOT NULL AND filled_steps & ")
@@ -58,7 +57,7 @@ public class DashboardQueries {
             }
             return new RecordTotals(rs.getLong("total"), rs.getLong("created_this_month"), rs.getLong("complete"),
                 rs.getLong("in_progress"), rs.getLong("not_computed"), rs.getBigDecimal("average_filled"),
-                rs.getLong("without_document"), rs.getLong("without_birth_date"),
+                rs.getLong("without_age"),
                 rs.getLong("without_treatment_start"), empty);
         });
     }
@@ -172,7 +171,7 @@ public class DashboardQueries {
 
     /** Totales de historias; {@code emptyByStep} = historias calculadas con cada paso 1–7 vacío. */
     public record RecordTotals(long total, long createdThisMonth, long complete, long inProgress, long notComputed,
-                               BigDecimal averageFilled, long withoutDocument, long withoutBirthDate,
+                               BigDecimal averageFilled, long withoutAge,
                                long withoutTreatmentStart, List<Long> emptyByStep) {
     }
 

@@ -1,7 +1,7 @@
 package com.odontorisas.presentation.dto;
 
-import com.odontorisas.common.DocumentType;
 import com.odontorisas.common.PatientSex;
+import com.odontorisas.common.UnlockReason;
 import com.odontorisas.service.records.RecordView;
 import com.odontorisas.service.records.content.RecordContent;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -12,24 +12,18 @@ import java.util.List;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-/** Historia clínica completa. {@code ageYears} la calcula el servidor (no se envía). */
+/** Historia clínica completa. El paciente se identifica solo por alias, sexo y edad escrita. */
 public record RecordResponse(
     @Schema(requiredMode = REQUIRED) Long id,
     @Schema(requiredMode = REQUIRED, example = "AEO-0015") String recordNumber,
     @Schema(requiredMode = REQUIRED) Long authorId,
     @Schema(requiredMode = REQUIRED) String authorName,
     String treatingDentist,
-    @Schema(requiredMode = REQUIRED) String patientName,
-    DocumentType documentType,
-    String documentNumber,
+    @Schema(requiredMode = REQUIRED, description = "Alias del paciente (una o dos palabras, sin apellidos)") String patientAlias,
     PatientSex patientSex,
-    LocalDate birthDate,
-    String birthPlace,
-    String address,
-    String phone,
+    @Schema(description = "Años cumplidos al inicio del tratamiento, escritos por el tratante; vacío = sin edad", nullable = true)
+    Integer patientAge,
     LocalDate treatmentStartDate,
-    @Schema(description = "Años cumplidos a la fecha de inicio de tratamiento (o a hoy); vacío sin fecha de nacimiento")
-    Integer ageYears,
     @Schema(requiredMode = REQUIRED) RecordContent content,
     @Schema(description = "Último paso (1–8) en que se guardaron cambios; vacío = paso 1") Integer lastStep,
     @Schema(description = "Pasos (1–8) con datos según el último guardado; vacío = sin calcular") List<Integer> filledSteps,
@@ -43,10 +37,9 @@ public record RecordResponse(
 
     public static RecordResponse from(RecordView v) {
         return new RecordResponse(v.id(), v.recordNumber(), v.authorId(), v.authorName(), v.treatingDentist(),
-            v.patientName(), v.documentType(), v.documentNumber(), v.patientSex(), v.birthDate(), v.birthPlace(),
-            v.address(), v.phone(), v.treatmentStartDate(), v.ageYears(), v.content(), v.lastStep(), v.filledSteps(), v.patientLockedAt(),
+            v.patientAlias(), v.patientSex(), v.patientAge(), v.treatmentStartDate(), v.content(), v.lastStep(), v.filledSteps(), v.patientLockedAt(),
             v.lastUnlockAt() == null ? null : new LastUnlock(v.lastUnlockBy(), v.lastUnlockAt()),
-            v.unlockRequestedAt() == null ? null : new UnlockRequest(v.unlockRequestedAt(), v.unlockRequestReason()),
+            v.unlockRequestedAt() == null ? null : new UnlockRequest(v.unlockRequestedAt(), UnlockReason.fromStored(v.unlockRequestReason())),
             v.version(),
             v.createdAt(), v.updatedAt());
     }
@@ -60,6 +53,6 @@ public record RecordResponse(
     @Schema(name = "RecordUnlockRequest")
     public record UnlockRequest(
         @Schema(requiredMode = REQUIRED) Instant requestedAt,
-        @Schema(requiredMode = REQUIRED, description = "Motivo del tratante") String reason) {
+        @Schema(requiredMode = REQUIRED, description = "Motivo del catálogo cerrado") UnlockReason reason) {
     }
 }

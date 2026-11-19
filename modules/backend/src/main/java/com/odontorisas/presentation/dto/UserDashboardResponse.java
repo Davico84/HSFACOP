@@ -39,8 +39,7 @@ public record UserDashboardResponse(
 
     @Schema(name = "UserDashboardMissing")
     public record Missing(
-        @Schema(requiredMode = REQUIRED) long withoutDocument,
-        @Schema(requiredMode = REQUIRED) long withoutBirthDate,
+        @Schema(requiredMode = REQUIRED) long withoutAge,
         @Schema(requiredMode = REQUIRED) long withoutTreatmentStart,
         @Schema(requiredMode = REQUIRED, description = "Los 7 pasos clínicos, de más a menos historias vacías")
         List<EmptyStep> emptySteps) {
@@ -67,7 +66,7 @@ public record UserDashboardResponse(
             new Records(v.total(), v.createdThisMonth()),
             RecordQuotaResponse.from(v.quota()),
             Completeness.from(v.completeness()),
-            new Missing(v.missing().withoutDocument(), v.missing().withoutBirthDate(),
+            new Missing(v.missing().withoutAge(),
                 v.missing().withoutTreatmentStart(),
                 v.missing().emptySteps().stream().map(e -> new EmptyStep(e.step(), e.count())).toList()),
             v.resume().stream().map(r -> new ResumeItem(r.id(), r.recordNumber(), r.patientName(), r.lastStep(),

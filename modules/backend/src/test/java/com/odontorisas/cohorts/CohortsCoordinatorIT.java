@@ -135,7 +135,7 @@ class CohortsCoordinatorIT extends AbstractIntegrationTest {
     private long createRecord(Session as, String patient, List<Integer> filledSteps) throws Exception {
         String steps = filledSteps == null ? "" : ",\"filledSteps\":" + filledSteps;
         MvcResult result = send(as, post(RECORDS),
-            "{\"recordNumber\":\"" + next() + "\",\"patientName\":\"" + patient + "\"" + steps + "}");
+            "{\"recordNumber\":\"" + next() + "\",\"patientAlias\":\"" + patient + "\"" + steps + "}");
         assertThat(result.getResponse().getStatus()).isEqualTo(201);
         return read(result).get("id").asLong();
     }
@@ -367,7 +367,7 @@ class CohortsCoordinatorIT extends AbstractIntegrationTest {
         Session ana = register("Ana");
         assertThat(changeRole(admin, ana.id(), "COORDINATOR", List.of(cohort)).getResponse().getStatus()).isEqualTo(200);
 
-        MvcResult result = send(ana, post(RECORDS), "{\"recordNumber\":\"" + next() + "\",\"patientName\":\"X\"}");
+        MvcResult result = send(ana, post(RECORDS), "{\"recordNumber\":\"" + next() + "\",\"patientAlias\":\"X\"}");
 
         assertThat(result.getResponse().getStatus()).isEqualTo(403);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM orthodontic_records WHERE author_id = ?", Long.class,
@@ -518,11 +518,11 @@ class CohortsCoordinatorIT extends AbstractIntegrationTest {
         String number = jdbc.queryForObject("SELECT record_number FROM orthodontic_records WHERE id = ?", String.class, record);
 
         List<MvcResult> attempts = List.of(
-            send(coord, post(RECORDS), "{\"recordNumber\":\"" + next() + "\",\"patientName\":\"X\"}"),
+            send(coord, post(RECORDS), "{\"recordNumber\":\"" + next() + "\",\"patientAlias\":\"X\"}"),
             send(coord, put(RECORDS + "/" + record),
-                "{\"version\":" + version + ",\"recordNumber\":\"" + number + "\",\"patientName\":\"Cambiado\"}"),
+                "{\"version\":" + version + ",\"recordNumber\":\"" + number + "\",\"patientAlias\":\"Cambiado\"}"),
             send(coord, post(RECORDS + "/" + record + "/print"), null),
-            send(coord, post(RECORDS + "/" + record + "/unlock-request"), "{\"reason\":\"Error de tipeo\"}"),
+            send(coord, post(RECORDS + "/" + record + "/unlock-request"), "{\"reason\":\"ALIAS\"}"),
             send(coord, delete(RECORDS + "/" + record + "/unlock-request"), null),
             send(coord, delete(RECORDS + "/" + record + "/patient-lock"), null),
             send(coord, get(RECORDS + "/quota"), null),

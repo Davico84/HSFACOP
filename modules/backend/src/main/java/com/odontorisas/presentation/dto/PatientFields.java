@@ -1,7 +1,8 @@
 package com.odontorisas.presentation.dto;
 
-import com.odontorisas.common.DocumentType;
 import com.odontorisas.common.PatientSex;
+import com.odontorisas.service.records.PatientAlias;
+import com.odontorisas.service.records.RecordAgeCalculator;
 import com.odontorisas.service.records.content.RecordContent;
 import com.odontorisas.service.records.content.YesNo;
 import jakarta.validation.Constraint;
@@ -15,25 +16,20 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.time.LocalDate;
-import java.time.Period;
 
 /**
- * Datos del paciente comunes a crear y guardar una historia, con sus reglas entre campos
- * (scenarios de "Datos del paciente con edad calculada"): documento con tipo y número del formato
- * de ese tipo, inicio de tratamiento no anterior al nacimiento, y edad de la primera menstruación
- * entre 8 y 18 años, no mayor que la edad actual de la paciente; antes de los 8 años la respuesta
- * no puede ser Sí. Cada error va a su campo. "Hoy" sale del {@code ClockProvider}
- * de la validación, que usa el reloj de la app (zona de la clínica).
+ * Datos del paciente comunes a crear y guardar una historia, con sus reglas entre campos: alias
+ * de una o dos palabras, edad escrita entre 0 y 99 años, y edad de la primera menstruación entre 8
+ * y 18 años, no mayor que la edad registrada; antes de los 8 años la respuesta no puede ser Sí.
+ * Cada error va a su campo.
  */
 public interface PatientFields {
 
-    DocumentType documentType();
-
-    String documentNumber();
+    String patientAlias();
 
     PatientSex patientSex();
 
-    LocalDate birthDate();
+    Integer patientAge();
 
     LocalDate treatmentStartDate();
 
@@ -63,38 +59,29 @@ public interface PatientFields {
             }
             context.disableDefaultConstraintViolation();
             boolean valid = true;
-            String number = value.documentNumber() == null ? null : value.documentNumber().strip();
-            boolean hasNumber = number != null && !number.isEmpty();
-            if (value.documentType() == null && hasNumber) {
-                valid = violation(context, "documentType", "Indica el tipo de documento.");
-            } else if (value.documentType() != null && !hasNumber) {
-                valid = violation(context, "documentNumber", "Indica el número del documento.");
-            } else if (value.documentType() != null && !value.documentType().accepts(number)) {
-                valid = violation(context, "documentNumber", formatMessage(value.documentType()));
+            String aliasProblem = PatientAlias.violation(value.patientAlias());
+            if (aliasProblem != null) {
+                valid = violation(context, "patientAlias", aliasProblem);
             }
-            if (value.birthDate() != null && value.treatmentStartDate() != null
-                    && value.treatmentStartDate().isBefore(value.birthDate())) {
-                valid = violation(context, "treatmentStartDate",
-                    "La fecha de inicio de tratamiento no puede ser anterior a la de nacimiento.");
+            if (!RecordAgeCalculator.isInRange(value.patientAge())) {
+                valid = violation(context, "patientAge", "Usa una edad entre 0 y 99 años.");
             }
             Integer menarcheAge = value.content() == null || value.content().anamnesis() == null
                 ? null : value.content().anamnesis().menarcheAge();
             YesNo menarche = value.content() == null || value.content().anamnesis() == null
                 ? null : value.content().anamnesis().menarche();
-            LocalDate today = LocalDate.now(context.getClockProvider().getClock());
             // Solo aplica con sexo femenino y respuesta Sí (si no, el normalizador lo descarta al guardar).
             boolean applies = menarche == YesNo.YES && value.patientSex() == PatientSex.FEMALE;
-            Integer currentAge = value.birthDate() == null || value.birthDate().isAfter(today)
-                ? null : Period.between(value.birthDate(), today).getYears();
-            if (applies && currentAge != null && currentAge < MIN_MENARCHE_AGE) {
+            Integer age = RecordAgeCalculator.isInRange(value.patientAge()) ? value.patientAge() : null;
+            if (applies && age != null && age < MIN_MENARCHE_AGE) {
                 valid = anamnesisViolation(context, "menarche", "Antes de los 8 años la primera menstruación no aplica.");
             }
             if (applies && menarcheAge != null) {
                 if (menarcheAge < MIN_MENARCHE_AGE || menarcheAge > MAX_MENARCHE_AGE) {
                     valid = anamnesisViolation(context, "menarcheAge", "Usa una edad entre 8 y 18 años.");
-                } else if (currentAge != null && menarcheAge > currentAge) {
+                } else if (age != null && menarcheAge > age) {
                     valid = anamnesisViolation(context, "menarcheAge",
-                        "La edad de la primera menstruación no puede superar la edad actual de la paciente.");
+                        "La edad de la primera menstruación no puede superar la edad registrada de la paciente.");
                 }
             }
             return valid;
@@ -105,14 +92,6 @@ public interface PatientFields {
                 .addPropertyNode("content").addPropertyNode("anamnesis").addPropertyNode(field)
                 .addConstraintViolation();
             return false;
-        }
-
-        private static String formatMessage(DocumentType type) {
-            return switch (type) {
-                case DNI -> "El DNI debe tener 8 dígitos.";
-                case FOREIGNER_CARD -> "El carné de extranjería debe tener 9 dígitos.";
-                case PASSPORT -> "El pasaporte debe tener entre 6 y 12 dígitos.";
-            };
         }
 
         private static boolean violation(ConstraintValidatorContext context, String field, String message) {

@@ -3424,21 +3424,6 @@
       "Signatures": {
         "type": "object",
         "properties": {
-          "patientSignatureName": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 0
-          },
-          "guardianName": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 0
-          },
-          "guardianRelationship": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 0
-          },
           "supervisor1Name": {
             "type": "string",
             "maxLength": 200,
@@ -3544,23 +3529,10 @@
             "maxLength": 120,
             "minLength": 0
           },
-          "patientName": {
+          "patientAlias": {
             "type": "string",
-            "maxLength": 120,
-            "minLength": 0
-          },
-          "documentType": {
-            "type": "string",
-            "enum": [
-              "DNI",
-              "FOREIGNER_CARD",
-              "PASSPORT"
-            ]
-          },
-          "documentNumber": {
-            "type": "string",
-            "maxLength": 12,
-            "minLength": 0
+            "description": "Alias del paciente: una o dos palabras, sin apellidos (máx. 30)",
+            "example": "Mateo"
           },
           "patientSex": {
             "type": "string",
@@ -3569,24 +3541,15 @@
               "MALE"
             ]
           },
-          "birthDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "birthPlace": {
-            "type": "string",
-            "maxLength": 120,
-            "minLength": 0
-          },
-          "address": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 0
-          },
-          "phone": {
-            "type": "string",
-            "maxLength": 20,
-            "minLength": 0
+          "patientAge": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Años cumplidos al inicio del tratamiento (0–99); se escribe, no se calcula",
+            "maximum": 99,
+            "minimum": 0
           },
           "treatmentStartDate": {
             "type": "string",
@@ -3614,7 +3577,7 @@
           }
         },
         "required": [
-          "patientName",
+          "patientAlias",
           "recordNumber",
           "version"
         ]
@@ -3772,19 +3735,9 @@
           "treatingDentist": {
             "type": "string"
           },
-          "patientName": {
-            "type": "string"
-          },
-          "documentType": {
+          "patientAlias": {
             "type": "string",
-            "enum": [
-              "DNI",
-              "FOREIGNER_CARD",
-              "PASSPORT"
-            ]
-          },
-          "documentNumber": {
-            "type": "string"
+            "description": "Alias del paciente (una o dos palabras, sin apellidos)"
           },
           "patientSex": {
             "type": "string",
@@ -3793,27 +3746,17 @@
               "MALE"
             ]
           },
-          "birthDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "birthPlace": {
-            "type": "string"
-          },
-          "address": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
+          "patientAge": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Años cumplidos al inicio del tratamiento, escritos por el tratante; vacío = sin edad"
           },
           "treatmentStartDate": {
             "type": "string",
             "format": "date"
-          },
-          "ageYears": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Años cumplidos a la fecha de inicio de tratamiento (o a hoy); vacío sin fecha de nacimiento"
           },
           "content": {
             "$ref": "#/components/schemas/RecordContent"
@@ -3869,7 +3812,7 @@
           "content",
           "createdAt",
           "id",
-          "patientName",
+          "patientAlias",
           "recordNumber",
           "updatedAt",
           "version"
@@ -3884,7 +3827,13 @@
           },
           "reason": {
             "type": "string",
-            "description": "Motivo del tratante"
+            "description": "Motivo del catálogo cerrado",
+            "enum": [
+              "ALIAS",
+              "SEXO",
+              "EDAD",
+              "OTRO"
+            ]
           }
         },
         "required": [
@@ -4297,23 +4246,10 @@
             "maxLength": 120,
             "minLength": 0
           },
-          "patientName": {
+          "patientAlias": {
             "type": "string",
-            "maxLength": 120,
-            "minLength": 0
-          },
-          "documentType": {
-            "type": "string",
-            "enum": [
-              "DNI",
-              "FOREIGNER_CARD",
-              "PASSPORT"
-            ]
-          },
-          "documentNumber": {
-            "type": "string",
-            "maxLength": 12,
-            "minLength": 0
+            "description": "Alias del paciente: una o dos palabras, sin apellidos (máx. 30)",
+            "example": "Mateo"
           },
           "patientSex": {
             "type": "string",
@@ -4322,24 +4258,15 @@
               "MALE"
             ]
           },
-          "birthDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "birthPlace": {
-            "type": "string",
-            "maxLength": 120,
-            "minLength": 0
-          },
-          "address": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 0
-          },
-          "phone": {
-            "type": "string",
-            "maxLength": 20,
-            "minLength": 0
+          "patientAge": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Años cumplidos al inicio del tratamiento (0–99); se escribe, no se calcula",
+            "maximum": 99,
+            "minimum": 0
           },
           "treatmentStartDate": {
             "type": "string",
@@ -4360,7 +4287,7 @@
           }
         },
         "required": [
-          "patientName",
+          "patientAlias",
           "recordNumber"
         ]
       },
@@ -4369,9 +4296,14 @@
         "properties": {
           "reason": {
             "type": "string",
-            "example": "Error en el número de DNI",
-            "maxLength": 200,
-            "minLength": 0
+            "description": "Motivo del catálogo: ALIAS, SEXO, EDAD u OTRO",
+            "enum": [
+              "ALIAS",
+              "SEXO",
+              "EDAD",
+              "OTRO"
+            ],
+            "example": "ALIAS"
           }
         },
         "required": [
@@ -4484,18 +4416,7 @@
             "type": "string",
             "example": "AEO-0015"
           },
-          "patientName": {
-            "type": "string"
-          },
-          "documentType": {
-            "type": "string",
-            "enum": [
-              "DNI",
-              "FOREIGNER_CARD",
-              "PASSPORT"
-            ]
-          },
-          "documentNumber": {
+          "patientAlias": {
             "type": "string"
           },
           "treatingDentist": {
@@ -4527,8 +4448,8 @@
         "required": [
           "authorName",
           "id",
+          "patientAlias",
           "patientLocked",
-          "patientName",
           "recordNumber",
           "updatedAt"
         ]
@@ -4949,11 +4870,7 @@
       "UserDashboardMissing": {
         "type": "object",
         "properties": {
-          "withoutDocument": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "withoutBirthDate": {
+          "withoutAge": {
             "type": "integer",
             "format": "int64"
           },
@@ -4971,8 +4888,7 @@
         },
         "required": [
           "emptySteps",
-          "withoutBirthDate",
-          "withoutDocument",
+          "withoutAge",
           "withoutTreatmentStart"
         ]
       },
@@ -5373,7 +5289,14 @@
             "format": "date-time"
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "description": "Motivo del catálogo cerrado",
+            "enum": [
+              "ALIAS",
+              "SEXO",
+              "EDAD",
+              "OTRO"
+            ]
           }
         },
         "required": [

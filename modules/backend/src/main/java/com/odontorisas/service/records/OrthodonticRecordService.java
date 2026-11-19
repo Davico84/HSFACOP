@@ -7,6 +7,7 @@ import com.odontorisas.persistence.repository.RecordUnlockEventRepository;
 import com.odontorisas.persistence.entity.RecordUnlockEvent;
 import com.odontorisas.common.UnlockAction;
 import com.odontorisas.common.Role;
+import com.odontorisas.common.UnlockReason;
 import com.odontorisas.common.text.SearchNormalizer;
 import com.odontorisas.persistence.entity.Cohort;
 import com.odontorisas.persistence.entity.OrthodonticRecord;
@@ -45,19 +46,17 @@ public class OrthodonticRecordService {
 
     private final OrthodonticRecordRepository records;
     private final UserRepository users;
-    private final RecordAgeCalculator ages;
     private final JsonMapper json;
     private final RecordUnlockEventRepository unlockEvents;
     private final Clock clock;
     private final CohortRepository cohorts;
 
     public OrthodonticRecordService(OrthodonticRecordRepository records, UserRepository users,
-                                    RecordAgeCalculator ages, JsonMapper json,
+                                    JsonMapper json,
                                     RecordUnlockEventRepository unlockEvents, Clock clock,
                                     CohortRepository cohorts) {
         this.records = records;
         this.users = users;
-        this.ages = ages;
         this.json = json;
         this.unlockEvents = unlockEvents;
         this.clock = clock;
@@ -232,7 +231,7 @@ public class OrthodonticRecordService {
 
     /** El autor (o un ADMIN) solicita el desbloqueo de los datos fijos, con un motivo. */
     @Transactional
-    public void requestUnlock(RecordActor actor, Long id, String reason) {
+    public void requestUnlock(RecordActor actor, Long id, UnlockReason reason) {
         OrthodonticRecord record = loadForUpdate(actor, id);
         if (record.getPatientLockedAt() == null) {
             throw new PatientNotLockedException();
@@ -241,7 +240,7 @@ public class OrthodonticRecordService {
             throw new UnlockAlreadyRequestedException();
         }
         record.setUnlockRequestedAt(clock.instant());
-        record.setUnlockRequestReason(reason.strip());
+        record.setUnlockRequestReason(reason.name());
         records.saveAndFlush(record);
     }
 
@@ -273,13 +272,11 @@ public class OrthodonticRecordService {
     }
 
     private static PatientIdentity identityOf(OrthodonticRecord r) {
-        return PatientIdentity.of(r.getPatientName(), r.getDocumentType(), r.getDocumentNumber(), r.getBirthDate(),
-            r.getPatientSex(), r.getBirthPlace());
+        return PatientIdentity.of(r.getPatientName(), r.getPatientSex(), r.getPatientAge());
     }
 
     private static PatientIdentity identityOf(RecordData d) {
-        return PatientIdentity.of(d.patientName(), d.documentType(), d.documentNumber(), d.birthDate(),
-            d.patientSex(), d.birthPlace());
+        return PatientIdentity.of(d.patientAlias(), d.patientSex(), d.patientAge());
     }
 
     @Transactional(readOnly = true)
@@ -342,40 +339,34 @@ public class OrthodonticRecordService {
     }
 
     private RecordData normalize(RecordData data) {
-        return RecordNormalizer.normalize(data, ages.ageYears(data.birthDate(), data.treatmentStartDate()));
+        return RecordNormalizer.normalize(data, data.patientAge());
     }
 
     private void apply(OrthodonticRecord record, RecordData data) {
         // El número va antes del texto de búsqueda, que lo incluye.
         record.setRecordNumber(data.recordNumber());
         record.setTreatingDentist(data.treatingDentist());
-        record.setPatientName(data.patientName());
-        record.setDocumentType(data.documentType());
-        record.setDocumentNumber(data.documentNumber());
+        record.setPatientName(data.patientAlias());
         record.setPatientSex(data.patientSex());
-        record.setBirthDate(data.birthDate());
-        record.setBirthPlace(data.birthPlace());
-        record.setAddress(data.address());
-        record.setPhone(data.phone());
+        record.setPatientAge(data.patientAge());
         record.setTreatmentStartDate(data.treatmentStartDate());
         record.setContent(json.writeValueAsString(data.content()));
-        record.setSearchText(searchText(data.patientName(), data.documentNumber(), record.getRecordNumber()));
+        record.setSearchText(searchText(data.patientAlias(), record.getRecordNumber()));
     }
 
-    static String searchText(String patientName, String documentNumber, String recordNumber) {
-        String raw = String.join(" ", patientName, documentNumber == null ? "" : documentNumber, recordNumber);
+    static String searchText(String patientAlias, String recordNumber) {
+        String raw = String.join(" ", patientAlias, recordNumber);
         return SearchNormalizer.normalize(raw);
     }
 
     private RecordView toView(OrthodonticRecord r) {
-        Integer age = ages.ageYears(r.getBirthDate(), r.getTreatmentStartDate());
+        Integer age = r.getPatientAge();
         RecordContent stored = json.readValue(r.getContent(), RecordContent.class);
         RecordContent content = RecordNormalizer.content(stored, r.getPatientSex(), age);
         Optional<RecordUnlockEvent> lastUnlock = r.getId() == null ? Optional.empty()
             : unlockEvents.findFirstByRecordIdAndActionOrderByCreatedAtDescIdDesc(r.getId(), UnlockAction.UNLOCKED);
         return new RecordView(r.getId(), r.getRecordNumber(), r.getAuthor().getId(), r.getAuthor().getFullName(),
-            r.getTreatingDentist(), r.getPatientName(), r.getDocumentType(), r.getDocumentNumber(), r.getPatientSex(),
-            r.getBirthDate(), r.getBirthPlace(), r.getAddress(), r.getPhone(), r.getTreatmentStartDate(), age,
+            r.getTreatingDentist(), r.getPatientName(), r.getPatientSex(), age, r.getTreatmentStartDate(),
             content, r.getLastStep(), FilledSteps.toList(r.getFilledSteps()), r.getPatientLockedAt(),
             lastUnlock.map(e -> e.getAdmin().getFullName()).orElse(null),
             lastUnlock.map(RecordUnlockEvent::getCreatedAt).orElse(null), r.getUnlockRequestedAt(),
@@ -384,8 +375,7 @@ public class OrthodonticRecordService {
 
     private static RecordSummaryView toSummary(OrthodonticRecord r) {
         Cohort cohort = r.getAuthor().getCohort();
-        return new RecordSummaryView(r.getId(), r.getRecordNumber(), r.getPatientName(), r.getDocumentType(),
-            r.getDocumentNumber(), r.getTreatingDentist(), r.getTreatmentStartDate(), r.getAuthor().getFullName(),
+        return new RecordSummaryView(r.getId(), r.getRecordNumber(), r.getPatientName(), r.getTreatingDentist(), r.getTreatmentStartDate(), r.getAuthor().getFullName(),
             cohort == null ? null : cohort.getName(), r.getUpdatedAt(), r.getPatientLockedAt() != null);
     }
 }

@@ -102,7 +102,7 @@ class DashboardIT extends AbstractIntegrationTest {
     }
 
     private long record(Session as) throws Exception {
-        return record(as, "{\"patientName\":\"Paciente\"}");
+        return record(as, "{\"patientAlias\":\"Paciente\"}");
     }
 
     private void set(long recordId, String column, Object value) {
@@ -188,18 +188,16 @@ class DashboardIT extends AbstractIntegrationTest {
     @Test
     void missing_data_and_empty_steps_order() throws Exception {
         Session torres = register("Dra. Torres");
-        long a = record(torres, "{\"patientName\":\"A\",\"documentType\":\"DNI\",\"documentNumber\":\"74125896\","
-            + "\"birthDate\":\"2012-05-20\",\"treatmentStartDate\":\"2026-05-19\"}");
-        long b = record(torres, "{\"patientName\":\"B\",\"birthDate\":\"2012-05-20\",\"treatmentStartDate\":\"2026-05-19\"}");
-        long c = record(torres, "{\"patientName\":\"C\",\"birthDate\":\"2012-05-20\"}");
+        long a = record(torres, "{\"patientAlias\":\"A\",\"patientAge\":13,\"treatmentStartDate\":\"2026-05-19\"}");
+        long b = record(torres, "{\"patientAlias\":\"B\",\"patientAge\":13,\"treatmentStartDate\":\"2026-05-19\"}");
+        long c = record(torres, "{\"patientAlias\":\"C\"}");
         set(a, "filled_steps", 1 + 2 + 4);        // vacíos 4,5,6,7
         set(b, "filled_steps", 1 + 2 + 8);        // vacíos 3,5,6,7
         set(c, "filled_steps", 1 + 2 + 4 + 8);    // vacíos 5,6,7
 
         JsonNode d = me(torres);
         JsonNode missing = d.get("missing");
-        assertThat(missing.get("withoutDocument").asLong()).isEqualTo(2);
-        assertThat(missing.get("withoutBirthDate").asLong()).isZero();
+        assertThat(missing.get("withoutAge").asLong()).isEqualTo(1);
         assertThat(missing.get("withoutTreatmentStart").asLong()).isEqualTo(1);
         // 5, 6 y 7 vacíos en las 3; 3 y 4 en una; 1 y 2 en ninguna (empates por número de paso).
         assertThat(emptyStepOrder(d)).containsExactly(5L, 6L, 7L, 3L, 4L, 1L, 2L);
@@ -441,13 +439,13 @@ class DashboardIT extends AbstractIntegrationTest {
             long id = record(torres);
             ids.add(id);
             jdbc.update("UPDATE orthodontic_records SET patient_locked_at = ?, unlock_requested_at = ?,"
-                + " unlock_request_reason = ? WHERE id = ?", at(2030, 10, 1), at(2030, 10, 1 + i), "Motivo " + i, id);
+                + " unlock_request_reason = ? WHERE id = ?", at(2030, 10, 1), at(2030, 10, 1 + i), "ALIAS", id);
         }
         JsonNode requests = adminDashboard(admin).get("unlockRequests");
         assertThat(requests.get("total").asLong()).isEqualTo(12);
         assertThat(requests.get("items")).hasSize(10);
         assertThat(requests.get("items").get(0).get("recordId").asLong()).isEqualTo(ids.get(0));
-        assertThat(requests.get("items").get(0).get("reason").stringValue()).isEqualTo("Motivo 0");
+        assertThat(requests.get("items").get(0).get("reason").stringValue()).isEqualTo("ALIAS");
         assertThat(requests.get("items").get(0).get("authorName").stringValue()).isEqualTo("Dra. Torres");
     }
 

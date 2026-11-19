@@ -1,6 +1,5 @@
 package com.odontorisas.service.records;
 
-import com.odontorisas.common.DocumentType;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -9,9 +8,7 @@ import java.time.LocalDate;
 public record RecordSummaryView(
     Long id,
     String recordNumber,
-    String patientName,
-    DocumentType documentType,
-    String documentNumber,
+    String patientAlias,
     String treatingDentist,
     LocalDate treatmentStartDate,
     String authorName,
