@@ -163,6 +163,8 @@ class OrthodonticRecordsControllerTest {
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.errors[0].field").value("patientAge"));
         create("{\"patientAlias\":\"A\",\"patientAge\":-1}").andExpect(status().isBadRequest());
+        // Scenario "Edad fuera de rango": 12,5 no es una edad entera y no se trunca a 12.
+        create("{\"patientAlias\":\"A\",\"patientAge\":12.5}").andExpect(status().isBadRequest());
     }
 
     /** Scenario "Cliente antiguo": los campos retirados se rechazan, no se ignoran en silencio. */

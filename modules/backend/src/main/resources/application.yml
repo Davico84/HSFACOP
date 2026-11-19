@@ -13,6 +13,10 @@ spring:
   config:
     import: "optional:file:./secrets.properties"
 
+  jackson:
+    deserialization:
+      accept-float-as-int: false   # 12,5 no es una edad entera: se rechaza con 400, no se trunca a 12
+
   mvc:
     problemdetails:
       enabled: true          # errores en formato RFC 9457 (ProblemDetail) de forma nativa
