@@ -38,4 +38,4 @@ La historia clínica guarda hoy el nombre completo, el documento, la fecha y el 
 - Cifrado de extremo a extremo ni frases de paso (viven en el otro change).
 - Detectar con certeza que un alias es un nombre real: solo se avisa.
 - Identificar a la misma persona en dos historias (ya no hay documento).
-- Revisión legal bajo la Ley 29733: se necesita igual para confirmar que alias, sexo y edad no identifican al paciente.
+- Revisión legal bajo la Ley 29733: el responsable decidió el 2026-11-19 no hacerla y asumir el riesgo; la identificabilidad de alias, sexo y edad se analiza en el propio diseño.
