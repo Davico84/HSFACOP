@@ -3,7 +3,7 @@
 - [ ] 0.1 Fijar con el responsable, por escrito, la fecha límite de copia (D10) y confirmar que `update-orthodontic-records-pseudonymous-patient` (D8 y tarea 5.1) devuelve los datos antiguos solo al autor hasta esa fecha; verificar que ambos documentos dicen lo mismo y que `openspec validate --strict` pasa en los dos
 - [ ] 0.2 **Este change no se aplica antes de archivar** `update-backend-logging-no-patient-data` y `update-orthodontic-records-pseudonymous-patient`; después, rebasar este change (`MODIFIED` de "Datos en la hoja impresa" y del contrato de búsqueda con filtro por identificadores) y volver a ejecutar `openspec validate add-orthodontic-records-local-patient-notebook --strict`; verificar que pasa
 - [ ] 0.3 Confirmar con el responsable que la libreta es opcional y que acepta por escrito sus límites (un dispositivo, sin cifrado en reposo, sin recuperación sin archivo, frase de 66 bits con PBKDF2 y la fuga residual de identificadores en la búsqueda); verificar que la nota existe en este change, sin datos sensibles
-- [ ] 0.4 Registrar la conclusión de la revisión legal sobre los datos del paciente guardados en el dispositivo del tratante (Ley 29733); verificar que existe y está fechada
+- [x] 0.4 Revisión legal bajo la Ley 29733: el responsable decidió el 2026-11-19 no hacerla y asumir ese riesgo; los datos guardados en el dispositivo del tratante siguen siendo datos personales de salud. Verificar que esta nota consta en este change
 
 ## 1. Frontend: libreta local
 

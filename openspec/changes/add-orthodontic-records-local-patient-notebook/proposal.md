@@ -35,4 +35,4 @@
 - Cifrar la libreta en reposo dentro del navegador (se recomienda cifrado del disco del equipo; ver riesgos).
 - Proteger contra un frontend comprometido o una extensión del navegador con acceso a la página.
 - Recuperar una libreta perdida: sin archivo exportado no hay copia.
-- Revisión legal bajo la Ley 29733: los datos guardados en el dispositivo del tratante siguen siendo datos personales de salud; se necesita igual (tarea 0.4).
+- Revisión legal bajo la Ley 29733: el responsable decidió el 2026-11-19 no hacerla y asumir el riesgo; los datos guardados en el dispositivo del tratante siguen siendo datos personales de salud (tarea 0.4).
