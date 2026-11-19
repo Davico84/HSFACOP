@@ -4,6 +4,8 @@ import { MeasureField } from "@/modules/core/components/form/MeasureField";
 import { TextAreaField } from "@/modules/core/components/form/TextAreaField";
 import { ChoiceField } from "@/modules/core/components/form/ChoiceField";
 import { AliasField } from "./AliasField";
+import { NotebookPatientFields } from "./NotebookPatientFields";
+import type { NotebookRecordRef } from "../../notebook/useNotebookDraft";
 import type { RecordFormValues } from "../../schemas/record";
 import { LONG_TEXT, MAX_MENARCHE_AGE, MENARCHE_TOO_YOUNG, MIN_MENARCHE_AGE } from "../../schemas/record";
 import { cooperationOptions, NOT_REPORTED, oralHygieneOptions, sexOptions, yesNoOptions } from "../../config/options";
@@ -15,10 +17,12 @@ interface Step1PatientProps {
    * formulario y se envían sin cambios al guardar).
    */
   patientLocked?: boolean;
+  /** La historia ya creada: la libreta local se liga a ella. */
+  record?: NotebookRecordRef | null;
 }
 
 /** Paso 1 (pág. 1): alias, sexo y edad del paciente, y anamnesis. La edad se escribe (no se calcula). */
-export function Step1Patient({ patientLocked = false }: Step1PatientProps) {
+export function Step1Patient({ patientLocked = false, record = null }: Step1PatientProps) {
   const { control } = useFormContext<RecordFormValues>();
   const [age, sex, menarche] = useWatch({
     control,
@@ -39,6 +43,8 @@ export function Step1Patient({ patientLocked = false }: Step1PatientProps) {
           readOnly={patientLocked} />
         <TextField name="treatmentStartDate" label="Fecha de inicio de tratamiento" type="date" />
       </section>
+
+      <NotebookPatientFields record={record} />
 
       <section aria-labelledby="s1-anamnesis" className="flex flex-col gap-4">
         <h3 id="s1-anamnesis" className="text-lg font-semibold">Anamnesis</h3>

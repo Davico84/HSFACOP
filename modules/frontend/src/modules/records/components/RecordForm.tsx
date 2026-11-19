@@ -389,7 +389,8 @@ export function RecordForm({ record, onReload, onRemoteUpdate, onNotFound, remot
             <h2 ref={stepHeading} tabIndex={-1} className="text-xl font-semibold outline-none">
               {current.number}. {current.title} <span className="text-sm font-normal text-muted-foreground">({current.pages})</span>
             </h2>
-            <RecordStepContent step={step} patientLocked={Boolean(record?.patientLockedAt)} />
+            <RecordStepContent step={step} patientLocked={Boolean(record?.patientLockedAt)}
+              record={record ? { id: record.id, recordNumber: record.recordNumber } : null} />
 
             {/* En celular cabe en una fila: "Anterior" y "Siguiente" muestran solo el icono (el texto queda
                 para el lector de pantalla). */}

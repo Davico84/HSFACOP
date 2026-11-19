@@ -1,5 +1,5 @@
 import { NotebookError, getEntry, putEntry } from "./notebookDb";
-import { NOTEBOOK_SCHEMA_VERSION, notebookEntrySchema, notebookFieldsSchema, type NotebookEntry, type NotebookFields } from "./notebookSchema";
+import { EMPTY_NOTEBOOK_FIELDS, NOTEBOOK_SCHEMA_VERSION, fieldsOf, notebookEntrySchema, notebookFieldsSchema, type NotebookEntry, type NotebookFields } from "./notebookSchema";
 
 /** Resultado de leer la libreta para una historia: la entrada, o por qué no se usa. */
 export type NotebookLookup =
@@ -65,6 +65,30 @@ export async function saveEntry({ accountId, recordId, recordNumber, fields, now
   });
   await putEntry(entry);
   return entry;
+}
+
+export interface UpdateEntryInput {
+  accountId: number;
+  recordId: number;
+  recordNumber: string;
+  /** Solo los campos que cambia quien llama (paso 1 o paso de firmas); el resto de la entrada se conserva. */
+  changes: Partial<NotebookFields>;
+  now?: Date;
+}
+
+export type UpdateEntryResult = { ok: true; entry: NotebookEntry } | { ok: false; errors: NotebookFieldErrors };
+
+/**
+ * Cambia solo una parte de la entrada (leyendo la guardada, no una copia vieja): el paso 1 y el paso
+ * de firmas escriben por separado sin pisarse. Una entrada inválida no se guarda y devuelve sus
+ * errores por campo; un fallo de IndexedDB sube como `NotebookError`.
+ */
+export async function updateEntry({ accountId, recordId, recordNumber, changes, now }: UpdateEntryInput): Promise<UpdateEntryResult> {
+  const previous = await getEntry(accountId, recordId);
+  const merged: NotebookFields = { ...(previous ? fieldsOf(previous) : EMPTY_NOTEBOOK_FIELDS), ...changes };
+  const errors = validateFields(merged);
+  if (Object.keys(errors).length > 0) return { ok: false, errors };
+  return { ok: true, entry: await saveEntry({ accountId, recordId, recordNumber, fields: merged, now }) };
 }
 
 /** Marca las entradas como exportadas (alimenta el recordatorio de los 7 días). */

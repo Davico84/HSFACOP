@@ -8,11 +8,11 @@
 ## 1. Frontend: libreta local
 
 - [x] 1.1 Módulo `patientNotebook` (`modules/frontend/src/modules/records/notebook/`): envoltorio de IndexedDB, esquema Zod de la entrada (con reglas de documento), clave `[accountId, recordId]`, lectura, escritura, borrado y listado; verificar con tests (Vitest + `fake-indexeddb`) de los Scenario "Guardar en la libreta", "Documento con formato incorrecto" y "Otra cuenta en el mismo dispositivo"
-- [ ] 1.1b Matriz de capacidades: sin IndexedDB, sin `crypto.subtle`, cuota llena, modo privado, actualización bloqueada por otra pestaña y `storage.persist` denegado, con mensajes visibles y sin guardado alternativo; verificar con los Scenario de "Libreta no disponible en el navegador" y con una prueba de actualización bloqueada con dos pestañas
-- [ ] 1.1c Entrada con `recordNumber` y `revision`; ignorar la entrada si el número no coincide con el de la historia; verificar con el Scenario "Entrada de otra historia con el mismo identificador"
-- [ ] 1.2 Paso 1: campos "solo en este dispositivo" (nombre, documento, nacimiento, lugar, domicilio, celular) y datos de quien firma en el paso de firmas, con aviso de que no se envían; verificar con los Scenario "Historia sin libreta" y "Guardar en la libreta" (Vitest + MSW comprobando que ninguna petición los lleva)
-- [ ] 1.3 Aviso del primer guardado, petición de `navigator.storage.persist()` y recordatorio de exportar tras 7 días; verificar con los Scenario "Primer uso", "Recordatorio" y "El navegador borró la libreta"
-- [ ] 1.4 Alias sugerido desde el nombre de la libreta (nombre de pila más inicial del primer apellido, sin partículas), editable y calculado en el navegador; verificar con los Scenario de "Alias sugerido desde la libreta" y que ninguna petición lleva el nombre
+- [x] 1.1b Matriz de capacidades: sin IndexedDB, sin `crypto.subtle`, cuota llena, modo privado, actualización bloqueada por otra pestaña y `storage.persist` denegado, con mensajes visibles y sin guardado alternativo; verificar con los Scenario de "Libreta no disponible en el navegador" y con una prueba de actualización bloqueada con dos pestañas
+- [x] 1.1c Entrada con `recordNumber` y `revision`; ignorar la entrada si el número no coincide con el de la historia; verificar con el Scenario "Entrada de otra historia con el mismo identificador"
+- [x] 1.2 Paso 1: campos "solo en este dispositivo" (nombre, documento, nacimiento, lugar, domicilio, celular) y datos de quien firma en el paso de firmas, con aviso de que no se envían; verificar con los Scenario "Historia sin libreta" y "Guardar en la libreta" (Vitest + MSW comprobando que ninguna petición los lleva)
+- [x] 1.3 Aviso del primer guardado, petición de `navigator.storage.persist()` y recordatorio de exportar tras 7 días; verificar con los Scenario "Primer uso", "Recordatorio" y "El navegador borró la libreta"
+- [x] 1.4 Alias sugerido desde el nombre de la libreta (nombre de pila más inicial del primer apellido, sin partículas), editable y calculado en el navegador; verificar con los Scenario de "Alias sugerido desde la libreta" y que ninguna petición lleva el nombre
 
 ## 2. Frontend: impresión
 

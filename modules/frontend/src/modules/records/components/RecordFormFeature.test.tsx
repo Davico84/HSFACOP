@@ -524,10 +524,12 @@ describe("orthodontic-records — Secciones clínicas de la fase 1", () => {
     renderRecordRoutes("/historias/10?paso=8");
     await stepHeading(/Firmas/);
 
-    // Ya no se guarda el nombre de quien firma: solo se indica quién firma y se escribe a mano.
+    // El servidor ya no guarda el nombre de quien firma: se indica quién firma y el nombre vive solo en la
+    // libreta del dispositivo.
     expect(screen.getByText(/menor de edad: firma el apoderado/)).toBeInTheDocument();
-    expect(screen.queryByLabelText("Nombre del apoderado")).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Parentesco")).not.toBeInTheDocument();
+    const notebook = screen.getByRole("region", { name: "Solo en este dispositivo" });
+    expect(within(notebook).getByLabelText("Nombre del apoderado")).toBeInTheDocument();
+    expect(within(notebook).getByLabelText("Parentesco")).toBeInTheDocument();
     expect(screen.queryByLabelText("Nombre del paciente")).not.toBeInTheDocument();
   });
 

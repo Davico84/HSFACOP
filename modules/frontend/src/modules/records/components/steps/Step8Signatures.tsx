@@ -2,6 +2,8 @@ import { useFormContext, useWatch } from "react-hook-form";
 import { TextField } from "@/modules/core/components/form/TextField";
 import type { RecordFormValues } from "../../schemas/record";
 import { FieldHint } from "@/modules/core/components/form/FieldHint";
+import { NotebookSignerFields } from "./NotebookSignerFields";
+import type { NotebookRecordRef } from "../../notebook/useNotebookDraft";
 import { isMinor } from "../../utils/age";
 
 /**
@@ -10,7 +12,11 @@ import { isMinor } from "../../utils/age";
  * Solo indica quién firma según la edad escrita (apoderado si es menor de 18) y guarda los nombres de
  * los supervisores y del tratante.
  */
-export function Step8Signatures() {
+interface Step8SignaturesProps {
+  record?: NotebookRecordRef | null;
+}
+
+export function Step8Signatures({ record = null }: Step8SignaturesProps) {
   const { control } = useFormContext<RecordFormValues>();
   const [age, treatingDentist] = useWatch({ control, name: ["patientAge", "treatingDentist"] });
   const minor = isMinor(age);
@@ -25,6 +31,7 @@ export function Step8Signatures() {
           ? "Paciente menor de edad: firma el apoderado. Su nombre y parentesco se escriben a mano en la hoja impresa."
           : "Firma el paciente. Su nombre se escribe a mano en la hoja impresa."}
       </FieldHint>
+      <NotebookSignerFields record={record} guardian={minor} />
       <fieldset className="grid gap-4 md:grid-cols-2">
         <legend className="mb-2 text-sm font-semibold">Firma supervisor</legend>
         <TextField name="content.signatures.supervisor1Name" label="Supervisor 1" />
