@@ -16,6 +16,7 @@ import { RecordsPagination } from "./RecordsPagination";
 import { RecordsEmptyState } from "./RecordsEmptyState";
 import { NewRecordLink } from "./NewRecordLink";
 import { RecordQuotaNotice } from "./RecordQuotaNotice";
+import { NotebookReminder } from "./NotebookReminder";
 import { RecordsCohortFilter } from "./RecordsCohortFilter";
 import { recordsListViewFor } from "../utils/recordsListView";
 
@@ -157,6 +158,7 @@ export function RecordsFeature() {
         {view === "cohorts" ? null : <NewRecordLink />}
       </header>
       {view === "own" ? <RecordQuotaNotice /> : null}
+      {view === "cohorts" ? null : <NotebookReminder />}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="w-full max-w-md">
         <IconInput

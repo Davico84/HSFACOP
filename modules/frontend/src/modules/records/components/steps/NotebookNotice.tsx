@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import { PATHS } from "@/routes/paths";
 import type { NotebookDraft } from "../../notebook/useNotebookDraft";
 
 interface NotebookNoticeProps {
@@ -39,13 +41,21 @@ export function NotebookNotice({ draft }: NotebookNoticeProps) {
       {lost ? (
         <p role="status" className={base}>
           Los datos de la libreta de esta historia ya no están en este dispositivo: el navegador pudo borrarlos. Si exportaste
-          un archivo, puedes importarlo desde la libreta. La historia no tiene ningún problema.
+          un archivo, puedes importarlo desde{" "}
+          <Link to={PATHS.NOTEBOOK} className="underline underline-offset-4">
+            Mi libreta
+          </Link>
+          . La historia no tiene ningún problema.
         </p>
       ) : null}
       {firstSave ? (
         <p role="status" className={base}>
           Guardado en este dispositivo. Estos datos viven <strong>solo aquí</strong>: el navegador puede borrarlos y no hay otra
-          copia. Exporta tu libreta para respaldarla.
+          copia.{" "}
+          <Link to={PATHS.NOTEBOOK} className="underline underline-offset-4">
+            Exporta tu libreta
+          </Link>{" "}
+          para respaldarla.
         </p>
       ) : null}
     </div>
