@@ -1,8 +1,8 @@
-import { useForm } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/modules/core/ui/button";
 import { buttonVariants } from "@/modules/core/ui/button-variants";
-import { Textarea } from "@/modules/core/ui/textarea";
+import { ChoiceField } from "@/modules/core/components/form/ChoiceField";
 import {
   Dialog,
   DialogClose,
@@ -12,59 +12,45 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/modules/core/ui/dialog";
+import type { UnlockRequestRequestReason } from "@/modules/core/services/generated/model";
+import { unlockReasonOptions } from "../config/options";
 import { unlockRequestSchema, type UnlockRequestValues } from "../schemas/unlockRequest";
 
 interface RequestUnlockDialogProps {
   open: boolean;
   pending: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (reason: string) => void;
+  onSubmit: (reason: UnlockRequestRequestReason) => void;
 }
 
-/** El tratante pide al ADMIN desbloquear los datos del paciente, con un motivo (1–200 caracteres). */
+/** El tratante pide al ADMIN desbloquear los datos del paciente, eligiendo el motivo de un catálogo cerrado. */
 export function RequestUnlockDialog({ open, pending, onOpenChange, onSubmit }: RequestUnlockDialogProps) {
   const form = useForm<UnlockRequestValues>({
     resolver: zodResolver(unlockRequestSchema),
     mode: "onTouched",
-    defaultValues: { reason: "" },
+    defaultValues: {},
   });
-  const error = form.formState.errors.reason?.message;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <form noValidate onSubmit={form.handleSubmit((values) => onSubmit(values.reason))} className="flex flex-col gap-4">
-          <DialogHeader>
-            <DialogTitle>Solicitar desbloqueo</DialogTitle>
-            <DialogDescription>
-              El administrador revisará la solicitud. Indica qué dato hay que corregir y por qué.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <label htmlFor="unlock-reason" className="text-sm font-medium">
-              Motivo
-            </label>
-            <Textarea
-              id="unlock-reason"
-              maxLength={200}
-              placeholder="Ej.: error en el número de DNI"
-              aria-invalid={error ? true : undefined}
-              aria-describedby={error ? "unlock-reason-error" : undefined}
-              {...form.register("reason")}
-            />
-            {error ? (
-              <p id="unlock-reason-error" className="text-sm text-destructive">
-                {error}
-              </p>
-            ) : null}
-          </div>
-          <DialogFooter>
-            <DialogClose className={buttonVariants({ variant: "outline" })}>Cancelar</DialogClose>
-            <Button type="submit" disabled={pending}>
-              Enviar solicitud
-            </Button>
-          </DialogFooter>
-        </form>
+        <FormProvider {...form}>
+          <form noValidate onSubmit={form.handleSubmit((values) => onSubmit(values.reason))} className="flex flex-col gap-4">
+            <DialogHeader>
+              <DialogTitle>Solicitar desbloqueo</DialogTitle>
+              <DialogDescription>
+                El administrador revisará la solicitud. Elige qué dato hay que corregir; los detalles se hablan fuera del sistema.
+              </DialogDescription>
+            </DialogHeader>
+            <ChoiceField<UnlockRequestValues> name="reason" label="¿Qué dato hay que corregir?" options={unlockReasonOptions} vertical />
+            <DialogFooter>
+              <DialogClose className={buttonVariants({ variant: "outline" })}>Cancelar</DialogClose>
+              <Button type="submit" disabled={pending}>
+                Enviar solicitud
+              </Button>
+            </DialogFooter>
+          </form>
+        </FormProvider>
       </DialogContent>
     </Dialog>
   );

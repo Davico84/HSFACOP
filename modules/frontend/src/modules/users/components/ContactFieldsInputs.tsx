@@ -3,7 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TextField } from "@/modules/core/components/form/TextField";
 import { FormField } from "@/modules/core/components/form/FormField";
 import { describedBy, fieldError, fieldId } from "@/modules/core/components/form/fieldError";
-import { documentTypeOptions } from "@/modules/records/config/options";
+import { documentTypeOptions } from "../config/documentTypes";
 import type { ContactValues } from "../schemas/contact";
 
 const NONE = "none";

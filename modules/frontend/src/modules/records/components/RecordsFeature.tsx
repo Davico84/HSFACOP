@@ -162,7 +162,7 @@ export function RecordsFeature() {
         <IconInput
           type="search"
           aria-label="Buscar historias"
-          placeholder="Buscar por paciente, documento o número (AEO-0001)"
+          placeholder="Buscar por alias o número (AEO-0001)"
           icon={<Search className="size-4" />}
           value={search}
           onChange={(e) => onSearch(e.target.value)}

@@ -3,33 +3,28 @@ import { TextField } from "@/modules/core/components/form/TextField";
 import { MeasureField } from "@/modules/core/components/form/MeasureField";
 import { TextAreaField } from "@/modules/core/components/form/TextAreaField";
 import { ChoiceField } from "@/modules/core/components/form/ChoiceField";
-import { FormField } from "@/modules/core/components/form/FormField";
-import { Input } from "@/modules/core/ui/input";
+import { AliasField } from "./AliasField";
 import type { RecordFormValues } from "../../schemas/record";
 import { LONG_TEXT, MAX_MENARCHE_AGE, MENARCHE_TOO_YOUNG, MIN_MENARCHE_AGE } from "../../schemas/record";
-import { cooperationOptions, documentTypeOptions, NOT_REPORTED, oralHygieneOptions, sexOptions, yesNoOptions } from "../../config/options";
-import { ageYears } from "../../utils/age";
-import { formatAge } from "../../utils/recordDisplay";
+import { cooperationOptions, NOT_REPORTED, oralHygieneOptions, sexOptions, yesNoOptions } from "../../config/options";
+import { MAX_AGE, MIN_AGE } from "../../utils/age";
 
 interface Step1PatientProps {
   /**
-   * Datos del paciente fijos tras imprimir: nombre, documento, sexo, fecha y lugar de nacimiento de
-   * solo lectura (siguen en el formulario y se envían sin cambios al guardar).
+   * Datos del paciente fijos tras imprimir: alias, sexo y edad de solo lectura (siguen en el
+   * formulario y se envían sin cambios al guardar).
    */
   patientLocked?: boolean;
 }
 
-/** Paso 1 (pág. 1): datos del paciente y anamnesis. La edad se calcula (no se teclea). */
+/** Paso 1 (pág. 1): alias, sexo y edad del paciente, y anamnesis. La edad se escribe (no se calcula). */
 export function Step1Patient({ patientLocked = false }: Step1PatientProps) {
   const { control } = useFormContext<RecordFormValues>();
-  const [birthDate, startDate, sex, menarche] = useWatch({
+  const [age, sex, menarche] = useWatch({
     control,
-    name: ["birthDate", "treatmentStartDate", "patientSex", "content.anamnesis.menarche"],
+    name: ["patientAge", "patientSex", "content.anamnesis.menarche"],
   });
-  const age = ageYears(birthDate, startDate);
-  // La 1ª menstruación se mide contra la edad actual (no la del inicio de tratamiento).
-  const currentAge = ageYears(birthDate);
-  const tooYoung = currentAge !== null && currentAge < MIN_MENARCHE_AGE;
+  const tooYoung = typeof age === "number" && age < MIN_MENARCHE_AGE;
 
   return (
     <div className="flex flex-col gap-8">
@@ -38,20 +33,11 @@ export function Step1Patient({ patientLocked = false }: Step1PatientProps) {
         <TextField name="recordNumber" label="Nro. de historia" placeholder="AEO-0001" autoComplete="off"
           hint="Lo asignan los docentes. Se puede corregir aunque la historia ya esté impresa." />
         <TextField name="treatingDentist" label="Odontólogo tratante" />
-        <TextField name="patientName" label="Paciente" className="md:col-span-2" autoComplete="off" readOnly={patientLocked} />
+        <AliasField readOnly={patientLocked} />
         <ChoiceField name="patientSex" label="Sexo" options={sexOptions} readOnly={patientLocked} />
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
-          <ChoiceField name="documentType" label="Documento" options={documentTypeOptions} vertical readOnly={patientLocked} />
-          <TextField name="documentNumber" label="Número" inputMode="numeric" autoComplete="off" readOnly={patientLocked} />
-        </div>
-        <TextField name="birthPlace" label="Lugar de nacimiento" readOnly={patientLocked} />
-        <TextField name="birthDate" label="Fecha de nacimiento" type="date" readOnly={patientLocked} />
-        <FormField id="f-age" label="Edad">
-          <Input id="f-age" value={formatAge(age) || "—"} readOnly disabled />
-        </FormField>
+        <MeasureField name="patientAge" label="Edad al inicio del tratamiento" unit="años" step={1} min={MIN_AGE} max={MAX_AGE}
+          readOnly={patientLocked} />
         <TextField name="treatmentStartDate" label="Fecha de inicio de tratamiento" type="date" />
-        <TextField name="address" label="Domicilio" className="md:col-span-2" />
-        <TextField name="phone" label="Celular" inputMode="tel" />
       </section>
 
       <section aria-labelledby="s1-anamnesis" className="flex flex-col gap-4">

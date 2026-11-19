@@ -11,12 +11,9 @@ const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
 
 const LOCKED: Partial<RecordResponse> = {
-  patientName: "Ana Quispe",
-  documentType: "DNI",
-  documentNumber: "74125896",
-  birthDate: "2012-05-20",
+  patientAlias: "Ana",
   patientSex: "FEMALE",
-  birthPlace: "Lima",
+  patientAge: 13,
   patientLockedAt: "2026-10-05T15:00:00Z",
 };
 
@@ -33,7 +30,7 @@ function mockRecord(initial: Partial<RecordResponse> = {}) {
       return HttpResponse.json(record);
     }),
     http.post("*/api/orthodontic-records/:id/unlock-request", async ({ request }) => {
-      const { reason } = (await request.json()) as { reason: string };
+      const { reason } = (await request.json()) as { reason: "ALIAS" | "SEXO" | "EDAD" | "OTRO" };
       calls.requests.push(reason);
       record = { ...record, unlockRequest: { requestedAt: "2026-10-06T14:00:00Z", reason } };
       return new HttpResponse(null, { status: 204 });
@@ -72,24 +69,22 @@ describe("orthodontic-records — Datos del paciente fijos tras imprimir", () =>
 
     const notice = screen.getByRole("region", { name: "Datos del paciente fijos" });
     expect(within(notice).getByText(/Datos del paciente fijos desde el 05\/10\/2026/)).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Paciente" })).toHaveAttribute("readonly");
-    for (const label of ["Número", "Lugar de nacimiento", "Fecha de nacimiento"]) {
-      expect(screen.getByLabelText(label)).toHaveAttribute("readonly");
-    }
+    expect(screen.getByRole("textbox", { name: "Alias del paciente" })).toHaveAttribute("readonly");
+    expect(screen.getByLabelText("Edad al inicio del tratamiento")).toBeDisabled();
     expect(screen.getByRole("radio", { name: "Masculino" })).toBeDisabled();
-    expect(screen.getByLabelText("Domicilio")).not.toHaveAttribute("readonly");
+    expect(screen.getByLabelText("Odontólogo tratante")).not.toHaveAttribute("readonly");
   });
 
   it("sin imprimir, los datos del paciente se editan normalmente", async () => {
-    mockRecord({ patientName: "Ana Quispe" });
+    mockRecord({ patientAlias: "Ana" });
     renderRecordRoutes("/historias/10?paso=1");
     await stepHeading(/Paciente y anamnesis/);
 
     expect(screen.queryByRole("region", { name: "Datos del paciente fijos" })).not.toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Paciente" })).not.toHaveAttribute("readonly");
+    expect(screen.getByRole("textbox", { name: "Alias del paciente" })).not.toHaveAttribute("readonly");
   });
 
-  it("el tratante solicita el desbloqueo con un motivo (obligatorio) y queda pendiente", async () => {
+  it("el tratante solicita el desbloqueo eligiendo un motivo del catálogo y queda pendiente", async () => {
     const calls = mockRecord(LOCKED);
     renderRecordRoutes("/historias/10?paso=1");
     await stepHeading(/Paciente y anamnesis/);
@@ -97,33 +92,35 @@ describe("orthodontic-records — Datos del paciente fijos tras imprimir", () =>
     await userEvent.click(screen.getByRole("button", { name: "Solicitar desbloqueo" }));
     const dialog = await screen.findByRole("dialog", { name: "Solicitar desbloqueo" });
     await userEvent.click(within(dialog).getByRole("button", { name: "Enviar solicitud" }));
-    expect(await within(dialog).findByText("Indica el motivo.")).toBeInTheDocument();
+    expect(await within(dialog).findByText("Elige el motivo.")).toBeInTheDocument();
     expect(calls.requests).toEqual([]);
+    // Catálogo cerrado: no hay campo de texto libre.
+    expect(within(dialog).queryByRole("textbox")).not.toBeInTheDocument();
 
-    await userEvent.type(within(dialog).getByLabelText("Motivo"), "Error en el número de DNI");
+    await userEvent.click(within(dialog).getByRole("radio", { name: "El alias" }));
     await userEvent.click(within(dialog).getByRole("button", { name: "Enviar solicitud" }));
 
-    await waitFor(() => expect(calls.requests).toEqual(["Error en el número de DNI"]));
+    await waitFor(() => expect(calls.requests).toEqual(["ALIAS"]));
     expect(await screen.findByText(/Desbloqueo solicitado el 06\/10\/2026/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Solicitar desbloqueo" })).not.toBeInTheDocument();
   });
 
   it("el ADMIN ve el motivo, desbloquea con confirmación y luego se muestra el último desbloqueo", async () => {
-    const calls = mockRecord({ ...LOCKED, unlockRequest: { requestedAt: "2026-10-06T14:00:00Z", reason: "Error en el DNI" } });
+    const calls = mockRecord({ ...LOCKED, unlockRequest: { requestedAt: "2026-10-06T14:00:00Z", reason: "ALIAS" } });
     renderRecordRoutes("/historias/10?paso=1", "ADMIN");
     await stepHeading(/Paciente y anamnesis/);
 
-    expect(screen.getByText(/«Error en el DNI»/)).toBeInTheDocument();
+    expect(screen.getByText(/«El alias»/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Desbloquear datos del paciente" }));
     await userEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Desbloquear" }));
 
     await waitFor(() => expect(calls.unlocks).toBe(1));
     expect(await screen.findByText(/desbloqueados por Admin FACOP el 06\/10\/2026/)).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Paciente" })).not.toHaveAttribute("readonly");
+    expect(screen.getByRole("textbox", { name: "Alias del paciente" })).not.toHaveAttribute("readonly");
   });
 
   it("el ADMIN descarta la solicitud y los datos siguen fijos", async () => {
-    const calls = mockRecord({ ...LOCKED, unlockRequest: { requestedAt: "2026-10-06T14:00:00Z", reason: "Error" } });
+    const calls = mockRecord({ ...LOCKED, unlockRequest: { requestedAt: "2026-10-06T14:00:00Z", reason: "OTRO" } });
     renderRecordRoutes("/historias/10?paso=1", "ADMIN");
     await stepHeading(/Paciente y anamnesis/);
 
@@ -135,7 +132,7 @@ describe("orthodontic-records — Datos del paciente fijos tras imprimir", () =>
   });
 
   it("el 409 de datos fijos se avisa sin 'Reintentar'", async () => {
-    mockRecord({ patientName: "Ana Quispe" });
+    mockRecord({ patientAlias: "Ana" });
     server.use(
       http.put("*/api/orthodontic-records/:id", () =>
         HttpResponse.json(
@@ -146,7 +143,7 @@ describe("orthodontic-records — Datos del paciente fijos tras imprimir", () =>
     );
     renderRecordRoutes("/historias/10?paso=1");
     await stepHeading(/Paciente y anamnesis/);
-    await userEvent.type(screen.getByLabelText("Domicilio"), "x");
+    await userEvent.type(screen.getByLabelText("Odontólogo tratante"), "x");
     await userEvent.click(screen.getByRole("button", { name: /Guardar/ }));
 
     await waitFor(() =>
@@ -167,18 +164,15 @@ describe("orthodontic-records — Autoguardado con datos fijos", () => {
     renderRecordRoutes("/historias/10?paso=1");
     await stepHeading(/Paciente y anamnesis/);
 
-    await user.type(screen.getByLabelText("Domicilio"), "Av. Sol 123");
+    await user.type(screen.getByLabelText("Odontólogo tratante"), "Av. Sol 123");
     await act(() => vi.advanceTimersByTimeAsync(3_500));
 
     await waitFor(() => expect(calls.put).toHaveLength(1));
     expect(calls.put[0]).toMatchObject({
-      patientName: "Ana Quispe",
-      documentType: "DNI",
-      documentNumber: "74125896",
-      birthDate: "2012-05-20",
+      patientAlias: "Ana",
       patientSex: "FEMALE",
-      birthPlace: "Lima",
-      address: "Av. Sol 123",
+      patientAge: 13,
+      treatingDentist: "Av. Sol 123",
     });
   });
 });
@@ -187,7 +181,7 @@ describe("orthodontic-records — Candado en el listado", () => {
   it("las historias con los datos fijos muestran el candado; las demás no", async () => {
     const rows: RecordSummaryResponse[] = [
       summary({ id: 10, recordNumber: "AEO-0001", patientLocked: true }),
-      summary({ id: 11, recordNumber: "AEO-0002", patientName: "Rosa Díaz" }),
+      summary({ id: 11, recordNumber: "AEO-0002", patientAlias: "Rosa Díaz" }),
     ];
     server.use(http.get("*/api/orthodontic-records", () => HttpResponse.json(page(rows))));
     renderRecordRoutes("/historias");

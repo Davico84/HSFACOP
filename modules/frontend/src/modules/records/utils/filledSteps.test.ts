@@ -9,7 +9,7 @@ describe("orthodontic-records — Pasos con datos guardados con la historia", ()
 
   it("cuenta el paso de cada campo con datos", () => {
     const values = emptyRecordValues("Dra. María Torres");
-    values.patientName = "Ana Quispe";
+    values.patientAlias = "Ana";
     values.content.facial.facialThirdsNotes = "Tercio inferior aumentado";
     values.content.diagnosis.problemList = ["Overjet aumentado"];
 

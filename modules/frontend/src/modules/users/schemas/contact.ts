@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { UpdateProfileRequest, UpdateProfileRequestDocumentType } from "@/modules/core/services/generated/model";
-import { DOCUMENT_PATTERNS } from "@/modules/records/schemas/record";
+import type { AccountDocumentType } from "../config/documentTypes";
+
+/** Formato del documento de la cuenta por tipo (paridad con `ContactFields`); el paciente ya no tiene documento. */
+export const DOCUMENT_PATTERNS: Record<AccountDocumentType, { regex: RegExp; message: string }> = {
+  DNI: { regex: /^\d{8}$/, message: "El DNI debe tener 8 dígitos." },
+  FOREIGNER_CARD: { regex: /^\d{9}$/, message: "El carné de extranjería debe tener 9 dígitos." },
+  PASSPORT: { regex: /^\d{6,12}$/, message: "El pasaporte debe tener entre 6 y 12 dígitos." },
+};
 
 /**
  * Datos de contacto e identificación de una cuenta (registro y "Mis datos"), en paridad con

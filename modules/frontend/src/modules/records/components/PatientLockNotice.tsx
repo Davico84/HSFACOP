@@ -8,6 +8,7 @@ import {
   useRequestPatientUnlock,
   useUnlockPatient,
 } from "../hooks/usePatientLock";
+import { unlockReasonLabel } from "../config/options";
 import { formatInstantDate } from "../utils/patientLock";
 import { RequestUnlockDialog } from "./RequestUnlockDialog";
 import { UnlockPatientDialog } from "./UnlockPatientDialog";
@@ -47,7 +48,7 @@ export function PatientLockNotice({ record }: PatientLockNoticeProps) {
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <p className="font-medium">Datos del paciente fijos desde el {formatInstantDate(record.patientLockedAt)}</p>
         <p className="text-muted-foreground">
-          Al imprimir quedaron fijos el nombre, el documento, la fecha y el lugar de nacimiento y el sexo. El resto de la
+          Al imprimir quedaron fijos el alias, el sexo y la edad. El resto de la
           historia se sigue editando.
         </p>
         {record.lastUnlock ? (
@@ -58,7 +59,7 @@ export function PatientLockNotice({ record }: PatientLockNoticeProps) {
         {pendingRequest ? (
           <p>
             Desbloqueo solicitado el {formatInstantDate(pendingRequest.requestedAt)}
-            {isAdmin ? <>: «{pendingRequest.reason}»</> : null}.
+            {isAdmin ? <>: «{unlockReasonLabel(pendingRequest.reason)}»</> : null}.
           </p>
         ) : null}
       </div>

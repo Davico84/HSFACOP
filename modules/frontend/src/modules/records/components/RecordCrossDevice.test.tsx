@@ -20,7 +20,7 @@ const REMOTE_BANNER = /La historia cambió en otro dispositivo mientras tenías 
  * retienen la próxima respuesta; `notFound` responde 404; `unauthorizedOnce` responde 401 una vez.
  */
 function mockBackend(initial: Partial<RecordResponse> = {}) {
-  let record = recordResponse({ address: "Av. Sol 1", ...initial });
+  let record = recordResponse({ treatingDentist: "Av. Sol 1", ...initial });
   const state = {
     gets: 0,
     failPut: false,
@@ -89,7 +89,7 @@ const returnToTab = async () => {
   await act(() => vi.advanceTimersByTimeAsync(0));
 };
 const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
-const address = () => screen.getByLabelText("Domicilio") as HTMLInputElement;
+const treatingDentist = () => screen.getByLabelText("Odontólogo tratante") as HTMLInputElement;
 let user: ReturnType<typeof userEvent.setup>;
 
 async function open(path = "/historias/10?paso=1", initial: Partial<RecordResponse> = {}) {
@@ -117,27 +117,27 @@ describe("orthodontic-records — Actualización al volver a la historia desde o
   it("volver sin cambios propios: muestra lo guardado en el otro dispositivo, en el mismo paso, con el aviso", async () => {
     const backend = await open();
     const getsAfterOpen = backend.state.gets;
-    backend.remote({ address: "Av. Remota 9" });
+    backend.remote({ treatingDentist: "Av. Remota 9" });
 
     await returnToTab();
 
-    await waitFor(() => expect(address().value).toBe("Av. Remota 9"));
+    await waitFor(() => expect(treatingDentist().value).toBe("Av. Remota 9"));
     expect(screen.getByRole("status", { name: "" })).toBeDefined();
     expect(screen.getByText(NOTICE)).toBeInTheDocument();
     expect(backend.router.state.location.search).toBe("?paso=1");
     // Una sola consulta: la recarga usa la respuesta de la revisión.
     expect(backend.state.gets).toBe(getsAfterOpen + 1);
 
-    await user.type(address(), "!");
+    await user.type(treatingDentist(), "!");
     expect(screen.queryByText(NOTICE)).not.toBeInTheDocument();
   });
 
   it("volver con cambios propios que chocan: los conserva, avisa (llevando la vista al aviso) y no autoguarda", async () => {
     const scroll = vi.spyOn(Element.prototype, "scrollIntoView");
     const backend = await open();
-    await user.clear(address());
-    await user.type(address(), "Mi casa");
-    backend.remote({ address: "Otra casa" });
+    await user.clear(treatingDentist());
+    await user.type(treatingDentist(), "Mi casa");
+    backend.remote({ treatingDentist: "Otra casa" });
 
     await returnToTab();
 
@@ -145,16 +145,16 @@ describe("orthodontic-records — Actualización al volver a la historia desde o
     expect(banner).toHaveTextContent(REMOTE_BANNER);
     expect(scroll.mock.contexts).toContain(banner);
     expect(banner).toHaveFocus();
-    expect(address().value).toBe("Mi casa");
+    expect(treatingDentist().value).toBe("Mi casa");
     await advance(15_000);
     expect(backend.puts).toHaveLength(0);
   });
 
   it("cambios propios iguales a los del servidor (respuesta perdida): sin aviso ni pendientes", async () => {
     const backend = await open();
-    await user.clear(address());
-    await user.type(address(), "Calle 1");
-    backend.remote({ address: "Calle 1" });
+    await user.clear(treatingDentist());
+    await user.type(treatingDentist(), "Calle 1");
+    backend.remote({ treatingDentist: "Calle 1" });
 
     await returnToTab();
     await advance(15_000);
@@ -168,17 +168,17 @@ describe("orthodontic-records — Actualización al volver a la historia desde o
   it("guardado al ocultar fallido y cambios remotos: conserva lo escrito, avisa y no vuelve a autoguardar", async () => {
     const backend = await open();
     backend.state.failPut = true;
-    await user.type(address(), " B");
+    await user.type(treatingDentist(), " B");
     await act(async () => setVisibility("hidden"));
     await advance(0);
     expect(backend.puts).toHaveLength(1);
     backend.state.failPut = false;
-    backend.remote({ address: "Desde el celular" });
+    backend.remote({ treatingDentist: "Desde el celular" });
 
     await returnToTab();
 
     expect(await screen.findByText(REMOTE_BANNER)).toBeInTheDocument();
-    expect(address().value).toBe("Av. Sol 1 B");
+    expect(treatingDentist().value).toBe("Av. Sol 1 B");
     await advance(15_000);
     expect(backend.puts).toHaveLength(1);
   });
@@ -186,10 +186,10 @@ describe("orthodontic-records — Actualización al volver a la historia desde o
   it("autoguardado pendiente durante la revisión: no se envía", async () => {
     const backend = await open();
     const release = backend.holdGet();
-    backend.remote({ address: "Desde el celular" });
+    backend.remote({ treatingDentist: "Desde el celular" });
     await returnToTab();
     // Escribe mientras la consulta espera; el autoguardado queda detrás de la revisión.
-    await user.type(address(), " X");
+    await user.type(treatingDentist(), " X");
     await advance(4_000);
     release();
     await advance(0);
@@ -202,34 +202,34 @@ describe("orthodontic-records — Actualización al volver a la historia desde o
   it("escribir mientras se revisa: no se pierde (aviso en lugar de recargar)", async () => {
     const backend = await open();
     const release = backend.holdGet();
-    backend.remote({ address: "Desde el celular" });
+    backend.remote({ treatingDentist: "Desde el celular" });
     await returnToTab();
-    await user.type(address(), " escrito");
+    await user.type(treatingDentist(), " escrito");
     release();
     await advance(0);
 
     expect(await screen.findByText(REMOTE_BANNER)).toBeInTheDocument();
-    expect(address().value).toBe("Av. Sol 1 escrito");
+    expect(treatingDentist().value).toBe("Av. Sol 1 escrito");
     expect(screen.queryByText(NOTICE)).not.toBeInTheDocument();
   });
 
   it("impresión o desbloqueo desde otro dispositivo: el paso 1 lo refleja y lo escrito se conserva", async () => {
-    const backend = await open("/historias/10?paso=1", { patientName: "Ana Quispe", patientSex: "FEMALE" });
-    await user.type(address(), " B");
+    const backend = await open("/historias/10?paso=1", { patientAlias: "Ana", patientSex: "FEMALE" });
+    await user.type(treatingDentist(), " B");
     backend.remote({ patientLockedAt: "2026-10-08T15:00:00Z" }, { bumpVersion: false });
 
     await returnToTab();
 
     expect(await screen.findByRole("region", { name: "Datos del paciente fijos" })).toBeInTheDocument();
-    expect(screen.getByRole("textbox", { name: "Paciente" })).toHaveAttribute("readonly");
-    expect(address().value).toBe("Av. Sol 1 B");
+    expect(screen.getByRole("textbox", { name: "Alias del paciente" })).toHaveAttribute("readonly");
+    expect(treatingDentist().value).toBe("Av. Sol 1 B");
     expect(screen.queryByText(REMOTE_BANNER)).not.toBeInTheDocument();
 
     backend.remote({ patientLockedAt: undefined, lastUnlock: { byName: "Admin FACOP", at: "2026-10-08T16:00:00Z" } }, { bumpVersion: false });
     await advance(5_000);
     await returnToTab();
-    await waitFor(() => expect(screen.getByRole("textbox", { name: "Paciente" })).not.toHaveAttribute("readonly"));
-    expect(address().value).toBe("Av. Sol 1 B");
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Alias del paciente" })).not.toHaveAttribute("readonly"));
+    expect(treatingDentist().value).toBe("Av. Sol 1 B");
   });
 
   it("volver sin cambios en el servidor: sin recarga ni aviso", async () => {
@@ -246,7 +246,7 @@ describe("orthodontic-records — Actualización al volver a la historia desde o
   it("guardado propio en curso al volver: no se confunde con otro dispositivo", async () => {
     const backend = await open();
     const release = backend.holdPut();
-    await user.type(address(), " B");
+    await user.type(treatingDentist(), " B");
     await advance(3_500); // el autoguardado sale y queda en espera
     expect(backend.puts).toHaveLength(1);
 
@@ -278,7 +278,7 @@ describe("orthodontic-records — Actualización al volver a la historia desde o
   });
 
   it("cerrar un diálogo de la app no provoca consultas", async () => {
-    const backend = await open("/historias/10?paso=1", { patientName: "Ana Quispe", patientLockedAt: "2026-10-05T15:00:00Z" });
+    const backend = await open("/historias/10?paso=1", { patientAlias: "Ana", patientLockedAt: "2026-10-05T15:00:00Z" });
     const getsAfterOpen = backend.state.gets;
 
     await user.click(screen.getByRole("button", { name: "Solicitar desbloqueo" }));
@@ -304,11 +304,11 @@ describe("orthodontic-records — Actualización al volver a la historia desde o
   it("sesión vencida al volver: si se renueva, repite la consulta y actualiza", async () => {
     const backend = await open();
     backend.state.unauthorizedOnce = true;
-    backend.remote({ address: "Tras renovar" });
+    backend.remote({ treatingDentist: "Tras renovar" });
 
     await returnToTab();
 
-    await waitFor(() => expect(address().value).toBe("Tras renovar"));
+    await waitFor(() => expect(treatingDentist().value).toBe("Tras renovar"));
     expect(useSessionStore.getState().accessToken).toBe("nuevo");
   });
 
@@ -326,11 +326,11 @@ describe("orthodontic-records — Actualización al volver a la historia desde o
     const backend = await open();
     await act(() => backend.router.navigate("/historias/10/imprimir"));
     await screen.findAllByRole("article");
-    backend.remote({ address: "Guardado en el celular" });
+    backend.remote({ treatingDentist: "Guardado en el celular" });
 
     await act(() => backend.router.navigate("/historias/10?paso=1"));
 
-    await waitFor(() => expect(address().value).toBe("Guardado en el celular"));
+    await waitFor(() => expect(treatingDentist().value).toBe("Guardado en el celular"));
   });
 
   it("historia todavía sin crear: no consulta nada", async () => {

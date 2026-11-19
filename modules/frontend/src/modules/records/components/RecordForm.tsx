@@ -354,7 +354,7 @@ export function RecordForm({ record, onReload, onRemoteUpdate, onNotFound, remot
               {record ? `Historia ${record.recordNumber}` : "Nueva historia clínica"}
             </h1>
             <p className="text-muted-foreground">
-              {record ? record.patientName : "Completa al menos el nombre del paciente para crearla."}
+              {record ? record.patientAlias : "Completa al menos el alias del paciente para crearla."}
             </p>
             {record ? (
               <RecordSaveStatus status={autosave.status} dirty={dirty} savedOnce={savedOnce} onRetry={autosave.retry} />

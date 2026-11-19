@@ -8,8 +8,7 @@
 import type { DashboardEmptyStep } from './dashboardEmptyStep';
 
 export interface UserDashboardMissing {
-  withoutDocument: number;
-  withoutBirthDate: number;
+  withoutAge: number;
   withoutTreatmentStart: number;
   /** Los 7 pasos clínicos, de más a menos historias vacías */
   emptySteps: DashboardEmptyStep[];

@@ -10,10 +10,13 @@ interface PrintSignaturesSectionProps {
   record: RecordResponse;
 }
 
-/** Pág. 13: plan de tratamiento final y firmas a mano (fecha en blanco; apoderado si es menor). */
+/**
+ * Pág. 13: plan de tratamiento final y firmas a mano (fecha en blanco; apoderado si es menor). El
+ * nombre y el parentesco de quien firma, paciente o apoderado, se escriben a mano.
+ */
 export function PrintSignaturesSection({ record }: PrintSignaturesSectionProps) {
   const s = record.content.signatures;
-  const minor = isMinor(record.ageYears ?? null);
+  const minor = isMinor(record.patientAge);
   return (
     <PrintPage recordNumber={record.recordNumber} title="Plan de tratamiento final">
       <PrintLines value={record.content.diagnosis.finalTreatmentPlan} lines={8} />
@@ -21,12 +24,12 @@ export function PrintSignaturesSection({ record }: PrintSignaturesSectionProps) 
       {minor ? (
         <>
           <p className={`mt-[17pt] ${LABEL}`}>FIRMA DEL APODERADO:</p>
-          <PrintSignatureRow name={s.guardianName} relationship={s.guardianRelationship ?? null} />
+          <PrintSignatureRow name={null} relationship={null} />
         </>
       ) : (
         <>
           <p className={`mt-[17pt] ${LABEL}`}>FIRMA DEL PACIENTE:</p>
-          <PrintSignatureRow name={s.patientSignatureName ?? record.patientName} />
+          <PrintSignatureRow name={null} />
         </>
       )}
       <p className={`mt-[17pt] ${LABEL}`}>FIRMA SUPERVISOR:</p>

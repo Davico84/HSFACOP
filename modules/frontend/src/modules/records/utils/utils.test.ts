@@ -1,25 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { ageYears, isMinor } from "./age";
+import { isMinor } from "./age";
 import { formatTeeth, isValidFdi } from "./fdi";
-import { formatAge, formatDate, formatDocument } from "./recordDisplay";
+import { formatAge, formatDate } from "./recordDisplay";
 import { toFormValues, toUpdateRequest } from "./recordForm";
 import { recordResponse } from "../test/fixtures";
 
-describe("orthodontic-records — edad calculada (misma regla que el backend)", () => {
-  it("a la fecha de inicio cuenta años cumplidos", () => {
-    expect(ageYears("2012-05-20", "2026-05-19")).toBe(13);
-    expect(ageYears("2012-05-20", "2026-05-20")).toBe(14);
-  });
-
-  it("sin inicio usa hoy; sin nacimiento no hay edad", () => {
-    expect(ageYears("2012-05-20", null, "2026-10-01")).toBe(14);
-    expect(ageYears(null, "2026-05-19")).toBeNull();
-  });
-
+describe("orthodontic-records — edad escrita", () => {
   it("menor de edad solo si la edad se conoce y es < 18", () => {
+    expect(isMinor(0)).toBe(true);
     expect(isMinor(17)).toBe(true);
     expect(isMinor(18)).toBe(false);
+    expect(isMinor(99)).toBe(false);
     expect(isMinor(null)).toBe(false);
+    expect(isMinor(undefined)).toBe(false);
   });
 });
 
@@ -41,10 +34,8 @@ describe("orthodontic-records — notación FDI", () => {
 });
 
 describe("orthodontic-records — presentación", () => {
-  it("fechas, documento y edad", () => {
+  it("fechas y edad", () => {
     expect(formatDate("2026-05-19")).toBe("19/05/2026");
-    expect(formatDocument("FOREIGNER_CARD", "001234567")).toBe("CE 001234567");
-    expect(formatDocument("DNI", null)).toBe("");
     expect(formatAge(13)).toBe("13 años");
     expect(formatAge(null)).toBe("");
   });
@@ -52,14 +43,17 @@ describe("orthodontic-records — presentación", () => {
 
 describe("orthodontic-records — conversión del formulario", () => {
   it("todos los campos existen desde el inicio (vacíos) y lo vacío no se envía", () => {
-    const values = toFormValues(recordResponse({ address: "Av. Ejército 512" }));
-    expect(values.birthPlace).toBe("");
+    const values = toFormValues(recordResponse({ treatingDentist: "Av. Ejército 512" }));
+    expect(values.patientAge).toBeNull();
     expect(values.content.facial.facialType).toBeNull();
     expect(values.content.diagnosis.problemList).toEqual([]);
-    const request = toUpdateRequest({ ...values, phone: "" }, 3);
+    const request = toUpdateRequest({ ...values, patientAlias: "  Ana   Q " }, 3);
     expect(request.version).toBe(3);
-    expect(request.address).toBe("Av. Ejército 512");
-    expect("phone" in request).toBe(false);
+    expect(request.treatingDentist).toBe("Av. Ejército 512");
+    expect("patientAge" in request).toBe(false);
+    // El alias se normaliza y la confirmación del formulario nunca viaja al servidor.
+    expect(request.patientAlias).toBe("Ana Q");
+    expect("aliasConfirmed" in request).toBe(false);
     expect(request.recordNumber).toBe(values.recordNumber);
   });
 });

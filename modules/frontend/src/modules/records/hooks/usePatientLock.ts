@@ -5,6 +5,7 @@ import {
   requestPatientUnlock,
   unlockPatient,
 } from "@/modules/core/services/generated/orthodontic-records";
+import type { UnlockRequestRequestReason } from "@/modules/core/services/generated/model";
 import { getUserFriendlyError } from "@/modules/core/utils/apiError";
 import { dashboardKeys } from "@/modules/dashboard/hooks/dashboardKeys";
 import { recordKeys } from "./recordKeys";
@@ -23,7 +24,7 @@ function useRefresh() {
 export function useRequestPatientUnlock(id: number) {
   const refresh = useRefresh();
   return useMutation({
-    mutationFn: (reason: string) => requestPatientUnlock(id, { reason }),
+    mutationFn: (reason: UnlockRequestRequestReason) => requestPatientUnlock(id, { reason }),
     onSuccess: () => toast.success("Solicitud de desbloqueo enviada al administrador"),
     onError: (error) => toast.error(getUserFriendlyError(error)),
     onSettled: () => refresh(id),

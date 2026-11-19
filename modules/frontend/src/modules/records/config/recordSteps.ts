@@ -18,8 +18,8 @@ export const RECORD_STEPS: readonly RecordStep[] = [
     title: "Paciente y anamnesis",
     pages: "pág. 1",
     fields: [
-      "recordNumber", "treatingDentist", "patientName", "documentType", "documentNumber", "patientSex", "birthDate",
-      "birthPlace", "address", "phone", "treatmentStartDate", "content.anamnesis",
+      "recordNumber", "treatingDentist", "patientAlias", "aliasConfirmed", "patientSex", "patientAge",
+      "treatmentStartDate", "content.anamnesis",
     ],
   },
   { number: 2, title: "Análisis facial", pages: "pág. 2", fields: ["content.facial"] },

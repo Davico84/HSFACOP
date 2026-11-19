@@ -1,6 +1,6 @@
 import type { RecordResponse } from "@/modules/core/services/generated/model";
-import { cooperationOptions, NOT_REPORTED, oralHygieneOptions, yesNoOptions } from "../../config/options";
-import { formatAge, formatDate, formatDocument } from "../../utils/recordDisplay";
+import { cooperationOptions, NOT_REPORTED, oralHygieneOptions, sexOptions, yesNoOptions } from "../../config/options";
+import { formatAge, formatDate } from "../../utils/recordDisplay";
 import { PrintChoice } from "./PrintChoice";
 import { PrintField } from "./PrintField";
 import { PrintLines } from "./PrintLines";
@@ -11,28 +11,33 @@ interface PrintPatientSectionProps {
   record: RecordResponse;
 }
 
-/** Pág. 1: odontólogo tratante, datos del paciente y anamnesis (texto vacío → "No refiere"). */
+/**
+ * Pág. 1: odontólogo tratante, datos del paciente y anamnesis (texto vacío → "No refiere"). El sistema
+ * guarda alias, sexo y edad; el nombre y apellidos, el documento, el nacimiento, el domicilio y el celular
+ * quedan en blanco para escribirlos a mano.
+ */
 export function PrintPatientSection({ record }: PrintPatientSectionProps) {
   const a = record.content.anamnesis;
-  const birth = [record.birthPlace, formatDate(record.birthDate)].filter(Boolean).join(", ");
-  const document = formatDocument(record.documentType, record.documentNumber);
+  const sex = sexOptions.find((option) => option.value === record.patientSex)?.label ?? "";
   return (
     <PrintPage recordNumber={record.recordNumber} first>
       <div className="flex"><PrintField label="ODONTÓLOGO TRATANTE:" value={record.treatingDentist} /></div>
       <PrintTitle>ANAMNESIS</PrintTitle>
       <div className="flex gap-4">
-        <PrintField label="PACIENTE" value={record.patientName} grow={3} lined />
-        <PrintField label="Edad:" value={formatAge(record.ageYears)} lined center />
+        <PrintField label="ALIAS" value={record.patientAlias} grow={2} lined />
+        <PrintField label="Edad:" value={formatAge(record.patientAge)} lined center />
+        <PrintField label="Sexo:" value={sex} lined center />
       </div>
-      <div className="flex"><PrintField label="Domicilio" value={record.address} lined /></div>
+      <div className="flex"><PrintField label="Nombre y apellidos" value="" lined /></div>
       <div className="flex gap-4">
         <PrintField label="Fecha de inicio de tratamiento:" value={formatDate(record.treatmentStartDate)} grow={2} lined center />
-        <PrintField label="Documento" value={document} lined center />
+        <PrintField label="Documento" value="" lined center />
       </div>
       <div className="flex gap-4">
-        <PrintField label="Lugar y fecha de nacimiento del paciente" value={birth} grow={2} lined center />
-        <PrintField label="Celular" value={record.phone} lined center />
+        <PrintField label="Lugar y fecha de nacimiento del paciente" value="" grow={2} lined center />
+        <PrintField label="Celular" value="" lined center />
       </div>
+      <div className="flex"><PrintField label="Domicilio" value="" lined /></div>
       <PrintLines label="Queja principal - ¿Por qué buscó tratamiento?" value={a.chiefComplaint} emptyText={NOT_REPORTED} lines={2} />
       <PrintLines label="Gustos personales (color, canal preferido en YouTube, juguetes)." value={a.personalPreferences} emptyText={NOT_REPORTED} lines={1} />
       <PrintChoice label="Índice de colaboración/cooperación:" options={cooperationOptions} value={a.cooperation} />

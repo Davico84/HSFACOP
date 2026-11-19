@@ -42,7 +42,7 @@ for (const width of [375, 768, 1280]) {
     await page.goto("/historias/nueva");
     const number = uniqueRecordNumber();
     await page.getByRole("textbox", { name: "Nro. de historia" }).fill(number);
-    await page.getByRole("textbox", { name: "Paciente" }).fill("Ana Lucía Quispe Mamani");
+    await page.getByRole("textbox", { name: "Alias del paciente" }).fill("Ana");
     await expectNoHorizontalScroll(page, "nueva historia");
     await page.getByRole("button", { name: /Crear historia/ }).click();
     await expect(page).toHaveURL(/\?paso=2$/);

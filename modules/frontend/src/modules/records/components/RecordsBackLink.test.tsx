@@ -63,7 +63,7 @@ describe("orthodontic-records — Volver al listado desde la historia", () => {
 
     await act(() => router.navigate("/historias/nueva"));
     await userEvent.type(screen.getByRole("textbox", { name: "Nro. de historia" }), "AEO-0015");
-    await userEvent.type(screen.getByRole("textbox", { name: "Paciente" }), "Ana Quispe");
+    await userEvent.type(screen.getByRole("textbox", { name: "Alias del paciente" }), "Ana");
     await userEvent.click(screen.getByRole("button", { name: /Crear historia/ }));
     await stepHeading(/Análisis facial/);
 
@@ -103,12 +103,12 @@ describe("orthodontic-records — Volver al listado desde la historia", () => {
     await screen.findByRole("row", { name: /AEO-0001/ });
     await act(() => router.navigate("/historias/10?paso=1"));
     await stepHeading(/Paciente y anamnesis/);
-    await userEvent.type(screen.getByLabelText("Domicilio"), "Av. Sol 123");
+    await userEvent.type(screen.getByLabelText("Odontólogo tratante"), "Av. Sol 123");
 
     await userEvent.click(await backLink());
     expect(await screen.findByRole("alertdialog", { name: "¿Salir sin guardar?" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Seguir editando" }));
-    expect(screen.getByLabelText("Domicilio")).toHaveValue("Av. Sol 123");
+    expect(screen.getByLabelText("Odontólogo tratante")).toHaveValue("Av. Sol 123");
     expect(location(router)).toBe("/historias/10?paso=1");
 
     await userEvent.click(await backLink());

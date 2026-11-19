@@ -37,12 +37,12 @@ function mockList(respond: (q: string | null) => ReturnType<typeof page>) {
 
 describe("orthodontic-records — Listado y búsqueda de historias", () => {
   it("USER ve sus historias sin la columna Autor", async () => {
-    mockList(() => page([summary({ documentType: "DNI", documentNumber: "74125896", treatmentStartDate: "2026-05-19" })]));
+    mockList(() => page([summary({ treatmentStartDate: "2026-05-19" })]));
     renderRecordRoutes("/historias", "USER");
 
     const row = await screen.findByRole("row", { name: /AEO-0001/ });
-    expect(within(row).getByText("Ana Quispe")).toBeInTheDocument();
-    expect(within(row).getByText("DNI 74125896")).toBeInTheDocument();
+    expect(within(row).getByText("Ana")).toBeInTheDocument();
+    expect(within(row).queryByText(/74125896|DNI/)).not.toBeInTheDocument();
     expect(within(row).getByText("19/05/2026")).toBeInTheDocument();
     expect(screen.queryByRole("columnheader", { name: "Autor" })).not.toBeInTheDocument();
     expect(within(row).getByRole("link", { name: "Vista previa de impresión de la historia AEO-0001" })).toHaveAttribute("href", "/historias/10/imprimir");
@@ -58,7 +58,7 @@ describe("orthodontic-records — Listado y búsqueda de historias", () => {
   });
 
   it("busca mientras se escribe (con espera) y envía el término al servidor", async () => {
-    const queries = mockList((q) => page(q ? [summary({ patientName: "Ana QUÍSPE" })] : [summary(), summary({ id: 11, recordNumber: "AEO-0002" })]));
+    const queries = mockList((q) => page(q ? [summary({ patientAlias: "Ana QUÍSPE" })] : [summary(), summary({ id: 11, recordNumber: "AEO-0002" })]));
     renderRecordRoutes("/historias");
     await screen.findByRole("row", { name: /AEO-0002/ });
 
@@ -107,7 +107,7 @@ describe("orthodontic-records — Listado y búsqueda de historias", () => {
     await waitFor(() => expect(screen.getByRole("row", { name: /AEO-0001/ })).toBeInTheDocument());
   });
   it("la página queda en la URL y el texto buscado no", async () => {
-    mockList((q) => page([summary({ patientName: q ? "Ana QUÍSPE" : "Ana Quispe" })], 0, 3));
+    mockList((q) => page([summary({ patientAlias: q ? "Ana QUÍSPE" : "Ana" })], 0, 3));
     const { router } = renderRecordRoutes("/historias");
     await screen.findByRole("row", { name: /AEO-0001/ });
 
@@ -122,7 +122,7 @@ describe("orthodontic-records — Listado y búsqueda de historias", () => {
   });
 
   it("la búsqueda de otra cuenta en la misma pestaña no se hereda", async () => {
-    const queries = mockList((q) => page([summary({ patientName: q ? "Ana QUÍSPE" : "Ana Quispe" })]));
+    const queries = mockList((q) => page([summary({ patientAlias: q ? "Ana QUÍSPE" : "Ana" })]));
     useRecordsSearchStore.getState().setText("quispe", 99);
     renderRecordRoutes("/historias");
 
@@ -145,7 +145,7 @@ describe("orthodontic-records — Listado y búsqueda de historias", () => {
   });
 
   it("la vista previa se abre en la misma pestaña y 'Volver' regresa al listado con su búsqueda", async () => {
-    mockList((q) => page(q ? [summary({ patientName: "Ana QUÍSPE" })] : [summary()]));
+    mockList((q) => page(q ? [summary({ patientAlias: "Ana QUÍSPE" })] : [summary()]));
     server.use(http.get("*/api/orthodontic-records/:id", () => HttpResponse.json(recordResponse())));
     useRecordsSearchStore.getState().setText("quispe", 1);
     const { router } = renderRecordRoutes("/historias");
@@ -192,15 +192,15 @@ describe("orthodontic-records — Listado en celular y tablet", () => {
 
   it("bajo 1024 px cada historia es una tarjeta con sus datos y sus acciones visibles", async () => {
     narrowScreen();
-    mockList(() => page([summary({ documentType: "DNI", documentNumber: "74125896", treatmentStartDate: "2026-05-19" })]));
+    mockList(() => page([summary({ treatmentStartDate: "2026-05-19" })]));
     renderRecordRoutes("/historias", "USER");
 
     const list = await screen.findByRole("list", { name: "Historias clínicas" });
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     const card = within(list).getAllByRole("listitem")[0];
     expect(within(card).getByText("AEO-0001")).toBeInTheDocument();
-    expect(within(card).getByRole("heading", { name: "Ana Quispe" })).toBeInTheDocument();
-    expect(within(card).getByText("DNI 74125896")).toBeInTheDocument();
+    expect(within(card).getByRole("heading", { name: "Ana" })).toBeInTheDocument();
+    expect(within(card).queryByText(/Documento|DNI/)).not.toBeInTheDocument();
     expect(within(card).getByText("19/05/2026")).toBeInTheDocument();
     expect(within(card).queryByText("Autor")).not.toBeInTheDocument();
     expect(within(card).getByRole("link", { name: "Editar historia AEO-0001" })).toHaveAttribute("href", "/historias/10");

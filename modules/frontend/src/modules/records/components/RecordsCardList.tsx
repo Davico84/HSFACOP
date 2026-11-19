@@ -1,5 +1,5 @@
 import type { RecordSummaryResponse } from "@/modules/core/services/generated/model";
-import { formatDate, formatDateTime, formatDocument } from "../utils/recordDisplay";
+import { formatDate, formatDateTime } from "../utils/recordDisplay";
 import type { RecordsListView } from "../utils/recordsListView";
 import { RecordEditLink } from "./RecordEditLink";
 import { RecordLockIcon } from "./RecordLockIcon";
@@ -22,7 +22,6 @@ export function RecordsCardList({ records, view }: RecordsCardListProps) {
     <ul className="flex flex-col gap-3" aria-label="Historias clínicas">
       {records.map((record) => {
         const details: [string, string][] = [
-          ["Documento", formatDocument(record.documentType, record.documentNumber)],
           ["Odontólogo tratante", record.treatingDentist ?? ""],
           ["Inicio", formatDate(record.treatmentStartDate)],
           ["Modificada", formatDateTime(record.updatedAt)],
@@ -44,7 +43,7 @@ export function RecordsCardList({ records, view }: RecordsCardListProps) {
               <h3 className="text-base font-semibold">
                 <RecordPatientLink
                   id={record.id}
-                  patientName={record.patientName}
+                  patientName={record.patientAlias}
                   readOnly={readOnly}
                   className="text-primary underline-offset-4 hover:underline"
                 />

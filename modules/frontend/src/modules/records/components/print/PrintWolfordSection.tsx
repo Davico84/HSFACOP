@@ -43,9 +43,9 @@ export function PrintWolfordSection({ record }: PrintWolfordSectionProps) {
   return (
     <PrintPage recordNumber={record.recordNumber} title="Análisis de Wolford">
       <div className="mt-[4pt] flex flex-col">
-        <PrintField label="Nombre" value={record.patientName} lined />
+        <PrintField label="Alias" value={record.patientAlias} lined />
         <div className="flex">
-          <PrintField label="Edad" value={formatAge(record.ageYears)} grow={0} lined center className="w-[50%]" />
+          <PrintField label="Edad" value={formatAge(record.patientAge)} grow={0} lined center className="w-[50%]" />
         </div>
       </div>
       <p className="mt-[10pt] text-[11pt] font-bold">Ancho mesiodistal de las 12 piezas</p>

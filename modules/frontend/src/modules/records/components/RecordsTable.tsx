@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { IconLinkAction } from "@/modules/core/components/IconLinkAction";
 import type { RecordSummaryResponse } from "@/modules/core/services/generated/model";
 import { recordPath, recordPrintPath } from "@/routes/paths";
-import { formatDate, formatDateTime, formatDocument } from "../utils/recordDisplay";
+import { formatDate, formatDateTime } from "../utils/recordDisplay";
 import type { RecordsListView } from "../utils/recordsListView";
 import { RecordLockIcon } from "./RecordLockIcon";
 import { RecordPatientLink } from "./RecordPatientLink";
@@ -17,7 +17,7 @@ interface RecordsTableProps {
 }
 
 /**
- * Listado en escritorio: número con candado, paciente con su documento debajo, tratante, fechas,
+ * Listado en escritorio: número con candado, alias del paciente, tratante, fechas,
  * autor o alumno y turma según el rol, y acciones como íconos con tooltip.
  */
 export function RecordsTable({ records, view }: RecordsTableProps) {
@@ -30,7 +30,7 @@ export function RecordsTable({ records, view }: RecordsTableProps) {
         <TableHeader className="bg-muted/50">
           <TableRow className="hover:bg-transparent">
             <TableHead className="pl-4">Número</TableHead>
-            <TableHead>Paciente</TableHead>
+            <TableHead>Alias</TableHead>
             <TableHead>Odontólogo tratante</TableHead>
             <TableHead>Inicio</TableHead>
             <TableHead>Modificada</TableHead>
@@ -44,7 +44,6 @@ export function RecordsTable({ records, view }: RecordsTableProps) {
         </TableHeader>
         <TableBody>
           {records.map((record) => {
-            const document = formatDocument(record.documentType, record.documentNumber);
             return (
               <TableRow key={record.id}>
                 <TableCell className="py-2 pl-4 whitespace-nowrap">
@@ -57,12 +56,11 @@ export function RecordsTable({ records, view }: RecordsTableProps) {
                   <div className="w-56 min-w-0">
                     <RecordPatientLink
                       id={record.id}
-                      patientName={record.patientName}
+                      patientName={record.patientAlias}
                       readOnly={readOnly}
                       truncate
                       className="block font-medium text-primary underline-offset-4 hover:underline"
                     />
-                    <span className="block truncate text-xs text-muted-foreground">{document || "Sin documento"}</span>
                   </div>
                 </TableCell>
                 <TableCell>{record.treatingDentist ?? ""}</TableCell>

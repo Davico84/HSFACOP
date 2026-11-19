@@ -12,7 +12,7 @@ interface RecordPatientLinkProps {
   truncate?: boolean;
 }
 
-/** Nombre del paciente que abre la historia: el formulario para quien la edita, la vista preliminar si no. */
+/** Alias del paciente que abre la historia: el formulario para quien la edita, la vista preliminar si no. */
 export function RecordPatientLink({ id, patientName, readOnly, className, truncate = false }: RecordPatientLinkProps) {
   const label = truncate ? <TruncatedText text={patientName} /> : patientName;
   const location = useLocation();

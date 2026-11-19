@@ -2,7 +2,7 @@ import type { ChoiceOption } from "@/modules/core/components/form/choiceTypes";
 import {
   AnamnesisCooperation,
   AngleRelationAngleClass,
-  CreateRecordRequestDocumentType,
+  UnlockRequestRequestReason,
   CreateRecordRequestPatientSex,
   FacialAnalysisChinNeckAngle,
   FacialAnalysisChinNeckLine,
@@ -75,14 +75,17 @@ function choices<V extends string>(values: Record<string, V>, labels: Labels<V>,
 
 // --- Paciente ---
 
-export const documentTypeOptions = choices(CreateRecordRequestDocumentType, {
-  DNI: "DNI", FOREIGNER_CARD: "Carné de extranjería", PASSPORT: "Pasaporte",
-});
-/** Abreviatura al imprimir junto al número. */
-export const documentTypeShort: Labels<CreateRecordRequestDocumentType> = {
-  DNI: "DNI", FOREIGNER_CARD: "CE", PASSPORT: "Pasaporte",
-};
 export const sexOptions = choices(CreateRecordRequestPatientSex, { FEMALE: "Femenino", MALE: "Masculino" });
+
+/** Motivos del desbloqueo de los datos fijos: catálogo cerrado, sin texto libre. */
+export const unlockReasonOptions = choices(UnlockRequestRequestReason, {
+  ALIAS: "El alias", SEXO: "El sexo", EDAD: "La edad", OTRO: "Otro motivo",
+});
+
+/** Texto de un motivo del catálogo (o el mismo código si llega uno desconocido). */
+export function unlockReasonLabel(reason: string): string {
+  return unlockReasonOptions.find((option) => option.value === reason)?.label ?? reason;
+}
 
 // --- Comunes ---
 

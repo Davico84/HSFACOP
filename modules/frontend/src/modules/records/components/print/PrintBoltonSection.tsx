@@ -43,9 +43,9 @@ export function PrintBoltonSection({ record }: PrintBoltonSectionProps) {
   return (
     <PrintPage recordNumber={record.recordNumber} title="Análisis de Bolton">
       <div className="mt-[4pt] flex flex-col">
-        <PrintField label="Nombre" value={record.patientName} lined />
+        <PrintField label="Alias" value={record.patientAlias} lined />
         <div className="flex gap-4">
-          <PrintField label="Edad" value={formatAge(record.ageYears)} lined center />
+          <PrintField label="Edad" value={formatAge(record.patientAge)} lined center />
           <PrintField label="Fecha" value={formatDate(models?.bolton?.analysisDate)} grow={2} lined center />
         </div>
       </div>

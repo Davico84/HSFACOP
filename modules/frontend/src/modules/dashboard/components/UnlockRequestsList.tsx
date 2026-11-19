@@ -4,6 +4,7 @@ import { Card } from "@/modules/core/ui/card";
 import type { AdminDashboardUnlockRequests } from "@/modules/core/services/generated/model";
 import { recordPath } from "@/routes/paths";
 import { formatInstantDate } from "@/modules/records/utils/patientLock";
+import { unlockReasonLabel } from "@/modules/records/config/options";
 
 interface UnlockRequestsListProps {
   requests: AdminDashboardUnlockRequests;
@@ -30,7 +31,7 @@ export function UnlockRequestsList({ requests }: UnlockRequestsListProps) {
                   {r.recordNumber} · {r.patientName}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {r.authorName} · {formatInstantDate(r.requestedAt)} · «{r.reason}»
+                  {r.authorName} · {formatInstantDate(r.requestedAt)} · «{unlockReasonLabel(r.reason)}»
                 </p>
               </div>
               <Link

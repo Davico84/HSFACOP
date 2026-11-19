@@ -1,5 +1,5 @@
 /** Datos del paciente que quedan fijos al imprimir (en el orden del formulario). */
-export const LOCKED_PATIENT_FIELDS = ["patientName", "patientSex", "documentType", "documentNumber", "birthPlace", "birthDate"] as const;
+export const LOCKED_PATIENT_FIELDS = ["patientAlias", "patientSex", "patientAge"] as const;
 
 /** "06/10/2026" (fecha local de un instante). */
 export function formatInstantDate(instant: string): string {

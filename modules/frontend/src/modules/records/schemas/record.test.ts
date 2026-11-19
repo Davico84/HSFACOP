@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { recordFormSchema, type RecordFormValues } from "./record";
 import { emptyRecordValues } from "../utils/recordForm";
-import { ageYears } from "../utils/age";
+import { aliasViolation } from "../utils/alias";
 
 function values(overrides: Partial<RecordFormValues> = {}, content: Record<string, unknown> = {}): RecordFormValues {
   const base = emptyRecordValues("Dra. Torres");
   return {
     ...base,
     recordNumber: "AEO-0015",
-    patientName: "Ana Quispe",
+    patientAlias: "Ana",
     ...overrides,
     content: { ...base.content, ...content } as RecordFormValues["content"],
   };
@@ -32,35 +32,32 @@ describe("orthodontic-records — schema del formulario (paridad con el backend)
     }
   });
 
-  it("edad de la primera menstruación: 8 a 18 años, no mayor que la edad actual, solo si aplica", () => {
-    const female = { patientSex: "FEMALE" as const, birthDate: "2012-05-20" };
+  it("edad de la primera menstruación: 8 a 18 años, no mayor que la edad registrada, solo si aplica", () => {
+    const female = { patientSex: "FEMALE" as const, patientAge: 14 };
     const anamnesis = (menarche: "YES" | "NO", menarcheAge: number) => ({
       anamnesis: { ...emptyRecordValues().content.anamnesis, menarche, menarcheAge },
     });
     const path = "content.anamnesis.menarcheAge";
-    const currentAge = ageYears(female.birthDate)!;
     expect(errorsOf(values(female, anamnesis("YES", 13)))).toEqual({});
     expect(errorsOf(values(female, anamnesis("YES", 7)))).toEqual({ [path]: "Usa una edad entre 8 y 18 años." });
     expect(errorsOf(values(female, anamnesis("YES", 19)))).toEqual({ [path]: "Usa una edad entre 8 y 18 años." });
-    if (currentAge < 18) {
-      expect(errorsOf(values(female, anamnesis("YES", currentAge + 1)))).toEqual({
-        [path]: "La edad de la primera menstruación no puede superar la edad actual de la paciente.",
-      });
-    }
-    // Sin fecha de nacimiento solo se exige el rango.
-    expect(errorsOf(values({ patientSex: "FEMALE", birthDate: "" }, anamnesis("YES", 18)))).toEqual({});
+    expect(errorsOf(values(female, anamnesis("YES", 15)))).toEqual({
+      [path]: "La edad de la primera menstruación no puede superar la edad registrada de la paciente.",
+    });
+    // Sin edad registrada solo se exige el rango.
+    expect(errorsOf(values({ patientSex: "FEMALE", patientAge: null }, anamnesis("YES", 18)))).toEqual({});
     // Con "No" o sin sexo femenino la edad no aplica (el servidor la descarta al guardar).
     expect(errorsOf(values(female, anamnesis("NO", 30)))).toEqual({});
-    expect(errorsOf(values({ patientSex: "MALE", birthDate: "2012-05-20" }, anamnesis("YES", 30)))).toEqual({});
+    expect(errorsOf(values({ patientSex: "MALE", patientAge: 14 }, anamnesis("YES", 30)))).toEqual({});
   });
 
-  it("menor de 8 años: 'Sí' en la 1ª menstruación es un error; sin nacimiento no se controla", () => {
+  it("menor de 8 años: 'Sí' en la 1ª menstruación es un error; sin edad no se controla", () => {
     const anamnesis = { anamnesis: { ...emptyRecordValues().content.anamnesis, menarche: "YES" as const } };
-    const fiveYearsAgo = `${new Date().getFullYear() - 5}-01-01`;
-    expect(errorsOf(values({ patientSex: "FEMALE", birthDate: fiveYearsAgo }, anamnesis))).toEqual({
+    expect(errorsOf(values({ patientSex: "FEMALE", patientAge: 7 }, anamnesis))).toEqual({
       "content.anamnesis.menarche": "Antes de los 8 años la primera menstruación no aplica.",
     });
-    expect(errorsOf(values({ patientSex: "FEMALE", birthDate: "" }, anamnesis))).toEqual({});
+    expect(errorsOf(values({ patientSex: "FEMALE", patientAge: 8 }, anamnesis))).toEqual({});
+    expect(errorsOf(values({ patientSex: "FEMALE", patientAge: null }, anamnesis))).toEqual({});
   });
 
   it("separación interlabial: 0 a 20 mm con un decimal, opcional", () => {
@@ -75,32 +72,52 @@ describe("orthodontic-records — schema del formulario (paridad con el backend)
     expect(errorsOf(values({}, facial(2.55)))).toEqual({ [path]: "Máximo un decimal." });
   });
 
-  it("nombre vacío o solo espacios: error en el campo", () => {
-    expect(errorsOf(values({ patientName: "   " }))).toEqual({ patientName: "Indica el nombre del paciente." });
+  it("alias vacío o solo espacios: error en el campo", () => {
+    expect(errorsOf(values({ patientAlias: "   " }))).toEqual({ patientAlias: "Indica el alias del paciente." });
+    expect(errorsOf(values({ patientAlias: null }))).toEqual({ patientAlias: "Indica el alias del paciente." });
   });
 
-  it("documento válido según su tipo", () => {
-    expect(errorsOf(values({ documentType: "DNI", documentNumber: "74125896" }))).toEqual({});
-    expect(errorsOf(values({ documentType: "FOREIGNER_CARD", documentNumber: "001234567" }))).toEqual({});
-    expect(errorsOf(values({ documentType: "PASSPORT", documentNumber: "12345678" }))).toEqual({});
+  it("alias: más de dos palabras, número largo y caracteres no permitidos", () => {
+    expect(errorsOf(values({ patientAlias: "Mateo Quispe Rojas" })).patientAlias).toBe("Usa una o dos palabras, sin apellidos.");
+    expect(errorsOf(values({ patientAlias: "Mateo 74125896" })).patientAlias).toBe("No escribas números de documento en el alias.");
+    expect(errorsOf(values({ patientAlias: "Ana@" })).patientAlias).toBe("Usa solo letras, números, guion y apóstrofo.");
+    expect(errorsOf(values({ patientAlias: "a".repeat(31) })).patientAlias).toBe("El alias admite hasta 30 caracteres.");
+    expect(errorsOf(values({ patientAlias: "a".repeat(30) }))).toEqual({});
   });
 
-  it("documento con formato incorrecto: error en el número", () => {
-    expect(errorsOf(values({ documentType: "DNI", documentNumber: "7412589" }))).toEqual({ documentNumber: "El DNI debe tener 8 dígitos." });
-    expect(errorsOf(values({ documentType: "FOREIGNER_CARD", documentNumber: "00123456A" })).documentNumber).toBeDefined();
-    expect(errorsOf(values({ documentType: "PASSPORT", documentNumber: "AB1234" })).documentNumber).toBeDefined();
-    expect(errorsOf(values({ documentType: "PASSPORT", documentNumber: "12345" })).documentNumber).toBeDefined();
+  it("alias: espacios sobrantes se normalizan y un número corto es válido", () => {
+    expect(errorsOf(values({ patientAlias: "  Ana   Q ", aliasConfirmed: true }))).toEqual({});
+    expect(errorsOf(values({ patientAlias: "José 12" }))).toEqual({ aliasConfirmed: "Confirma que el alias no es el nombre real del paciente." });
   });
 
-  it("número sin tipo o tipo sin número", () => {
-    expect(errorsOf(values({ documentNumber: "74125896" }))).toEqual({ documentType: "Indica el tipo de documento." });
-    expect(errorsOf(values({ documentType: "DNI" }))).toEqual({ documentNumber: "Indica el número del documento." });
+  it("alias de dos palabras o repetido en un texto libre: pide confirmar", () => {
+    const confirm = { aliasConfirmed: "Confirma que el alias no es el nombre real del paciente." };
+    expect(errorsOf(values({ patientAlias: "Ana Q" }))).toEqual(confirm);
+    expect(errorsOf(values({ patientAlias: "Ana Q", aliasConfirmed: true }))).toEqual({});
+    const text = { anamnesis: { ...emptyRecordValues().content.anamnesis, chiefComplaint: "Mateo se muerde las uñas" } };
+    expect(errorsOf(values({ patientAlias: "Mateo" }, text))).toEqual(confirm);
+    expect(errorsOf(values({ patientAlias: "Mateo", aliasConfirmed: true }, text))).toEqual({});
+    expect(errorsOf(values({ patientAlias: "Lucas" }, text))).toEqual({});
   });
 
-  it("fecha de nacimiento futura e inicio anterior al nacimiento", () => {
-    expect(errorsOf(values({ birthDate: "2999-01-01" })).birthDate).toBe("La fecha de nacimiento no puede ser futura.");
-    expect(errorsOf(values({ birthDate: "2012-05-20", treatmentStartDate: "2012-05-19" })).treatmentStartDate)
-      .toBe("La fecha de inicio de tratamiento no puede ser anterior a la de nacimiento.");
+  it("edad: de 0 a 99, entera y opcional", () => {
+    for (const age of [0, 17, 18, 99, null]) expect(errorsOf(values({ patientAge: age }))).toEqual({});
+    for (const age of [-1, 100, 12.5]) {
+      expect(errorsOf(values({ patientAge: age })).patientAge).toBe("Usa una edad entre 0 y 99 años.");
+    }
+  });
+
+  it("el alias comparte vectores con el servidor (PatientAliasTest)", () => {
+    for (const valid of ["Mateo", "Ana Q", "  Ana    Q  ", "Jean-Luc", "D'Angelo", "María José", "Ana 12", "Ana 12345", "Ａｎａ", "李明", "Ñandú Ç"]) {
+      expect(aliasViolation(valid), valid).toBeNull();
+    }
+    for (const invalid of [null, "   ", "a".repeat(31), "Ana Lucía Quispe", "Ana 123456", "74125896", "Ana!", "Ana_Q", "Ana@", "Ana.", "Ana😀"]) {
+      expect(aliasViolation(invalid), String(invalid)).not.toBeNull();
+    }
+    expect(aliasViolation("a".repeat(30))).toBeNull();
+    // 30 y 31 puntos de código: cada letra matemática ocupa 2 unidades UTF-16 y se cuenta como una.
+    expect(aliasViolation("𝐚".repeat(30))).toBeNull();
+    expect(aliasViolation("𝐚".repeat(31))).not.toBeNull();
   });
 
   it("texto largo por encima del límite", () => {

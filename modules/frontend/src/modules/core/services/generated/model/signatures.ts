@@ -11,21 +11,6 @@ export interface Signatures {
    * @minLength 0
    * @maxLength 200
    */
-  patientSignatureName?: string;
-  /**
-   * @minLength 0
-   * @maxLength 200
-   */
-  guardianName?: string;
-  /**
-   * @minLength 0
-   * @maxLength 200
-   */
-  guardianRelationship?: string;
-  /**
-   * @minLength 0
-   * @maxLength 200
-   */
   supervisor1Name?: string;
   /**
    * @minLength 0
