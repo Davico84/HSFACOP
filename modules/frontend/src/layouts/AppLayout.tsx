@@ -1,9 +1,15 @@
 import { useCallback, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { useLogout } from "@/modules/auth/hooks/useAuth";
 import { Header } from "@/modules/core/components/shell/Header";
 import { MobileNavDrawer } from "@/modules/core/components/shell/MobileNavDrawer";
 import { Sidebar } from "@/modules/core/components/shell/Sidebar";
+import { SharedDeviceLogoutDialog } from "@/modules/records/components/SharedDeviceLogoutDialog";
+import { wipeNotebook } from "@/modules/records/notebook/notebookActions";
+import { isSharedDevice } from "@/modules/records/notebook/notebookMarkers";
+import { useInactivityWipe } from "@/modules/records/notebook/useInactivityWipe";
+import { RECORD_EDITOR_ROLES } from "@/modules/core/config/sections";
+import { PATHS } from "@/routes/paths";
 import { useSessionStore } from "@/store/useSessionStore";
 import { useSidebarStore } from "@/store/useSidebarStore";
 
@@ -15,15 +21,28 @@ import { useSidebarStore } from "@/store/useSidebarStore";
 export function AppLayout() {
   const user = useSessionStore((s) => s.user);
   const logout = useLogout();
+  const navigate = useNavigate();
+  const [sharedLogout, setSharedLogout] = useState(false);
+  const hasNotebook = user !== null && RECORD_EDITOR_ROLES.includes(user.role);
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const collapsed = useSidebarStore((s) => s.collapsed);
   const toggleSidebar = useSidebarStore((s) => s.toggle);
 
+  // Equipo compartido: tras 15 minutos sin actividad (de cualquier pestaña) se borra la libreta y se cierra la sesión.
+  useInactivityWipe(hasNotebook, () => {
+    if (user) void wipeNotebook(user.id).finally(() => logout.mutate());
+  });
+
   // RequireAuth garantiza la sesión; esto solo satisface el tipo.
   if (!user) return null;
 
-  const onLogout = () => logout.mutate();
+  // En un equipo compartido se ofrece exportar antes de borrar la libreta; en uno propio se conserva.
+  const onLogout = () => (hasNotebook && isSharedDevice() ? setSharedLogout(true) : logout.mutate());
+  const confirmSharedLogout = () => {
+    setSharedLogout(false);
+    void wipeNotebook(user.id).finally(() => logout.mutate());
+  };
 
   return (
     // Marco de la app (barra + cabecera + contenido) con máximo de 1920 px, centrado: en pantallas
@@ -53,6 +72,15 @@ export function AppLayout() {
           </main>
         </div>
       </div>
+      <SharedDeviceLogoutDialog
+        open={sharedLogout}
+        onCancel={() => setSharedLogout(false)}
+        onExport={() => {
+          setSharedLogout(false);
+          navigate(PATHS.NOTEBOOK);
+        }}
+        onConfirm={confirmSharedLogout}
+      />
     </div>
   );
 }

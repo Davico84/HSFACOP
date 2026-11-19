@@ -30,9 +30,9 @@
 
 ## 4. Frontend: equipo compartido y búsqueda
 
-- [ ] 4.0 Coordinación entre pestañas con Web Locks (o `BroadcastChannel`) para exportar, importar, imprimir y borrar, con la actividad compartida; verificar con el Scenario "Borrado mientras otra pestaña exporta" y una prueba con dos pestañas
-- [ ] 4.1 Ajustes: "Este equipo es compartido", "Borrar la libreta de este dispositivo" con confirmación, borrado al cerrar sesión y tras 15 minutos de inactividad con oferta de exportar; verificar con los Scenario "Borrar la libreta", "Cierre de sesión en equipo compartido" e "Inactividad en equipo compartido"
-- [ ] 4.2 Búsqueda local por nombre o documento, sin mayúsculas ni tildes, con listado pedido por identificadores (hasta 50); verificar con los Scenario "Buscar por nombre", "Sin coincidencias o sin libreta" y "Más de 50 coincidencias"
+- [x] 4.0 Coordinación entre pestañas con Web Locks (o `BroadcastChannel`) para exportar, importar, imprimir y borrar, con la actividad compartida; verificar con el Scenario "Borrado mientras otra pestaña exporta" y una prueba con dos pestañas
+- [x] 4.1 Ajustes: "Este equipo es compartido", "Borrar la libreta de este dispositivo" con confirmación, borrado al cerrar sesión y tras 15 minutos de inactividad con oferta de exportar; verificar con los Scenario "Borrar la libreta", "Cierre de sesión en equipo compartido" e "Inactividad en equipo compartido"
+- [x] 4.2 Búsqueda local por nombre o documento, sin mayúsculas ni tildes, con listado pedido por identificadores (hasta 50); verificar con los Scenario "Buscar por nombre", "Sin coincidencias o sin libreta" y "Más de 50 coincidencias"
 
 ## 5. Backend: marca de copia
 

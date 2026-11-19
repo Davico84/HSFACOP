@@ -21,6 +21,7 @@ import { RecordNotFound } from "../RecordNotFound";
 import { RecordPrintDocument } from "./RecordPrintDocument";
 import { NotebookReadError } from "./NotebookReadError";
 import { lookupEntry } from "../../notebook/notebookService";
+import { withNotebookLock } from "../../notebook/notebookLocks";
 import type { NotebookEntry } from "../../notebook/notebookSchema";
 import { useNotebookEntry } from "../../notebook/useNotebookEntry";
 import { PAGE_CSS, SHEET_WIDTH_PX } from "./printStyle";
@@ -149,7 +150,8 @@ export function RecordPrintFeature() {
    */
   const onPrint = async () => {
     setReadFailed(false);
-    const result = await lookupEntry(accountId ?? 0, data.id, data.recordNumber);
+    // Bajo el bloqueo de la libreta: un borrado o una importación de otra pestaña espera a esta lectura.
+    const result = await withNotebookLock(() => lookupEntry(accountId ?? 0, data.id, data.recordNumber));
     if (result.status === "unavailable" && result.error.kind !== "unavailable") {
       setReadFailed(true);
       return;
