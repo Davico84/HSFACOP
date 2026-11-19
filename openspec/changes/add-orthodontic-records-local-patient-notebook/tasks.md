@@ -36,13 +36,13 @@
 
 ## 5. Backend: marca de copia
 
-- [ ] 5.1 Columna `notebook_backup_confirmed_at` (sin datos del paciente) y operación para que el autor marque su historia como respaldada; la operación de datos antiguos del autor (tarea 5.1 del change del alias) responde `404` a otros usuarios, con `Cache-Control: no-store` y sin registro del cuerpo; verificar con los Scenario "Datos antiguos solo para el autor" y "Fecha límite vencida"; el contrato de búsqueda acepta una lista de identificadores (hasta 50); verificar con tests de slice de acceso por autor (`403`/`404` en historia ajena) y de lista de identificadores, y regenerar `contracts/openapi.json` y el cliente (`orval`)
-- [ ] 5.2 Los registros, eventos y errores del backend no incluyen datos de la libreta; verificar con un test que inspecciona la salida del logger
+- [x] 5.1 Columna `notebook_backup_confirmed_at` (sin datos del paciente) y operación para que el autor marque su historia como respaldada; la operación de datos antiguos del autor (tarea 5.1 del change del alias) responde `404` a otros usuarios, con `Cache-Control: no-store` y sin registro del cuerpo; verificar con los Scenario "Datos antiguos solo para el autor" y "Fecha límite vencida"; el contrato de búsqueda acepta una lista de identificadores (hasta 50); verificar con tests de slice de acceso por autor (`403`/`404` en historia ajena) y de lista de identificadores, y regenerar `contracts/openapi.json` y el cliente (`orval`)
+- [x] 5.2 Los registros, eventos y errores del backend no incluyen datos de la libreta; verificar con un test que inspecciona la salida del logger
 
 ## 6. Copia de las historias existentes
 
 - [ ] 6.1 Acción "Pasar a mi libreta": lectura de `legacyIdentity`, escritura local, exportación del archivo cifrado, descifrado en memoria y comparación campo por campo, y solo entonces marca de respaldada; verificar con los Scenario "Copiar, exportar y verificar", "Copia sin respaldo", "Historia ya migrada" y "Cambio de autor durante la copia"
-- [ ] 6.2 Informe para el responsable (solo informativo; pasada la fecha límite se borra igual) con cuántas historias por autor siguen sin copiar, sin datos del paciente, para consultarlo antes de la migración administrativa; verificar que el informe no muestra ningún valor del paciente
+- [x] 6.2 Informe para el responsable (solo informativo; pasada la fecha límite se borra igual) con cuántas historias por autor siguen sin copiar, sin datos del paciente, para consultarlo antes de la migración administrativa; verificar que el informe no muestra ningún valor del paciente
 - [ ] 6.3 Prueba e2e de la secuencia copia local → marca de respaldo → fin de la fecha límite → migración, con fallo de red al marcar y migración concurrente: la marca es idempotente, no se borra nada antes de la fecha límite y la operación del autor se cierra al migrar; verificar el resultado de cada paso
 
 ## 7. Integración
