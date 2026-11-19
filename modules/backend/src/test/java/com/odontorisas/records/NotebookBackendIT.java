@@ -255,6 +255,39 @@ class NotebookBackendIT extends AbstractIntegrationTest {
         assertThat(backedUpAt(migrated)).isNull();
     }
 
+    /** Secuencia completa: copia → marca de respaldo → fin de la fecha límite → migración → la copia se cierra. */
+    @Test
+    void the_whole_sequence_copy_backup_deadline_and_migration() throws Exception {
+        Session torres = register("Dra. Torres");
+        long id = record(torres, "Ana");
+        jdbc.update("UPDATE orthodontic_records SET legacy_patient_name = 'Ana Lucía Quispe Mamani', document_type = 'DNI', "
+            + "document_number = '74125896', birth_date = DATE '2012-05-20', phone = '987654321' WHERE id = ?", id);
+        // Antes de la fecha límite el autor copia (con los datos antiguos), marca el respaldo y la migración se niega.
+        MvcResult legacy = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .get(BASE + "/" + id + "/legacy-identity").header("Authorization", "Bearer " + torres.token())).andReturn();
+        assertThat(legacy.getResponse().getStatus()).isEqualTo(200);
+        assertThat(backup(torres, id).getResponse().getStatus()).isEqualTo(204);
+        assertThat(org.assertj.core.api.Assertions.catchThrowable(() -> migration.migrate())).hasMessageContaining("aún no venció");
+        assertThat(jdbc.queryForObject("SELECT document_number FROM orthodontic_records WHERE id = ?", String.class, id)).isEqualTo("74125896");
+
+        // Un fallo de red al marcar se reintenta sin efecto: la marca es idempotente.
+        assertThat(backup(torres, id).getResponse().getStatus()).isEqualTo(204);
+        Instant stamp = backedUpAt(id);
+
+        // Vence la fecha: la migración corre, borra los datos antiguos y conserva la marca.
+        CLOCK.set(AFTER);
+        migration.migrate();
+
+        assertThat(jdbc.queryForObject("SELECT document_number FROM orthodontic_records WHERE id = ?", String.class, id)).isNull();
+        assertThat(jdbc.queryForObject("SELECT legacy_patient_name FROM orthodontic_records WHERE id = ?", String.class, id)).isNull();
+        assertThat(backedUpAt(id)).isEqualTo(stamp);
+        // La copia ya no está disponible: ni los datos antiguos ni la marca.
+        MvcResult closed = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .get(BASE + "/" + id + "/legacy-identity").header("Authorization", "Bearer " + torres.token())).andReturn();
+        assertThat(closed.getResponse().getStatus()).isEqualTo(404);
+        assertThat(backup(torres, id).getResponse().getStatus()).isEqualTo(404);
+    }
+
     @Test
     void the_report_counts_pending_records_without_backup_by_author_and_shows_no_patient_values() throws Exception {
         Session torres = register("Dra. Torres");

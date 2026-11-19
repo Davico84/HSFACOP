@@ -79,8 +79,8 @@ describe("patient-notebook — exportar desde Mi libreta", () => {
     expect(downloads[0].name).not.toMatch(/Ana|Quispe/);
     expect(downloads[0].text).not.toContain("Quispe");
     // La frase ya no se muestra y las entradas quedan marcadas como exportadas.
-    expect(screen.queryByLabelText("Frase de exportación")).not.toBeInTheDocument();
     expect(await screen.findByText(/La frase no se mostrará otra vez/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Frase de exportación")).not.toBeInTheDocument();
     expect((await listEntries(1))[0].exportedAt).not.toBeNull();
   }, 20000);
 

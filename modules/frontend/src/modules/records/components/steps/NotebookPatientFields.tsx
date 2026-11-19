@@ -7,6 +7,7 @@ import { notebookDocumentOptions } from "../../notebook/notebookOptions";
 import type { NotebookFields } from "../../notebook/notebookSchema";
 import { suggestAlias } from "../../notebook/suggestAlias";
 import { useNotebookDraft, type NotebookRecordRef } from "../../notebook/useNotebookDraft";
+import { NotebookLegacyCopy } from "./NotebookLegacyCopy";
 import { NotebookNotice } from "./NotebookNotice";
 
 const KEYS = ["fullName", "documentType", "documentNumber", "birthDate", "birthPlace", "address", "phone"] as const;
@@ -40,6 +41,7 @@ export function NotebookPatientFields({ record }: NotebookPatientFieldsProps) {
         Solo en este dispositivo
       </h3>
       <NotebookNotice draft={draft} />
+      <NotebookLegacyCopy record={record} onCopied={(fields) => draft.form.reset(fields)} />
       <FormProvider {...draft.form}>
         <TextField<NotebookFields> name="fullName" label="Nombre y apellidos" className="md:col-span-2" autoComplete="off" readOnly={readOnly} />
         {suggestion && !readOnly ? (
