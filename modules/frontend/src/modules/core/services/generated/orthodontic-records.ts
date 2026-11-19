@@ -7,6 +7,7 @@
  */
 import type {
   CreateRecordRequest,
+  LegacyIdentityResponse,
   ListRecordsParams,
   PageResponseRecordSummaryResponse,
   PrintRecordRequest,
@@ -129,6 +130,18 @@ export const searchRecords = (
       );
     }
   /**
+ * Para copiarlos a la libreta local. Responde 404 a cualquiera que no sea el autor, tras la fecha límite de copia o con la historia ya migrada. Nunca se cachea (Cache-Control: no-store) ni se registra.
+ * @summary Datos antiguos del paciente, solo para su autor y hasta la fecha límite de copia
+ */
+export const getLegacyIdentity = (
+    id: number,
+ ) => {
+      return customInstance<LegacyIdentityResponse>(
+      {url: `/api/orthodontic-records/${id}/legacy-identity`, method: 'GET'
+    },
+      );
+    }
+  /**
  * @summary Cupo de historias del usuario autenticado y cuántas creó
  */
 export const getRecordQuota = (
@@ -158,5 +171,6 @@ export type RequestPatientUnlockResult = NonNullable<Awaited<ReturnType<typeof r
 export type DiscardPatientUnlockRequestResult = NonNullable<Awaited<ReturnType<typeof discardPatientUnlockRequest>>>
 export type PrintRecordResult = NonNullable<Awaited<ReturnType<typeof printRecord>>>
 export type SearchRecordsResult = NonNullable<Awaited<ReturnType<typeof searchRecords>>>
+export type GetLegacyIdentityResult = NonNullable<Awaited<ReturnType<typeof getLegacyIdentity>>>
 export type GetRecordQuotaResult = NonNullable<Awaited<ReturnType<typeof getRecordQuota>>>
 export type UnlockPatientResult = NonNullable<Awaited<ReturnType<typeof unlockPatient>>>
