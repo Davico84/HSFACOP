@@ -4975,6 +4975,11 @@
               "null"
             ],
             "description": "Parentesco del apoderado"
+          },
+          "copyDeadline": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Fecha límite de copia: después el servidor borra estos datos"
           }
         }
       },

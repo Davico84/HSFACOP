@@ -28,16 +28,18 @@ interface Backend {
   /** Cómo responde cada operación (para simular fecha vencida, otro autor o fallos de red). */
   legacy: "ok" | "closed";
   backup: "ok" | "closed" | "network";
+  /** Fecha límite que devuelve el servidor junto a los datos (ISO), si la hay. */
+  deadline: string | null;
 }
 
 function mockBackend(initial: Partial<Backend> = {}, record: Partial<RecordResponse> = {}) {
-  const state: Backend = { legacyCalls: 0, backups: 0, puts: [], legacy: "ok", backup: "ok", ...initial };
+  const state: Backend = { legacyCalls: 0, backups: 0, puts: [], legacy: "ok", backup: "ok", deadline: null, ...initial };
   server.use(
     http.get("*/api/orthodontic-records/:id", () => HttpResponse.json(recordResponse(record))),
     http.get("*/api/orthodontic-records/:id/legacy-identity", () => {
       state.legacyCalls += 1;
       return state.legacy === "ok"
-        ? HttpResponse.json(LEGACY, { headers: { "Cache-Control": "no-store" } })
+        ? HttpResponse.json({ ...LEGACY, ...(state.deadline ? { copyDeadline: state.deadline } : {}) }, { headers: { "Cache-Control": "no-store" } })
         : HttpResponse.json({ type: "/errors/record-not-found", detail: "No se encontró la historia clínica." }, { status: 404 });
     }),
     http.post("*/api/orthodontic-records/:id/notebook-backup", async ({ request }) => {
@@ -156,6 +158,23 @@ describe("patient-notebook — copia de las historias existentes", () => {
     expect(await within(region).findByText(/La copia ya no está disponible/)).toBeInTheDocument();
     expect(await getEntry(1, 10)).toBeNull();
     expect(backend.backups).toBe(0);
+  });
+
+  const inDays = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000 - 60_000).toISOString();
+
+  it("El aviso muestra la fecha límite y los días que quedan", async () => {
+    mockBackend({ deadline: inDays(10) });
+    await openRecord();
+    const region = await screen.findByRole("region", { name: "Pasar a mi libreta" });
+    const line = within(region).getByText(/Fecha límite: \d{2}\/\d{2}\/\d{4} \(quedan 10 días\)/);
+    expect(line.className).not.toMatch(/bg-warning/);
+  });
+
+  it("Con 3 días o menos para la fecha límite, el aviso se destaca", async () => {
+    mockBackend({ deadline: inDays(2) });
+    await openRecord();
+    const region = await screen.findByRole("region", { name: "Pasar a mi libreta" });
+    expect(within(region).getByText(/\(quedan 2 días\)/).className).toMatch(/bg-warning/);
   });
 
   it("Fecha límite vencida o historia ya migrada: la copia no está disponible y la historia sigue funcionando", async () => {

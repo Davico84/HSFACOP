@@ -86,7 +86,7 @@ public class OrthodonticRecordService {
         return legacyIdentity.find(id)
             .map(r -> new LegacyIdentityView(r.patientName(), r.documentType(), r.documentNumber(), r.birthDate(),
                 r.birthPlace(), r.address(), r.phone(), r.patientSignatureName(), r.guardianName(),
-                r.guardianRelationship()))
+                r.guardianRelationship(), legacyCopy.deadline()))
             .orElseThrow(RecordNotFoundException::new);
     }
 

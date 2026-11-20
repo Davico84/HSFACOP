@@ -4,6 +4,7 @@ import com.odontorisas.common.DocumentType;
 import com.odontorisas.service.records.LegacyIdentityView;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 /**
@@ -21,11 +22,12 @@ public record LegacyIdentityResponse(
     @Schema(nullable = true) String phone,
     @Schema(description = "Nombre de quien firma si es el paciente", nullable = true) String patientSignatureName,
     @Schema(description = "Nombre del apoderado si el paciente es menor de edad", nullable = true) String guardianName,
-    @Schema(description = "Parentesco del apoderado", nullable = true) String guardianRelationship) {
+    @Schema(description = "Parentesco del apoderado", nullable = true) String guardianRelationship,
+    @Schema(description = "Fecha límite de copia: después el servidor borra estos datos") Instant copyDeadline) {
 
     public static LegacyIdentityResponse from(LegacyIdentityView row) {
         return new LegacyIdentityResponse(row.patientName(), row.documentType(), row.documentNumber(), row.birthDate(),
             row.birthPlace(), row.address(), row.phone(), row.patientSignatureName(), row.guardianName(),
-            row.guardianRelationship());
+            row.guardianRelationship(), row.copyDeadline());
     }
 }

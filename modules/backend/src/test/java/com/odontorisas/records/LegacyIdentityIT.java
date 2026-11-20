@@ -167,6 +167,8 @@ class LegacyIdentityIT extends AbstractIntegrationTest {
         assertThat(body.get("phone").stringValue()).isEqualTo("987654321");
         assertThat(body.get("guardianName").stringValue()).isEqualTo("Rosa Mamani");
         assertThat(body.get("guardianRelationship").stringValue()).isEqualTo("Madre");
+        // La fecha límite viaja con los datos para que la pantalla avise del plazo.
+        assertThat(body.get("copyDeadline").stringValue()).isEqualTo("2026-10-20T00:00:00Z");
     }
 
     @Test

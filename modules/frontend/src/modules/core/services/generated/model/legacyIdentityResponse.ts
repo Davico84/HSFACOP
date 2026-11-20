@@ -31,4 +31,6 @@ export interface LegacyIdentityResponse {
   guardianName?: LegacyIdentityResponseGuardianName;
   /** Parentesco del apoderado */
   guardianRelationship?: LegacyIdentityResponseGuardianRelationship;
+  /** Fecha límite de copia: después el servidor borra estos datos */
+  copyDeadline?: string;
 }
