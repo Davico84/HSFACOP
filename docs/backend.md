@@ -21,7 +21,7 @@ infra (config · security · storage · mail) = adaptadores técnicos (transvers
 | Presentación | `presentation.controller`, `presentation.dto` | Recibir HTTP, validar request (DTO + Bean Validation), delegar en services, construir respuesta | Contener lógica de negocio ni acceder a `persistence`/entidades |
 | Servicio | `service.<dominio>` | **Lógica de negocio**, transacciones, orquestación, mapeo entidad→record del servicio (view) | Depender de `presentation` |
 | Persistencia | `persistence.entity`, `persistence.repository`, `persistence.specification` | Entidades JPA, repositorios Spring Data, queries dinámicas (Specifications) | Contener reglas de negocio; depender de `presentation`/`service` |
-| Infraestructura | `infra.config`, `infra.security`, `infra.storage`, `infra.mail` | Adaptadores técnicos: configuración del framework, seguridad, S3, mail | Contener lógica de negocio |
+| Infraestructura | `infra.config`, `infra.security` | Adaptadores técnicos: configuración del framework, seguridad | Contener lógica de negocio |
 | Común | `common` | Utilidades transversales y tipos compartidos | Depender de un dominio |
 
 **Reglas de oro:**
@@ -461,9 +461,8 @@ en despliegue).
 
 ---
 
-## 13. Caché y logging
+## 13. Logging
 
-- **Caché**: Spring Cache + Caffeine. `@Cacheable`/`@CacheEvict` con nombres de caché explícitos; cachea solo lo que aporta (lecturas costosas y estables).
 - **Logging**: SLF4J. Se prefiere Lombok `@Slf4j`; `LoggerFactory.getLogger(...)` es válido cuando la clase no usa Lombok o necesita un logger especial (el código actual lo usa). Mensajes en español (§2). Niveles adecuados (`info`, `warn`, `error`, `debug`). Log estructurado con contexto (ids), **sin** secretos ni datos personales (PII) de usuarios o clientes.
 
 ### 13.1 Política de registros — sin datos de pacientes

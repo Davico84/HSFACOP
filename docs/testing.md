@@ -43,7 +43,7 @@ Unit → Componente/Slice → Integración → E2E
 | Frontend | Unit / Componente / Integración | Vitest + React Testing Library + MSW |
 | Frontend | E2E | Playwright |
 | Backend | Unit | JUnit 5 + Mockito |
-| Backend | Slices | `@WebMvcTest` (controller, + `@EnableMethodSecurity` para seguridad) · `@SpringBootTest` acotado a Repository (no `@DataJpaTest` — ver §5.1) · `@SpringBootTest` (websocket, planeado — ver `docs/architecture.md §2`) |
+| Backend | Slices | `@WebMvcTest` (controller, + `@EnableMethodSecurity` para seguridad) · `@SpringBootTest` acotado a Repository (no `@DataJpaTest` — ver §5.1) |
 | Backend | Integración / persistencia | **Testcontainers (PostgreSQL)** + Flyway |
 
 Decisión del proyecto: **Testcontainers desde el inicio** (PostgreSQL real efímero), no H2 — garantiza paridad con producción. Requiere **Docker** local y en CI.
@@ -121,7 +121,6 @@ Usa `renderHook` con un `wrapper` que provea un `QueryClient` nuevo por test (co
 | Seguridad / autorización por rol (`@PreAuthorize`) | `@WebMvcTest` + `@EnableMethodSecurity` + `spring-security-test` (`@WithMockUser`) — ver §5.1 |
 | Repositorios / `Specification` / queries | Alcance de repositorio (solo `Repository`, sin pasar por el service) — ver §5.1, nota sobre por qué NO es `@DataJpaTest` |
 | Migraciones Flyway | Integración + **Testcontainers** |
-| WebSocket/STOMP | `@SpringBootTest` (websocket) |
 | Flujo completo (controller→service→repo→BD) | `@SpringBootTest` + **Testcontainers** (los `*ControllerIT`, p. ej. `AuthControllerIT`) |
 
 ### 5.1 Dos capas para Controller/Repository — no una reemplaza a la otra

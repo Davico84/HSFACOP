@@ -32,18 +32,14 @@ HS FACOP/
 |---|---|
 | Lenguaje / build | Java 25 · Maven |
 | Framework | Spring Boot 4.0.6 |
-| API REST | Spring Web MVC + springdoc-openapi (Swagger, por perfil) |
-| Realtime | Spring WebSocket (STOMP) — encaja con `@stomp/stompjs` + `sockjs` del front |
+| API REST | Spring Web MVC + springdoc-openapi (Swagger apagado por defecto, `SWAGGER_ENABLED`) |
 | Persistencia | Spring Data JPA (Hibernate) + PostgreSQL |
 | Migraciones | Flyway (`db/migration`) · `ddl-auto=none` (schema lo maneja Flyway) |
 | Seguridad | Spring Security + JWT (`com.auth0:java-jwt`) |
 | Validación | Bean Validation (`starter-validation`) |
-| Caché | Spring Cache + Caffeine |
-| Almacenamiento | AWS S3 (subida de imágenes) |
-| IA | Spring AI (chat memory JDBC) — para el bot |
-| Utilidades | Lombok · mail vía webhook |
+| Utilidades | Lombok |
 | Configuración | Única (sin perfiles); todos los valores externalizados como secretos (env vars + `secrets.properties` local ignorado) |
-| Testing | Test slices: H2, JPA-test, security-test, webmvc-test, websocket-test, flyway-test |
+| Testing | JUnit 5 · Spring Boot Test (slices `webmvc-test`, `security-test`) · Testcontainers (PostgreSQL) · ArchUnit |
 
 ### Arquitectura por capas (paquetes reales)
 ```
@@ -53,10 +49,10 @@ service        → <dominio> (+ mapper co-ubicado)      # lógica de negocio / c
       ↓
 persistence    → entity · repository · specification (queries dinámicas)
 
-infra          → config · security · storage · mail   # adaptadores técnicos (transversal)
+infra          → config · security                    # adaptadores técnicos (transversal)
 common         → utilidades / tipos compartidos
 ```
-- La **lógica de negocio** vive en `service.<dominio>`, **no** en `infra`. `infra` es solo adaptadores técnicos (framework, seguridad, S3, mail).
+- La **lógica de negocio** vive en `service.<dominio>`, **no** en `infra`. `infra` es solo adaptadores técnicos (framework, seguridad).
 - `presentation` no accede a `persistence` directamente: pasa por `service`.
 - `persistence` no depende de `presentation` ni de `service` (las entidades JPA son el modelo de dominio; no hexagonal puro, decisión consciente).
 - `specification` centraliza las queries dinámicas (JPA Criteria/Specifications).
@@ -71,12 +67,11 @@ Base: template FixRiver `modules/frontend/proyecto-base`.
 | Área | Tecnología |
 |---|---|
 | Core | React 19 · TypeScript · Vite |
-| UI | Tailwind CSS 4 (CSS-first, `@tailwindcss/vite`) + shadcn/Radix + `@base-ui/react` · `lucide-react` · `framer-motion` · `sonner` · `recharts` |
+| UI | Tailwind CSS 4 (CSS-first, `@tailwindcss/vite`) + shadcn/Radix · `lucide-react` · `sonner` |
 | Datos servidor | `@tanstack/react-query` + `axios` |
 | Estado cliente | Zustand |
 | Formularios | `react-hook-form` + `zod` (`@hookform/resolvers`) |
-| Routing | `react-router-dom` v7 + `RouteGuard` central (roles ADMIN/USER/ALL) |
-| Realtime | `@stomp/stompjs` + `sockjs-client` |
+| Routing | `react-router-dom` v7 + guards `RequireAuth` / `RequireRole` por sección (roles ADMIN/USER/COORDINATOR) |
 | Testing | Vitest + React Testing Library + MSW · e2e con Playwright |
 | Calidad | ESLint + typescript-eslint · pre-commit con `lint-staged` |
 | Gestor | pnpm |
@@ -105,9 +100,8 @@ Detalle ampliado de los estándares de frontend en `docs/frontend.md` (arquitect
 ## 4. Contrato back ↔ front
 
 - **Auth**: JWT emitido por Spring Security; el front lo guarda y lo envía vía `axios` (interceptor). Refresh de token ante 401.
-- **Roles**: ADMIN / USER (alineados con `$UserRole` del front y la seguridad por rol del back).
-- **Realtime**: STOMP sobre WebSocket (back Spring WebSocket ↔ front `@stomp/stompjs` + `sockjs-client`).
-- **API docs**: springdoc-openapi (Swagger) por perfil como contrato de referencia.
+- **Roles**: ADMIN / USER / COORDINATOR (alineados con el contrato OpenAPI y la seguridad por rol del back).
+- **API docs**: springdoc-openapi (Swagger), apagado por defecto (`SWAGGER_ENABLED`); el contrato versionado es `contracts/openapi.json`.
 
 ---
 
