@@ -14,14 +14,30 @@ import { saveEntry } from "./notebookService";
  * (una marca sin datos del paciente). Los datos antiguos no se cachean: se piden al hacer la copia.
  */
 
-/** ¿Hay datos antiguos que copiar? No guarda la respuesta: solo si existe. */
-export async function legacyCopyAvailable(recordId: number): Promise<boolean> {
+/**
+ * ¿Hay datos antiguos que copiar? Devuelve solo la fecha límite de copia (sin ningún dato del paciente: no
+ * guarda la respuesta) o `false` si no hay nada que copiar.
+ */
+export async function legacyCopyAvailable(recordId: number): Promise<{ deadline: string | null } | false> {
   try {
-    await getLegacyIdentity(recordId);
-    return true;
+    const data = await getLegacyIdentity(recordId);
+    return { deadline: data.copyDeadline ?? null };
   } catch {
     return false;
   }
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Cuántos días faltan para la fecha límite (0 si es hoy o ya pasó); nulo sin fecha. */
+export function daysUntil(deadline: string | null, now = new Date()): number | null {
+  if (!deadline) return null;
+  return Math.max(0, Math.ceil((new Date(deadline).getTime() - now.getTime()) / DAY_MS));
+}
+
+/** La fecha límite como dd/mm/aaaa en la zona del navegador. */
+export function formatDeadline(deadline: string): string {
+  return new Date(deadline).toLocaleDateString("es-PE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
 /** Los datos antiguos como campos de la libreta; el firmante es el apoderado, o el paciente si no hay. */

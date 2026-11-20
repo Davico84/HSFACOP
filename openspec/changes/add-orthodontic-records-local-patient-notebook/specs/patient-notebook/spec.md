@@ -210,6 +210,10 @@ Hasta la fecha límite de copia, el servidor SHALL devolver al autor, y solo a �
 - **WHEN** un `ADMIN`, un usuario de coordinación u otro `USER` pide los datos antiguos de una historia ajena
 - **THEN** la API responde `404` y no devuelve ningún dato; la respuesta del autor lleva `Cache-Control: no-store` y no figura en los registros
 
+#### Scenario: El aviso muestra la fecha límite
+- **WHEN** el autor abre una historia con datos antiguos por copiar
+- **THEN** la respuesta lleva la fecha límite de copia (sin datos del paciente) y el aviso la muestra con los días que quedan, destacándose cuando faltan 3 o menos
+
 #### Scenario: Fecha límite vencida
 - **WHEN** pasa la fecha límite de copia o la historia ya se migró
 - **THEN** la API deja de devolver los datos antiguos y la copia no está disponible

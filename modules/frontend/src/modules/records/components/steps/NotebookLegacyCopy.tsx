@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/modules/core/ui/button";
 import { useSessionStore } from "@/store/useSessionStore";
-import { LegacyCopyClosed, copyToNotebook, legacyCopyAvailable, markBackedUp, verifyExport } from "../../notebook/legacyCopy";
+import { LegacyCopyClosed, copyToNotebook, daysUntil, formatDeadline, legacyCopyAvailable, markBackedUp, verifyExport } from "../../notebook/legacyCopy";
 import { confirmExported, prepareExport, type PreparedExport } from "../../notebook/notebookActions";
 import { fieldsOf, type NotebookFields } from "../../notebook/notebookSchema";
 import { hasIndexedDb, hasWebCrypto } from "../../notebook/notebookDb";
@@ -58,6 +58,9 @@ export function NotebookLegacyCopy({ record, onCopied }: NotebookLegacyCopyProps
 
   if (!record || accountId === null || (!available.data && phase.name === "idle")) return null;
   const ref = record;
+  const deadline = available.data ? available.data.deadline : null;
+  const daysLeft = daysUntil(deadline);
+  const urgent = daysLeft !== null && daysLeft <= 3;
 
   const closed = (message = "La copia ya no está disponible para esta historia (venció la fecha límite o ya no es tuya).") => {
     setPhase({ name: "error", message });
@@ -113,6 +116,12 @@ export function NotebookLegacyCopy({ record, onCopied }: NotebookLegacyCopyProps
             Esta historia es anterior al cambio: el servidor todavía conserva sus datos antiguos solo hasta la fecha límite de copia y
             después los borra. <strong>Pásalos a tu libreta y exporta un archivo de respaldo.</strong>
           </p>
+          {deadline ? (
+            <p className={urgent ? "rounded-md border border-warning/50 bg-warning/10 p-2 font-semibold" : "font-semibold"}>
+              Fecha límite: {formatDeadline(deadline)}
+              {daysLeft === 0 ? " (vence hoy)" : daysLeft === 1 ? " (queda 1 día)" : ` (quedan ${daysLeft} días)`}.
+            </p>
+          ) : null}
           {phase.name === "idle" || phase.name === "working" || phase.name === "error" ? (
             <div>
               <Button type="button" size="sm" onClick={() => void start()} disabled={phase.name === "working"}>
