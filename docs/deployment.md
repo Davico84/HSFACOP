@@ -14,15 +14,14 @@ duerme vienen de `add-cold-start-warmup`. Pasos: §5; verificación: §6. Produc
   espera el arranque de Spring Boot (**~1 min**). Mientras tanto el frontend muestra la pantalla de
   arranque en frío ("Preparando tu consultorio digital").
 - **750 h de instancia al mes por workspace**, compartidas por todos sus servicios gratuitos. Un
-  servicio despierto 24/7 gasta hasta 744 h (mes de 31 días): por eso, desde que **Dentdesk** (repo
-  `Davico84/Odontorisas`) comparte el workspace, las dos apps solo están despiertas en horario de
+  servicio despierto 24/7 gasta hasta 744 h (mes de 31 días): por eso, desde que otra aplicación (repositorio privado) comparte el workspace, las dos apps solo están despiertas en horario de
   atención (abajo). Al pasar las 750 h, Render suspende **los servicios** hasta el mes siguiente.
 - **512 MB de RAM y 0,1 CPU.** En el primer despliegue mide la memoria (RSS) y el tiempo de
   arranque; ajusta la JVM (`JAVA_TOOL_OPTIONS`, p. ej. `-Xmx`) **solo tras medir**.
 
 ### Horario de atención: lunes a sábado, 9:00–21:00 (hora de Perú)
 
-Decisión del 2026-10-11 (compartida con Dentdesk). Fuera de horario (noches y domingos) el servicio
+Decisión del 2026-10-11 (compartida con la otra aplicación del workspace). Fuera de horario (noches y domingos) el servicio
 duerme y el primer ingreso ve la pantalla de arranque en frío (~1 min; medido: 64 s). Perú no tiene
 horario de verano.
 
@@ -44,9 +43,9 @@ horario de verano.
 - Usa **liveness**, no `/actuator/health`: liveness **no consulta la base**, así la base puede
   dormir (§2). `/actuator/health` sí la consulta en cada llamada.
 
-**Despertarlo cada mañana: GitHub Actions del repo de Dentdesk.** `.github/workflows/wake-up.yml` de
-`Davico84/Odontorisas` corre lunes a sábado a las **8:45** (13:45 UTC; GitHub puede atrasar los
-programados) y despierta Dentdesk **y HSO** con `curl` (hasta 3 intentos de 150 s); si alguna no
+**Despertarlo cada mañana: GitHub Actions de la otra aplicación.** Un workflow `wake-up.yml` de su
+repositorio (privado) corre lunes a sábado a las **8:45** (13:45 UTC; GitHub puede atrasar los
+programados) y despierta esa app **y HSO** con `curl` (hasta 3 intentos de 150 s); si alguna no
 responde `UP`, falla y GitHub avisa por correo. Se puede lanzar a mano (*Run workflow*). Verificado
 el 2026-10-12. Es un repo privado: el desactivado por 60 días sin actividad no le aplica.
 
@@ -61,7 +60,7 @@ el 2026-10-12. Es un repo privado: el desactivado por 60 días sin actividad no 
 | Concepto | Horas |
 |---|---|
 | Por app: 8:45 → ~21:05 ≈ 12 h 15 min/día × 27 | ≈ 331 h |
-| Dentdesk + HSO | ≈ 662 h |
+| Las dos apps | ≈ 662 h |
 | Cupo del workspace | 750 h |
 | Margen para uso fuera de horario | ≈ 88 h |
 
@@ -70,7 +69,7 @@ el 2026-10-12. Es un repo privado: el desactivado por 60 días sin actividad no 
 - Consumo del mes: Render → *Billing / Usage*. Si se agota, Render suspende **los dos** servicios
   hasta el mes siguiente (ni la pantalla de espera los despierta).
 - Alternativas evaluadas (lun–sáb): 9–20 (~142 h de margen), 8–20 (~88 h), 8–21 (~44 h), 9–22
-  (~34 h); todos los días 9–20: ~52 h. Detalle en `docs/deployment.md` §3 del repo de Dentdesk.
+  (~34 h); todos los días 9–20: ~52 h. Detalle en la documentación de esa otra aplicación.
 
 ### Variables del servicio
 
@@ -260,14 +259,14 @@ Producción = rama **`main`** (Render y Vercel). `dev` llega por PR con el CI en
    - `JWT_SECRET`: `openssl rand -base64 48`;
    - `CORS_ALLOWED_ORIGINS=https://pendiente.invalid` (provisional, paso 4).
 
-   Primer deploy: el log muestra las 14 migraciones y `GET https://<servicio>.onrender.com/actuator/health/liveness` → `200`.
+   Primer deploy: el log muestra las migraciones de Flyway y `GET https://<servicio>.onrender.com/actuator/health/liveness` → `200`.
 3. **URL de Render en `vercel.json`** — si la URL asignada no es `https://hs-facop-api.onrender.com`,
    corrígela en las dos reglas de `vercel.json` (PR a `main`).
 4. **Vercel** — *Add New → Project*, importa el repo. Root Directory = **raíz** (el build lo define
    `vercel.json`), rama de producción `main`, **sin** `VITE_API_URL`. Tras el primer deploy, en
    Render: `CORS_ALLOWED_ORIGINS=https://<app>.vercel.app` (exacto, sin `/` final).
 5. **Monitor** — cron-job.org a liveness en horario (lunes a sábado, 9–20 cada 10 min) y despertar
-   diario de las 8:45 (workflow del repo de Dentdesk); §1.
+   diario de las 8:45 (workflow de la otra aplicación); §1.
 6. **Primer ADMIN** — regístrate en `https://<app>.vercel.app/registro` y, enseguida, en el SQL
    Editor de Neon:
    ```sql
@@ -290,14 +289,16 @@ Producción = rama **`main`** (Render y Vercel). `dev` llega por PR con el CI en
 | Smoke E2E | `E2E_BASE_URL=https://<app>.vercel.app pnpm exec playwright test e2e/auth.smoke.spec.ts` | verde | ✅ 3/3 |
 | Memoria en Render | métricas del servicio tras el arranque | < 512 MB | ✅ sin reinicios por memoria (Live desde el deploy, `ExitOnOutOfMemoryError` no saltó). Render Free solo muestra métricas de red; medido en local con 512 MB: ~293 MiB |
 | Monitor y ADMIN | UptimeRobot a liveness; primer ADMIN | Up; ve Usuarios | ✅ (UptimeRobot pausado desde 2026-10-11) |
-| Monitor con horario | `wake-up.yml` (Dentdesk) a mano con el servicio dormido; pings de cron-job.org | `UP` tras el arranque; pings solo lun–sáb 9:00–20:50 | ✅ 2026-10-12: despertar verificado (Dentdesk dormida 63 s; HSO `UP`) |
+| Monitor con horario | `wake-up.yml` (otra app) a mano con el servicio dormido; pings de cron-job.org | `UP` tras el arranque; pings solo lun–sáb 9:00–20:50 | ✅ 2026-10-12: despertar verificado (la otra app dormida 63 s; HSO `UP`) |
 
 ## 7. Migración de la identidad del paciente (alias, sexo y edad)
+
+**Estado (2026-11-20):** pasos 1 y 2 hechos — el binario con la libreta local está en producción (PRs #35 y #36; Flyway aplicó V21 a V23) y la fecha límite de copia está definida en Render: cada tratante ve la fecha en el aviso "Pasar a mi libreta". Pendientes: pasos 3 a 7 (esperar la fecha límite, ejecutar la acción administrativa y retirar las columnas con una migración **V24**).
 
 Cambio `update-orthodontic-records-pseudonymous-patient`: el servidor deja de guardar nombre completo, documento, nacimiento, lugar, domicilio y celular del paciente. **El orden importa**: la acción borra datos en producción y las columnas no se eliminan hasta que ya no quede nada.
 
 1. **Copia de seguridad verificada** de la base (§2.1) y anotar cuántas historias hay.
-2. **Desplegar el binario nuevo junto con la libreta local** (`add-orthodontic-records-local-patient-notebook`) y escribir `LEGACY_COPY_DEADLINE` (14 días después). El servidor ya no mapea ni escribe las columnas antiguas; V21 y V22 solo añaden columnas y guardan el nombre original y los nombres de firma. Hasta la fecha, cada autor ve sus datos antiguos con `GET /api/orthodontic-records/{id}/legacy-identity` y los pasa a su libreta.
+2. **Desplegar el binario nuevo junto con la libreta local** (`add-orthodontic-records-local-patient-notebook`) y escribir `LEGACY_COPY_DEADLINE` (14 días después). El servidor ya no mapea ni escribe las columnas antiguas; V21, V22 y V23 solo añaden columnas (V22 guarda el nombre original y los nombres de firma; V23, la marca de respaldo de la libreta). Hasta la fecha, cada autor ve sus datos antiguos con `GET /api/orthodontic-records/{id}/legacy-identity` y los pasa a su libreta.
 3. **Esperar a que funcione sin errores** y a que venza la fecha límite. Pasada la fecha se borra igual lo que nadie copió: queda solo en el papel firmado.
 4. **Revisar la lista de alias** (no cambia nada) y el informe de historias sin respaldo, y obtener la **aprobación escrita** del responsable:
 

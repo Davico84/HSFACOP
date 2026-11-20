@@ -6,12 +6,9 @@ Dimensión **tecnológica** (reutilizable). Guía única del cliente: stack, arq
 
 ## 1. Stack y arquitectura de pantallas/módulos
 
-**Stack** (detalle y versiones en `docs/architecture.md §3`): React 19 · TypeScript · Vite. UI: Tailwind CSS 4 + shadcn/Radix, `lucide-react`, `framer-motion`, `sonner`. Datos de servidor: `@tanstack/react-query` + `axios`. Estado de cliente: Zustand. Formularios: `react-hook-form` + `zod`. Routing: `react-router-dom` v7 con guards centrales `RequireAuth`/`RequireGuest` (roles `ADMIN`/`USER`/`COORDINATOR`; sin `roles` = cualquier autenticado). Gestor: pnpm.
+**Stack** (detalle y versiones en `docs/architecture.md §3`): React 19 · TypeScript · Vite. UI: Tailwind CSS 4 + shadcn/Radix, `lucide-react`, `sonner`. Datos de servidor: `@tanstack/react-query` + `axios`. Estado de cliente: Zustand. Formularios: `react-hook-form` + `zod`. Routing: `react-router-dom` v7 con guards centrales `RequireAuth`/`RequireGuest` (roles `ADMIN`/`USER`/`COORDINATOR`; sin `roles` = cualquier autenticado). Gestor: pnpm.
 
-> **Estado actual (objetivo, aún no adoptado):** `@base-ui/react` (§4.1), `recharts` (gráficas) y el
-> par realtime `@stomp/stompjs`/`sockjs-client` (`docs/vision.md §7`) figuran en el stack **cerrado**
-> (`docs/architecture.md §3`) pero **no están instalados todavía**: se agregan la primera vez que una
-> capacidad los necesite de verdad, no antes. Mismo criterio para `framer-motion` (§4.2).
+> Solo se usan las librerías instaladas (`modules/frontend/package.json`): una librería nueva se agrega la primera vez que una capacidad la necesite, no antes.
 
 **Estructura** (`modules/frontend/src/`):
 

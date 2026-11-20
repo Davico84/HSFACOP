@@ -30,21 +30,20 @@ context: |
 
   Backend:
     - Java 25 · Maven · Spring Boot 4.0.6.
-    - API REST: Spring Web MVC + springdoc-openapi (Swagger por perfil).
-    - Realtime: Spring WebSocket (STOMP) — encaja con @stomp/stompjs + sockjs del front.
+    - API REST: Spring Web MVC + springdoc-openapi (Swagger apagado por defecto, SWAGGER_ENABLED).
     - Persistencia: Spring Data JPA (Hibernate) + PostgreSQL. Migraciones: Flyway (db/migration), ddl-auto=none.
     - Seguridad: Spring Security + JWT (com.auth0:java-jwt). Validación: Bean Validation.
-    - Caché: Spring Cache + Caffeine. Almacenamiento: AWS S3. IA: Spring AI (chat memory JDBC). Utils: Lombok, mail vía webhook.
+    - Utils: Lombok.
     - Configuración: única (sin perfiles dev/qa/pro); todos los valores externalizados como secretos (env vars + secrets.properties local ignorado, con .example versionado).
-    - Testing: Spring Boot test slices (H2, JPA-test, security-test, webmvc-test, websocket-test, flyway-test).
+    - Testing: JUnit 5 · Spring Boot Test (slices webmvc-test, security-test) · Testcontainers (PostgreSQL) · ArchUnit.
     - Arquitectura por capas (paquetes reales):
         presentation (controller · dto) → infra (config · security · service por dominio · utils/mappers)
         → persistence (entity · repository · specification para queries dinámicas).
 
-  Frontend (base: template FixRiver — modules/frontend/proyecto-base):
-    - React 19 · TypeScript · Vite. UI: Tailwind + shadcn/Radix + @base-ui/react; lucide-react; framer-motion; sonner; recharts.
+  Frontend:
+    - React 19 · TypeScript · Vite. UI: Tailwind + shadcn/Radix; lucide-react; sonner.
     - Datos servidor: @tanstack/react-query + axios. Estado cliente: Zustand. Formularios: react-hook-form + zod (@hookform/resolvers).
-    - Routing: react-router-dom v7 con RouteGuard central (roles ADMIN/USER/ALL). Realtime: @stomp/stompjs + sockjs-client.
+    - Routing: react-router-dom v7 con guards RequireAuth/RequireRole por sección (roles ADMIN/USER/COORDINATOR).
     - Testing: Vitest + React Testing Library + MSW; e2e con Playwright. Lint: ESLint + typescript-eslint. Hooks: lint-staged.
     - Arquitectura orientada a pantallas: src/{layouts,screens,modules(core/auth/...),store,routes,styles}.
         screens orquestan; modules encapsulan lógica; core sin dependencias a otros módulos.

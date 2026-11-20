@@ -5,8 +5,6 @@ export const PATHS = {
   LOGIN: "/ingresar",
   REGISTER: "/registro",
   // Secciones de ejemplo del shell: cada proyecto derivado las reemplaza.
-  MODULE_A: "/modulo-a",
-  MODULE_B: "/modulo-b",
   // Gestión de cuentas (capacidad users), solo ADMIN.
   USERS: "/usuarios",
   // Historias clínicas de ortodoncia (capacidad orthodontic-records).

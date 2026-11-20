@@ -74,24 +74,23 @@ describe("app-shell — Layout privado común", () => {
 describe("app-shell — Navegación declarada por configuración", () => {
   it("Ítem activo resaltado: solo el ítem de la ruta actual lleva aria-current", async () => {
     signIn();
-    renderApp("/modulo-a");
+    renderApp("/libreta");
 
     const nav = await screen.findByRole("navigation", { name: "Navegación principal" });
-    expect(within(nav).getByRole("link", { name: "Módulo A" })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: "Mi libreta" })).toHaveAttribute("aria-current", "page");
     expect(within(nav).getByRole("link", { name: "Inicio" })).not.toHaveAttribute("aria-current");
   });
 
-  it("Navegar a un ítem de ejemplo: muestra 'Próximamente' con el nombre y mantiene el shell", async () => {
+  it("Navegar a un ítem del menú: muestra su pantalla y mantiene el shell", async () => {
     signIn();
     const user = userEvent.setup();
     const router = renderApp("/");
 
-    await user.click(within(await screen.findByRole("navigation", { name: "Navegación principal" })).getByRole("link", { name: "Módulo A" }));
+    await user.click(within(await screen.findByRole("navigation", { name: "Navegación principal" })).getByRole("link", { name: "Mi libreta" }));
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Módulo A" })).toBeInTheDocument();
-    expect(screen.getByText(/próximamente/i)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Mi libreta" })).toBeInTheDocument();
     expect(mainNav()).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe("/modulo-a");
+    expect(router.state.location.pathname).toBe("/libreta");
   });
 
   it("Ruta privada inexistente: muestra la página de no encontrado", async () => {
@@ -153,12 +152,12 @@ describe("app-shell — Navegación responsive (tooltips de la barra compacta)",
   it("Tooltip en la barra compacta: al enfocar con el teclado muestra el nombre", async () => {
     signIn();
     renderApp("/");
-    const link = within(await screen.findByRole("navigation", { name: "Navegación principal" })).getByRole("link", { name: "Módulo A" });
+    const link = within(await screen.findByRole("navigation", { name: "Navegación principal" })).getByRole("link", { name: "Mi libreta" });
 
     link.focus();
 
-    expect(await screen.findByRole("tooltip", { name: "Módulo A" })).toBeInTheDocument();
-    expect(link).toHaveAttribute("aria-label", "Módulo A");
+    expect(await screen.findByRole("tooltip", { name: "Mi libreta" })).toBeInTheDocument();
+    expect(link).toHaveAttribute("aria-label", "Mi libreta");
     expect(link).not.toHaveAttribute("title");
     expect(link).not.toHaveAttribute("aria-describedby"); // solo visual: sin anuncio duplicado
   });
@@ -167,9 +166,9 @@ describe("app-shell — Navegación responsive (tooltips de la barra compacta)",
     // Regresión: dentro de TooltipTrigger asChild, un className-función de NavLink se
     // convertía en su código fuente y el enlace perdía todos sus estilos.
     signIn();
-    renderApp("/modulo-a");
+    renderApp("/libreta");
     const nav = within(await screen.findByRole("navigation", { name: "Navegación principal" }));
-    const active = nav.getByRole("link", { name: "Módulo A" });
+    const active = nav.getByRole("link", { name: "Mi libreta" });
     const inactive = nav.getByRole("link", { name: "Inicio" });
 
     expect(active.className).not.toMatch(/=>|isActive/);
@@ -182,11 +181,11 @@ describe("app-shell — Navegación responsive (tooltips de la barra compacta)",
     signIn();
     const user = userEvent.setup();
     renderApp("/");
-    const link = within(await screen.findByRole("navigation", { name: "Navegación principal" })).getByRole("link", { name: "Módulo A" });
+    const link = within(await screen.findByRole("navigation", { name: "Navegación principal" })).getByRole("link", { name: "Mi libreta" });
 
     await user.hover(link);
 
-    expect(await screen.findByRole("tooltip", { name: "Módulo A" })).toBeInTheDocument();
+    expect(await screen.findByRole("tooltip", { name: "Mi libreta" })).toBeInTheDocument();
   });
 
   it("Tooltip de cerrar sesión: al enfocar muestra 'Cerrar sesión'", async () => {
@@ -209,7 +208,7 @@ describe("app-shell — Navegación responsive (tooltips de la barra compacta)",
     await user.click(await screen.findByRole("button", { name: "Abrir menú" }));
     const drawer = screen.getByRole("dialog", { name: "Menú de navegación" });
 
-    within(drawer).getByRole("link", { name: "Módulo A" }).focus();
+    within(drawer).getByRole("link", { name: "Mi libreta" }).focus();
 
     await waitFor(() => expect(screen.queryByRole("tooltip")).not.toBeInTheDocument());
   });
@@ -237,11 +236,11 @@ describe("app-shell — Navegación responsive (cajón móvil)", () => {
 
     await user.click(await screen.findByRole("button", { name: "Abrir menú" }));
     const drawer = screen.getByRole("dialog", { name: "Menú de navegación" });
-    await user.click(within(drawer).getByRole("link", { name: "Módulo A" }));
+    await user.click(within(drawer).getByRole("link", { name: "Mi libreta" }));
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Módulo A" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "Mi libreta" })).toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "Menú de navegación" })).not.toBeInTheDocument();
-    expect(router.state.location.pathname).toBe("/modulo-a");
+    expect(router.state.location.pathname).toBe("/libreta");
   });
 
   it("Cerrar el cajón con Escape: se cierra sin navegar", async () => {
