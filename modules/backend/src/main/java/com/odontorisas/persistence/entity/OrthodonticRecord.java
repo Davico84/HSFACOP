@@ -1,6 +1,5 @@
 package com.odontorisas.persistence.entity;
 
-import com.odontorisas.common.DocumentType;
 import com.odontorisas.common.PatientSex;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -61,38 +60,34 @@ public class OrthodonticRecord {
     @Column(name = "treating_dentist", length = 120)
     private String treatingDentist;
 
+    /** Alias del paciente (una o dos palabras, sin apellidos); la columna conserva su nombre histórico. */
     @Column(name = "patient_name", nullable = false, length = 120)
     private String patientName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "document_type", length = 20)
-    private DocumentType documentType;
-
-    @Column(name = "document_number", length = 12)
-    private String documentNumber;
+    /** Años cumplidos al inicio del tratamiento, escritos por el tratante (0–99); nulo = sin edad. */
+    @Column(name = "patient_age")
+    private Integer patientAge;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "patient_sex", length = 10)
     private PatientSex patientSex;
 
-    @Column(name = "birth_date")
-    private LocalDate birthDate;
-
-    @Column(name = "birth_place", length = 120)
-    private String birthPlace;
-
-    @Column(length = 200)
-    private String address;
-
-    @Column(length = 20)
-    private String phone;
-
     @Column(name = "treatment_start_date")
     private LocalDate treatmentStartDate;
 
-    /** Nombre + documento + número en minúsculas y sin tildes (búsqueda). */
+    /** Alias + número de historia en minúsculas y sin tildes (búsqueda). */
     @Column(name = "search_text", nullable = false, length = 400)
     private String searchText;
+
+    /** Marca de la migración administrativa de la identidad antigua (nulo = aún no migrada). */
+    @OptimisticLock(excluded = true)
+    @Column(name = "identity_migrated_at")
+    private Instant identityMigratedAt;
+
+    /** El autor copió los datos antiguos a su libreta local y verificó el archivo exportado (sin datos del paciente). */
+    @OptimisticLock(excluded = true)
+    @Column(name = "notebook_backup_confirmed_at")
+    private Instant notebookBackupConfirmedAt;
 
     /** Contenido clínico serializado (JSON). */
     @JdbcTypeCode(SqlTypes.JSON)
@@ -118,6 +113,7 @@ public class OrthodonticRecord {
     private Instant unlockRequestedAt;
 
     @OptimisticLock(excluded = true)
+    /** Código del catálogo cerrado (ALIAS, SEXO, EDAD, OTRO), nunca texto libre. */
     @Column(name = "unlock_request_reason", length = 200)
     private String unlockRequestReason;
 

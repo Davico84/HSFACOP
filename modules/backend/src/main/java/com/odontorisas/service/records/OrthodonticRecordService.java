@@ -7,6 +7,9 @@ import com.odontorisas.persistence.repository.RecordUnlockEventRepository;
 import com.odontorisas.persistence.entity.RecordUnlockEvent;
 import com.odontorisas.common.UnlockAction;
 import com.odontorisas.common.Role;
+import com.odontorisas.common.UnlockReason;
+import com.odontorisas.infra.config.LegacyCopyProperties;
+import com.odontorisas.persistence.repository.LegacyIdentityQueries;
 import com.odontorisas.common.text.SearchNormalizer;
 import com.odontorisas.persistence.entity.Cohort;
 import com.odontorisas.persistence.entity.OrthodonticRecord;
@@ -45,23 +48,46 @@ public class OrthodonticRecordService {
 
     private final OrthodonticRecordRepository records;
     private final UserRepository users;
-    private final RecordAgeCalculator ages;
     private final JsonMapper json;
     private final RecordUnlockEventRepository unlockEvents;
     private final Clock clock;
     private final CohortRepository cohorts;
+    private final LegacyCopyProperties legacyCopy;
+    private final LegacyIdentityQueries legacyIdentity;
 
     public OrthodonticRecordService(OrthodonticRecordRepository records, UserRepository users,
-                                    RecordAgeCalculator ages, JsonMapper json,
+                                    JsonMapper json,
                                     RecordUnlockEventRepository unlockEvents, Clock clock,
-                                    CohortRepository cohorts) {
+                                    CohortRepository cohorts, LegacyCopyProperties legacyCopy,
+                                    LegacyIdentityQueries legacyIdentity) {
         this.records = records;
         this.users = users;
-        this.ages = ages;
         this.json = json;
         this.unlockEvents = unlockEvents;
         this.clock = clock;
         this.cohorts = cohorts;
+        this.legacyCopy = legacyCopy;
+        this.legacyIdentity = legacyIdentity;
+    }
+
+    /**
+     * Datos antiguos del paciente para que el autor los copie a su libreta local. Solo el autor (ni un
+     * ADMIN ni la coordinación en historias ajenas), solo hasta la fecha límite de copia y mientras la
+     * historia no se haya migrado; en cualquier otro caso responde como una historia inexistente.
+     */
+    @Transactional(readOnly = true)
+    public LegacyIdentityView legacyIdentity(RecordActor actor, Long id) {
+        OrthodonticRecord record = records.findWithAuthorById(id).orElseThrow(RecordNotFoundException::new);
+        boolean author = record.getAuthor().getId().equals(actor.userId());
+        if (!author || actor.coordinator() || record.getIdentityMigratedAt() != null
+                || !legacyCopy.isOpenAt(clock.instant())) {
+            throw new RecordNotFoundException();
+        }
+        return legacyIdentity.find(id)
+            .map(r -> new LegacyIdentityView(r.patientName(), r.documentType(), r.documentNumber(), r.birthDate(),
+                r.birthPlace(), r.address(), r.phone(), r.patientSignatureName(), r.guardianName(),
+                r.guardianRelationship()))
+            .orElseThrow(RecordNotFoundException::new);
     }
 
     /**
@@ -232,7 +258,7 @@ public class OrthodonticRecordService {
 
     /** El autor (o un ADMIN) solicita el desbloqueo de los datos fijos, con un motivo. */
     @Transactional
-    public void requestUnlock(RecordActor actor, Long id, String reason) {
+    public void requestUnlock(RecordActor actor, Long id, UnlockReason reason) {
         OrthodonticRecord record = loadForUpdate(actor, id);
         if (record.getPatientLockedAt() == null) {
             throw new PatientNotLockedException();
@@ -241,7 +267,7 @@ public class OrthodonticRecordService {
             throw new UnlockAlreadyRequestedException();
         }
         record.setUnlockRequestedAt(clock.instant());
-        record.setUnlockRequestReason(reason.strip());
+        record.setUnlockRequestReason(reason.name());
         records.saveAndFlush(record);
     }
 
@@ -273,13 +299,11 @@ public class OrthodonticRecordService {
     }
 
     private static PatientIdentity identityOf(OrthodonticRecord r) {
-        return PatientIdentity.of(r.getPatientName(), r.getDocumentType(), r.getDocumentNumber(), r.getBirthDate(),
-            r.getPatientSex(), r.getBirthPlace());
+        return PatientIdentity.of(r.getPatientName(), r.getPatientSex(), r.getPatientAge());
     }
 
     private static PatientIdentity identityOf(RecordData d) {
-        return PatientIdentity.of(d.patientName(), d.documentType(), d.documentNumber(), d.birthDate(),
-            d.patientSex(), d.birthPlace());
+        return PatientIdentity.of(d.patientAlias(), d.patientSex(), d.patientAge());
     }
 
     @Transactional(readOnly = true)
@@ -294,6 +318,56 @@ public class OrthodonticRecordService {
      */
     @Transactional(readOnly = true)
     public Page<RecordSummaryView> list(RecordActor actor, String query, Long cohortId, Pageable pageable) {
+        Specification<OrthodonticRecord> spec = scope(actor, cohortId);
+        if (spec == null) {
+            return Page.empty(pageable);
+        }
+        String term = SearchNormalizer.normalize(query);
+        if (!term.isEmpty()) {
+            spec = spec.and(OrthodonticRecordSpecifications.searchTextContains(term));
+        }
+        return records.findAll(spec, pageable).map(OrthodonticRecordService::toSummary);
+    }
+
+    /**
+     * Listado de las historias con esos identificadores (la búsqueda local de la libreta), con el mismo
+     * alcance por rol y el mismo orden que el listado normal: las que no están al alcance del actor no
+     * aparecen. Lista vacía = página vacía.
+     */
+    @Transactional(readOnly = true)
+    public Page<RecordSummaryView> listByIds(RecordActor actor, List<Long> ids, Long cohortId, Pageable pageable) {
+        if (ids == null || ids.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        Specification<OrthodonticRecord> spec = scope(actor, cohortId);
+        if (spec == null) {
+            return Page.empty(pageable);
+        }
+        return records.findAll(spec.and(OrthodonticRecordSpecifications.idIn(ids)), pageable)
+            .map(OrthodonticRecordService::toSummary);
+    }
+
+    /**
+     * El autor marca su historia como respaldada: copió los datos antiguos a su libreta local, exportó un
+     * archivo cifrado y lo verificó. Idempotente (marcar de nuevo no cambia nada); solo el autor y solo
+     * mientras la ventana de copia siga abierta y la historia no esté migrada; si no, responde como una
+     * historia inexistente. La marca no lleva ningún dato del paciente.
+     */
+    @Transactional
+    public void confirmNotebookBackup(RecordActor actor, Long id) {
+        OrthodonticRecord record = records.findByIdForUpdate(id).orElseThrow(RecordNotFoundException::new);
+        boolean author = record.getAuthor().getId().equals(actor.userId());
+        if (!author || actor.coordinator() || record.getIdentityMigratedAt() != null || !legacyCopy.isOpenAt(clock.instant())) {
+            throw new RecordNotFoundException();
+        }
+        if (record.getNotebookBackupConfirmedAt() == null) {
+            record.setNotebookBackupConfirmedAt(clock.instant());
+            records.saveAndFlush(record);
+        }
+    }
+
+    /** Filtro de alcance del actor sobre el listado; {@code null} = nada a su alcance (p. ej. coordinación sin turmas). */
+    private Specification<OrthodonticRecord> scope(RecordActor actor, Long cohortId) {
         Specification<OrthodonticRecord> spec = Specification.unrestricted();
         if (actor.coordinator()) {
             Set<Long> scope = new HashSet<>(cohorts.findCoordinatorCohortIds(actor.userId()));
@@ -301,17 +375,14 @@ public class OrthodonticRecordService {
                 scope.retainAll(Set.of(cohortId));
             }
             if (scope.isEmpty()) {
-                return Page.empty(pageable);
+                return null;
             }
-            spec = spec.and(OrthodonticRecordSpecifications.authorInCohorts(scope));
-        } else if (!actor.admin()) {
-            spec = spec.and(OrthodonticRecordSpecifications.authoredBy(actor.userId()));
+            return spec.and(OrthodonticRecordSpecifications.authorInCohorts(scope));
         }
-        String term = SearchNormalizer.normalize(query);
-        if (!term.isEmpty()) {
-            spec = spec.and(OrthodonticRecordSpecifications.searchTextContains(term));
+        if (!actor.admin()) {
+            return spec.and(OrthodonticRecordSpecifications.authoredBy(actor.userId()));
         }
-        return records.findAll(spec, pageable).map(OrthodonticRecordService::toSummary);
+        return spec;
     }
 
     /** Historia al alcance del actor, o 404 (sin revelar si existe). */
@@ -342,40 +413,34 @@ public class OrthodonticRecordService {
     }
 
     private RecordData normalize(RecordData data) {
-        return RecordNormalizer.normalize(data, ages.ageYears(data.birthDate(), data.treatmentStartDate()));
+        return RecordNormalizer.normalize(data, data.patientAge());
     }
 
     private void apply(OrthodonticRecord record, RecordData data) {
         // El número va antes del texto de búsqueda, que lo incluye.
         record.setRecordNumber(data.recordNumber());
         record.setTreatingDentist(data.treatingDentist());
-        record.setPatientName(data.patientName());
-        record.setDocumentType(data.documentType());
-        record.setDocumentNumber(data.documentNumber());
+        record.setPatientName(data.patientAlias());
         record.setPatientSex(data.patientSex());
-        record.setBirthDate(data.birthDate());
-        record.setBirthPlace(data.birthPlace());
-        record.setAddress(data.address());
-        record.setPhone(data.phone());
+        record.setPatientAge(data.patientAge());
         record.setTreatmentStartDate(data.treatmentStartDate());
         record.setContent(json.writeValueAsString(data.content()));
-        record.setSearchText(searchText(data.patientName(), data.documentNumber(), record.getRecordNumber()));
+        record.setSearchText(searchText(data.patientAlias(), record.getRecordNumber()));
     }
 
-    static String searchText(String patientName, String documentNumber, String recordNumber) {
-        String raw = String.join(" ", patientName, documentNumber == null ? "" : documentNumber, recordNumber);
+    static String searchText(String patientAlias, String recordNumber) {
+        String raw = String.join(" ", patientAlias, recordNumber);
         return SearchNormalizer.normalize(raw);
     }
 
     private RecordView toView(OrthodonticRecord r) {
-        Integer age = ages.ageYears(r.getBirthDate(), r.getTreatmentStartDate());
+        Integer age = r.getPatientAge();
         RecordContent stored = json.readValue(r.getContent(), RecordContent.class);
         RecordContent content = RecordNormalizer.content(stored, r.getPatientSex(), age);
         Optional<RecordUnlockEvent> lastUnlock = r.getId() == null ? Optional.empty()
             : unlockEvents.findFirstByRecordIdAndActionOrderByCreatedAtDescIdDesc(r.getId(), UnlockAction.UNLOCKED);
         return new RecordView(r.getId(), r.getRecordNumber(), r.getAuthor().getId(), r.getAuthor().getFullName(),
-            r.getTreatingDentist(), r.getPatientName(), r.getDocumentType(), r.getDocumentNumber(), r.getPatientSex(),
-            r.getBirthDate(), r.getBirthPlace(), r.getAddress(), r.getPhone(), r.getTreatmentStartDate(), age,
+            r.getTreatingDentist(), r.getPatientName(), r.getPatientSex(), age, r.getTreatmentStartDate(),
             content, r.getLastStep(), FilledSteps.toList(r.getFilledSteps()), r.getPatientLockedAt(),
             lastUnlock.map(e -> e.getAdmin().getFullName()).orElse(null),
             lastUnlock.map(RecordUnlockEvent::getCreatedAt).orElse(null), r.getUnlockRequestedAt(),
@@ -384,8 +449,7 @@ public class OrthodonticRecordService {
 
     private static RecordSummaryView toSummary(OrthodonticRecord r) {
         Cohort cohort = r.getAuthor().getCohort();
-        return new RecordSummaryView(r.getId(), r.getRecordNumber(), r.getPatientName(), r.getDocumentType(),
-            r.getDocumentNumber(), r.getTreatingDentist(), r.getTreatmentStartDate(), r.getAuthor().getFullName(),
+        return new RecordSummaryView(r.getId(), r.getRecordNumber(), r.getPatientName(), r.getTreatingDentist(), r.getTreatmentStartDate(), r.getAuthor().getFullName(),
             cohort == null ? null : cohort.getName(), r.getUpdatedAt(), r.getPatientLockedAt() != null);
     }
 }

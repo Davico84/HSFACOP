@@ -1,9 +1,20 @@
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
+/**
+ * La preferencia guardada manda, no la clase de <html>: la vista de impresión quita `dark` mientras está
+ * abierta y lo restaura al salir, pero el botón del encabezado se monta antes de esa restauración (leer la
+ * clase aquí lo dejaba en claro y guardaba "light").
+ */
 function getInitialDark(): boolean {
   if (typeof document === "undefined") return false;
-  return document.documentElement.classList.contains("dark");
+  try {
+    const saved = localStorage.getItem("theme");
+    if (saved === "dark" || saved === "light") return saved === "dark";
+  } catch {
+    /* almacenamiento no disponible: se usa el sistema */
+  }
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? document.documentElement.classList.contains("dark");
 }
 
 /** Alterna el modo claro/oscuro (clase `dark` en <html>) y persiste la preferencia. */

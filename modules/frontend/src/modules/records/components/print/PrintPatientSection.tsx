@@ -1,38 +1,48 @@
 import type { RecordResponse } from "@/modules/core/services/generated/model";
-import { cooperationOptions, NOT_REPORTED, oralHygieneOptions, yesNoOptions } from "../../config/options";
-import { formatAge, formatDate, formatDocument } from "../../utils/recordDisplay";
+import { cooperationOptions, NOT_REPORTED, oralHygieneOptions, sexOptions, yesNoOptions } from "../../config/options";
+import { formatAge, formatDate } from "../../utils/recordDisplay";
 import { PrintChoice } from "./PrintChoice";
 import { PrintField } from "./PrintField";
 import { PrintLines } from "./PrintLines";
 import { PrintPage } from "./PrintPage";
 import { PrintTitle } from "./PrintTitle";
+import type { NotebookEntry } from "../../notebook/notebookSchema";
+import { formatBirth, formatNotebookDocument } from "../../notebook/notebookDisplay";
 
 interface PrintPatientSectionProps {
   record: RecordResponse;
+  /** Entrada de la libreta local (copia tomada antes de imprimir); sin ella las líneas quedan en blanco. */
+  notebook?: NotebookEntry | null;
 }
 
-/** Pág. 1: odontólogo tratante, datos del paciente y anamnesis (texto vacío → "No refiere"). */
-export function PrintPatientSection({ record }: PrintPatientSectionProps) {
+/**
+ * Pág. 1: odontólogo tratante, datos del paciente y anamnesis (texto vacío → "No refiere"). El sistema
+ * guarda alias, sexo y edad; el nombre y apellidos, el documento, el nacimiento, el domicilio y el celular
+ * quedan en blanco para escribirlos a mano, o los completa la libreta local del dispositivo si tiene
+ * entrada de esa historia (el navegador los une al imprimir; el servidor nunca los recibe).
+ */
+export function PrintPatientSection({ record, notebook = null }: PrintPatientSectionProps) {
   const a = record.content.anamnesis;
-  const birth = [record.birthPlace, formatDate(record.birthDate)].filter(Boolean).join(", ");
-  const document = formatDocument(record.documentType, record.documentNumber);
+  const sex = sexOptions.find((option) => option.value === record.patientSex)?.label ?? "";
   return (
     <PrintPage recordNumber={record.recordNumber} first>
       <div className="flex"><PrintField label="ODONTÓLOGO TRATANTE:" value={record.treatingDentist} /></div>
       <PrintTitle>ANAMNESIS</PrintTitle>
       <div className="flex gap-4">
-        <PrintField label="PACIENTE" value={record.patientName} grow={3} lined />
-        <PrintField label="Edad:" value={formatAge(record.ageYears)} lined center />
+        {/* Sin nombre en la libreta de este dispositivo sale el alias (la vista previa avisa de que faltan datos). */}
+        <PrintField label="Nombre y apellidos:" value={notebook?.fullName || record.patientAlias} grow={2} lined />
+        <PrintField label="Edad:" value={formatAge(record.patientAge)} lined center />
+        <PrintField label="Sexo:" value={sex} lined center />
       </div>
-      <div className="flex"><PrintField label="Domicilio" value={record.address} lined /></div>
       <div className="flex gap-4">
         <PrintField label="Fecha de inicio de tratamiento:" value={formatDate(record.treatmentStartDate)} grow={2} lined center />
-        <PrintField label="Documento" value={document} lined center />
+        <PrintField label="Documento" value={notebook ? formatNotebookDocument(notebook.documentType, notebook.documentNumber) : ""} lined center />
       </div>
       <div className="flex gap-4">
-        <PrintField label="Lugar y fecha de nacimiento del paciente" value={birth} grow={2} lined center />
-        <PrintField label="Celular" value={record.phone} lined center />
+        <PrintField label="Lugar y fecha de nacimiento del paciente" value={notebook ? formatBirth(notebook) : ""} grow={2} lined center />
+        <PrintField label="Celular" value={notebook?.phone ?? ""} lined center />
       </div>
+      <div className="flex"><PrintField label="Domicilio" value={notebook?.address ?? ""} lined /></div>
       <PrintLines label="Queja principal - ¿Por qué buscó tratamiento?" value={a.chiefComplaint} emptyText={NOT_REPORTED} lines={2} />
       <PrintLines label="Gustos personales (color, canal preferido en YouTube, juguetes)." value={a.personalPreferences} emptyText={NOT_REPORTED} lines={1} />
       <PrintChoice label="Índice de colaboración/cooperación:" options={cooperationOptions} value={a.cooperation} />

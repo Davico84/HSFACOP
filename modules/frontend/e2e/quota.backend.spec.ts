@@ -71,7 +71,7 @@ test("con el cupo lleno el tratante no puede crear más historias", async ({ bro
   await expect(tratante.getByText("0 de 1 historias")).toBeVisible();
   await tratante.getByRole("link", { name: /Nueva historia/ }).first().click();
   await tratante.getByRole("textbox", { name: "Nro. de historia" }).fill(uniqueRecordNumber());
-  await tratante.getByRole("textbox", { name: "Paciente" }).fill("Paciente de cupo");
+  await tratante.getByRole("textbox", { name: "Alias del paciente" }).fill("Cupo");
   await tratante.getByRole("button", { name: /Crear historia/ }).click();
   await expect(tratante).toHaveURL(/\/historias\/\d+\?paso=2$/);
 
@@ -89,7 +89,7 @@ test("con el cupo lleno el tratante no puede crear más historias", async ({ bro
   // La historia existente se sigue pudiendo abrir
   await tratante.goto("/historias");
   await tratante.getByRole("link", { name: /Editar historia/ }).first().click();
-  await expect(tratante.getByRole("textbox", { name: "Paciente" })).toHaveValue("Paciente de cupo");
+  await expect(tratante.getByRole("textbox", { name: "Alias del paciente" })).toHaveValue("Cupo");
 
   // ADMIN: la fila refleja el uso
   row = await userRow(admin, fullName);

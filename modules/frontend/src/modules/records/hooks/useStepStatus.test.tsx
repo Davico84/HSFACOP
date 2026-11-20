@@ -28,7 +28,7 @@ describe("useStepStatus", () => {
 
   it("con datos en los pasos 1, 2 y 4: esos 'con datos', los demás vacíos, 3 de 8", () => {
     const { hook } = setup((v) => {
-      v.patientName = "Ana";
+      v.patientAlias = "Ana";
       v.content.facial.facialType = "MESOFACIAL";
       v.content.occlusal.overjetMm = 3;
     });
@@ -59,9 +59,9 @@ describe("useStepStatus", () => {
   it("errorPaths aplana los errores anidados", () => {
     expect(
       errorPaths({
-        patientName: { type: "required", message: "Obligatorio" },
+        patientAlias: { type: "required", message: "Obligatorio" },
         content: { models: { nance: { upperWidths: { tooth11: { type: "min", message: "Mínimo 4 mm." } } } } },
       }),
-    ).toEqual(["patientName", "content.models.nance.upperWidths.tooth11"]);
+    ).toEqual(["patientAlias", "content.models.nance.upperWidths.tooth11"]);
   });
 });

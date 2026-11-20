@@ -98,7 +98,7 @@ describe("Sumas sugeridas de Wolford", () => {
 describe("Schema de Tanaka-Johnston y Wolford (paridad con el backend)", () => {
   const errorsFor = (tanaka: object, wolford: object) => {
     const content = emptyContent();
-    const values = { recordNumber: "AEO-0001", patientName: "Ana", content: { ...content, models: { ...content.models, tanaka, wolford } } };
+    const values = { recordNumber: "AEO-0001", patientAlias: "Ana", content: { ...content, models: { ...content.models, tanaka, wolford } } };
     const result = recordFormSchema.safeParse(values);
     return result.success ? [] : result.error.issues.map((i) => i.path.join("."));
   };

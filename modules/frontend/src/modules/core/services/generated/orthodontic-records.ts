@@ -7,6 +7,7 @@
  */
 import type {
   CreateRecordRequest,
+  LegacyIdentityResponse,
   ListRecordsParams,
   PageResponseRecordSummaryResponse,
   PrintRecordRequest,
@@ -114,7 +115,19 @@ export const printRecord = (
       );
     }
   /**
- * @summary Buscar historias por texto (el texto va en el cuerpo, no en la URL)
+ * Sin datos del paciente. Idempotente. Solo el autor, hasta la fecha límite de copia y mientras la historia no se migre; si no, responde 404.
+ * @summary El autor marca su historia como respaldada en su libreta local
+ */
+export const confirmNotebookBackup = (
+    id: number,
+ ) => {
+      return customInstance<void>(
+      {url: `/api/orthodontic-records/${id}/notebook-backup`, method: 'POST'
+    },
+      );
+    }
+  /**
+ * @summary Buscar historias por texto o por identificadores (van en el cuerpo, no en la URL)
  */
 export const searchRecords = (
     searchRecordsRequest: SearchRecordsRequest,
@@ -125,6 +138,18 @@ export const searchRecords = (
       headers: {'Content-Type': 'application/json', },
       data: searchRecordsRequest,
         params
+    },
+      );
+    }
+  /**
+ * Para copiarlos a la libreta local. Responde 404 a cualquiera que no sea el autor, tras la fecha límite de copia o con la historia ya migrada. Nunca se cachea (Cache-Control: no-store) ni se registra.
+ * @summary Datos antiguos del paciente, solo para su autor y hasta la fecha límite de copia
+ */
+export const getLegacyIdentity = (
+    id: number,
+ ) => {
+      return customInstance<LegacyIdentityResponse>(
+      {url: `/api/orthodontic-records/${id}/legacy-identity`, method: 'GET'
     },
       );
     }
@@ -157,6 +182,8 @@ export type CreateRecordResult = NonNullable<Awaited<ReturnType<typeof createRec
 export type RequestPatientUnlockResult = NonNullable<Awaited<ReturnType<typeof requestPatientUnlock>>>
 export type DiscardPatientUnlockRequestResult = NonNullable<Awaited<ReturnType<typeof discardPatientUnlockRequest>>>
 export type PrintRecordResult = NonNullable<Awaited<ReturnType<typeof printRecord>>>
+export type ConfirmNotebookBackupResult = NonNullable<Awaited<ReturnType<typeof confirmNotebookBackup>>>
 export type SearchRecordsResult = NonNullable<Awaited<ReturnType<typeof searchRecords>>>
+export type GetLegacyIdentityResult = NonNullable<Awaited<ReturnType<typeof getLegacyIdentity>>>
 export type GetRecordQuotaResult = NonNullable<Awaited<ReturnType<typeof getRecordQuota>>>
 export type UnlockPatientResult = NonNullable<Awaited<ReturnType<typeof unlockPatient>>>

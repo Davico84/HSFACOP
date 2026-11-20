@@ -24,8 +24,7 @@ function userDashboard(overrides: Partial<UserDashboardResponse> = {}): UserDash
     quota: { limit: 5, used: 3, reached: false },
     completeness: { complete: 1, inProgress: 1, notComputed: 1, averageFilledSteps: 5.5 },
     missing: {
-      withoutDocument: 2,
-      withoutBirthDate: 0,
+      withoutAge: 2,
       withoutTreatmentStart: 1,
       emptySteps: [
         { step: 5, count: 2 },
@@ -119,7 +118,7 @@ describe("dashboard — Métricas del tratante en Inicio", () => {
     renderWithProviders(<DashboardFeature />);
 
     const card = (await screen.findByRole("heading", { name: "Datos faltantes" })).closest("div")!;
-    expect(within(card).getByText("Sin documento").nextSibling).toHaveTextContent("2");
+    expect(within(card).getByText("Sin edad").nextSibling).toHaveTextContent("2");
     expect(within(card).getByText("Sin fecha de inicio de tratamiento").nextSibling).toHaveTextContent("1");
     const steps = within(card).getAllByRole("listitem").filter((li) => /^\d\./.test(li.textContent ?? ""));
     expect(steps.map((li) => li.textContent?.slice(0, 2))).toEqual(["5.", "6.", "7.", "1.", "2.", "3.", "4."]);
@@ -153,7 +152,7 @@ describe("dashboard — Métricas del tratante en Inicio", () => {
       userDashboard({
         records: { total: 0, createdThisMonth: 0 },
         completeness: { complete: 0, inProgress: 0, notComputed: 0, averageFilledSteps: null },
-        missing: { withoutDocument: 0, withoutBirthDate: 0, withoutTreatmentStart: 0, emptySteps: EMPTY_STEPS },
+        missing: { withoutAge: 0, withoutTreatmentStart: 0, emptySteps: EMPTY_STEPS },
         resume: [],
       }),
     );
@@ -245,8 +244,8 @@ describe("dashboard — Métricas globales del ADMIN en Inicio", () => {
         unlockRequests: {
           total: 14,
           items: [
-            { recordId: 21, recordNumber: "AEO-0004", patientName: "Rosa Díaz", authorName: "Dra. Torres", requestedAt: "2026-10-01T15:00:00Z", reason: "Error en el DNI" },
-            { recordId: 22, recordNumber: "AEO-0002", patientName: "Luis Rojas", authorName: "Dr. Medina", requestedAt: "2026-10-03T15:00:00Z", reason: "Nombre mal escrito" },
+            { recordId: 21, recordNumber: "AEO-0004", patientName: "Rosa Díaz", authorName: "Dra. Torres", requestedAt: "2026-10-01T15:00:00Z", reason: "ALIAS" },
+            { recordId: 22, recordNumber: "AEO-0002", patientName: "Luis Rojas", authorName: "Dr. Medina", requestedAt: "2026-10-03T15:00:00Z", reason: "SEXO" },
           ],
         },
       }),
@@ -254,7 +253,7 @@ describe("dashboard — Métricas globales del ADMIN en Inicio", () => {
     renderWithProviders(<DashboardFeature />);
 
     expect(await screen.findByText("14 solicitudes")).toBeInTheDocument();
-    expect(screen.getByText(/Dra\. Torres · 01\/10\/2026 · «Error en el DNI»/)).toBeInTheDocument();
+    expect(screen.getByText(/Dra\. Torres · 01\/10\/2026 · «El alias»/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Revisar la solicitud de la historia AEO-0004" })).toHaveAttribute(
       "href",
       "/historias/21?paso=1",

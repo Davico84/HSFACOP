@@ -1,6 +1,5 @@
 package com.odontorisas.service.records;
 
-import com.odontorisas.common.DocumentType;
 import com.odontorisas.common.PatientSex;
 import com.odontorisas.service.records.content.RecordContent;
 
@@ -15,16 +14,10 @@ public record RecordView(
     Long authorId,
     String authorName,
     String treatingDentist,
-    String patientName,
-    DocumentType documentType,
-    String documentNumber,
+    String patientAlias,
     PatientSex patientSex,
-    LocalDate birthDate,
-    String birthPlace,
-    String address,
-    String phone,
+    Integer patientAge,
     LocalDate treatmentStartDate,
-    Integer ageYears,
     RecordContent content,
     Integer lastStep,
     List<Integer> filledSteps,

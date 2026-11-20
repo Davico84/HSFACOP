@@ -5,9 +5,10 @@
  * Tu portal al conocimiento y al éxito profesional.
  * OpenAPI spec version: v1
  */
+import type { RecordUnlockRequestReason } from './recordUnlockRequestReason';
 
 export interface RecordUnlockRequest {
   requestedAt: string;
-  /** Motivo del tratante */
-  reason: string;
+  /** Motivo del catálogo cerrado */
+  reason: RecordUnlockRequestReason;
 }

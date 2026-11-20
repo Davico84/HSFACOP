@@ -6,6 +6,7 @@ import type {
 } from "@/modules/core/services/generated/model";
 import type { RecordFormValues } from "../schemas/record";
 import { completeValues } from "../schemas/recordDefaults";
+import { normalizeAlias } from "./alias";
 
 /** Contenido vacío (todas las secciones presentes), como lo devuelve el backend para una historia nueva. */
 export function emptyContent(): RecordContent {
@@ -23,7 +24,7 @@ export function emptyContent(): RecordContent {
 
 /** Valores iniciales de una historia nueva; el tratante se propone con el nombre del usuario. */
 export function emptyRecordValues(treatingDentist?: string): RecordFormValues {
-  return completeValues({ recordNumber: "", treatingDentist: treatingDentist ?? "", patientName: "", content: emptyContent() });
+  return completeValues({ recordNumber: "", treatingDentist: treatingDentist ?? "", patientAlias: "", content: emptyContent() });
 }
 
 /**
@@ -36,14 +37,11 @@ export function toFormValues(record: RecordResponse): RecordFormValues {
   const values = {
     recordNumber: clean.recordNumber,
     treatingDentist: clean.treatingDentist,
-    patientName: clean.patientName,
-    documentType: clean.documentType,
-    documentNumber: clean.documentNumber,
+    patientAlias: clean.patientAlias,
     patientSex: clean.patientSex,
-    birthDate: clean.birthDate,
-    birthPlace: clean.birthPlace,
-    address: clean.address,
-    phone: clean.phone,
+    patientAge: clean.patientAge,
+    // Un alias ya guardado no pide confirmación de nuevo; solo el que se escribe.
+    aliasConfirmed: true,
     treatmentStartDate: clean.treatmentStartDate,
     content: clean.content,
   };
@@ -55,7 +53,7 @@ export function toFormValues(record: RecordResponse): RecordFormValues {
  * pasos que tienen datos.
  */
 export function toCreateRequest(values: RecordFormValues, filledSteps?: number[]): CreateRecordRequest {
-  return { ...(withoutEmpty(values) as CreateRecordRequest), ...(filledSteps ? { filledSteps } : {}) };
+  return { ...(requestBody(values) as CreateRecordRequest), ...(filledSteps ? { filledSteps } : {}) };
 }
 
 /** Valores del formulario + versión cargada → cuerpo del PUT. */
@@ -66,7 +64,7 @@ export function toUpdateRequest(
   filledSteps?: number[],
 ): UpdateRecordRequest {
   return {
-    ...(withoutEmpty(values) as CreateRecordRequest),
+    ...(requestBody(values) as CreateRecordRequest),
     version,
     ...(lastStep ? { lastStep } : {}),
     ...(filledSteps ? { filledSteps } : {}),
@@ -82,6 +80,16 @@ function withoutNulls(value: unknown): unknown {
     );
   }
   return value;
+}
+
+/**
+ * Cuerpo de la petición: sin vacíos, con el alias normalizado y sin `aliasConfirmed`, que es solo
+ * del formulario (el servidor rechazaría o ignoraría un campo que no conoce).
+ */
+function requestBody(values: RecordFormValues): unknown {
+  const rest = { ...values };
+  delete rest.aliasConfirmed;
+  return withoutEmpty({ ...rest, patientAlias: rest.patientAlias ? normalizeAlias(rest.patientAlias) : rest.patientAlias });
 }
 
 /** Copia profunda sin `null`, `undefined` ni cadenas vacías. */

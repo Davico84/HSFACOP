@@ -13,6 +13,7 @@ import { useWindowReturn } from "@/modules/core/hooks/useWindowReturn";
 import { applyServerFieldErrors, getFieldErrors, getUserFriendlyError, problemType } from "@/modules/core/utils/apiError";
 import { useSessionStore } from "@/store/useSessionStore";
 import { recordPath } from "@/routes/paths";
+import { flushPending } from "../notebook/notebookPending";
 import { recordFormSchema, type RecordFormValues } from "../schemas/record";
 import { parseStep, RECORD_STEPS, stepOfField } from "../config/recordSteps";
 import { emptyRecordValues, toFormValues } from "../utils/recordForm";
@@ -73,6 +74,7 @@ export function RecordForm({ record, onReload, onRemoteUpdate, onNotFound, remot
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const fullName = useSessionStore((s) => s.user?.fullName);
+  const accountId = useSessionStore((s) => s.user?.id) ?? null;
   const stepParam = searchParams.get("paso");
   // Sin `?paso=`, la historia se abre en su último paso trabajado.
   const step = record ? parseStep(stepParam ?? String(record.lastStep ?? 1)) : 1;
@@ -292,6 +294,8 @@ export function RecordForm({ record, onReload, onRemoteUpdate, onNotFound, remot
         { values: form.getValues() },
         {
           onSuccess: (saved) => {
+            // Lo escrito en la libreta antes de crear la historia pasa ya a este dispositivo (no al servidor).
+            if (accountId !== null) void flushPending(accountId, saved.id, saved.recordNumber);
             form.reset(toFormValues(saved));
             allowNextNavigation();
             // Crear lleva al paso 2 en un formulario nuevo (primer render): sube aquí.
@@ -354,7 +358,7 @@ export function RecordForm({ record, onReload, onRemoteUpdate, onNotFound, remot
               {record ? `Historia ${record.recordNumber}` : "Nueva historia clínica"}
             </h1>
             <p className="text-muted-foreground">
-              {record ? record.patientName : "Completa al menos el nombre del paciente para crearla."}
+              {record ? record.patientAlias : "Completa al menos el alias del paciente para crearla."}
             </p>
             {record ? (
               <RecordSaveStatus status={autosave.status} dirty={dirty} savedOnce={savedOnce} onRetry={autosave.retry} />
@@ -389,7 +393,8 @@ export function RecordForm({ record, onReload, onRemoteUpdate, onNotFound, remot
             <h2 ref={stepHeading} tabIndex={-1} className="text-xl font-semibold outline-none">
               {current.number}. {current.title} <span className="text-sm font-normal text-muted-foreground">({current.pages})</span>
             </h2>
-            <RecordStepContent step={step} patientLocked={Boolean(record?.patientLockedAt)} />
+            <RecordStepContent step={step} patientLocked={Boolean(record?.patientLockedAt)}
+              record={record ? { id: record.id, recordNumber: record.recordNumber } : null} />
 
             {/* En celular cabe en una fila: "Anterior" y "Siguiente" muestran solo el icono (el texto queda
                 para el lector de pantalla). */}

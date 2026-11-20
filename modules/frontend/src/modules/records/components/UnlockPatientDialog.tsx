@@ -24,7 +24,7 @@ export function UnlockPatientDialog({ open, recordNumber, onConfirm, onCancel }:
         <AlertDialogHeader>
           <AlertDialogTitle>¿Desbloquear los datos del paciente de la historia {recordNumber}?</AlertDialogTitle>
           <AlertDialogDescription>
-            El tratante podrá corregir el nombre, el documento, la fecha y el lugar de nacimiento y el sexo. Se
+            El tratante podrá corregir el alias, el sexo y la edad. Se
             vuelven a fijar en la próxima impresión. Queda registrado quién desbloqueó y cuándo.
           </AlertDialogDescription>
         </AlertDialogHeader>

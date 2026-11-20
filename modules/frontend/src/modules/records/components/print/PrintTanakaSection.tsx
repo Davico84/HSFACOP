@@ -28,9 +28,9 @@ export function PrintTanakaSection({ record }: PrintTanakaSectionProps) {
   return (
     <PrintPage recordNumber={record.recordNumber} title="Fórmula de Tanaka-Johnston">
       <div className="mt-[4pt] flex flex-col">
-        <PrintField label="Nombre" value={record.patientName} lined />
+        <PrintField label="Nombre y apellidos" value={record.patientAlias} lined />
         <div className="flex">
-          <PrintField label="Edad" value={formatAge(record.ageYears)} grow={0} lined center className="w-[50%]" />
+          <PrintField label="Edad" value={formatAge(record.patientAge)} grow={0} lined center className="w-[50%]" />
         </div>
       </div>
       <div className="mt-[12pt] flex flex-col tabular-nums">

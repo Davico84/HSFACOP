@@ -11,7 +11,7 @@ const SEARCHED = "quispe-e2e";
 const row = {
   id: 10,
   recordNumber: "AEO-0001",
-  patientName: "Ana Quispe",
+  patientAlias: "Ana",
   treatingDentist: "Dra. María Torres",
   authorName: "Dra. María Torres",
   updatedAt: "2026-10-01T10:00:00Z",

@@ -63,7 +63,7 @@ describe("orthodontic-records — Crear una historia", () => {
 
     expect(screen.getByLabelText("Odontólogo tratante")).toHaveValue("Dra. María Torres");
     await userEvent.type(screen.getByRole("textbox", { name: "Nro. de historia" }), "AEO-0015");
-    await userEvent.type(screen.getByRole("textbox", { name: "Paciente" }), "Ana Quispe");
+    await userEvent.type(screen.getByRole("textbox", { name: "Alias del paciente" }), "Ana");
     await userEvent.click(screen.getByRole("button", { name: /Crear historia/ }));
 
     await stepHeading(/Análisis facial/);
@@ -72,13 +72,13 @@ describe("orthodontic-records — Crear una historia", () => {
     expect(router.state.location.search).toBe("?paso=2");
   });
 
-  it("sin nombre del paciente no se crea y el error aparece junto al campo", async () => {
+  it("sin alias del paciente no se crea y el error aparece junto al campo", async () => {
     const { calls } = mockRecord();
     renderRecordRoutes("/historias/nueva");
 
     await userEvent.click(screen.getByRole("button", { name: /Crear historia/ }));
 
-    expect(await screen.findByText("Indica el nombre del paciente.")).toBeInTheDocument();
+    expect(await screen.findByText("Indica el alias del paciente.")).toBeInTheDocument();
     expect(calls.post).toBe(0);
   });
 });
@@ -87,7 +87,7 @@ describe("orthodontic-records — Número de historia", () => {
   it("sin número no se crea y el error aparece junto al campo", async () => {
     const { calls } = mockRecord();
     renderRecordRoutes("/historias/nueva");
-    await userEvent.type(screen.getByRole("textbox", { name: "Paciente" }), "Ana Quispe");
+    await userEvent.type(screen.getByRole("textbox", { name: "Alias del paciente" }), "Ana");
 
     await userEvent.click(screen.getByRole("button", { name: /Crear historia/ }));
 
@@ -105,7 +105,7 @@ describe("orthodontic-records — Número de historia", () => {
     );
     const { router } = renderRecordRoutes("/historias/nueva");
     await userEvent.type(screen.getByRole("textbox", { name: "Nro. de historia" }), "AEO-0015");
-    await userEvent.type(screen.getByRole("textbox", { name: "Paciente" }), "Ana Quispe");
+    await userEvent.type(screen.getByRole("textbox", { name: "Alias del paciente" }), "Ana");
 
     await userEvent.click(screen.getByRole("button", { name: /Crear historia/ }));
 
@@ -161,7 +161,7 @@ describe("orthodontic-records — Anamnesis y cefalometría", () => {
   });
 
   it("con una paciente menor de 8 años, 'Sí' en la 1ª menstruación está deshabilitado y se explica", async () => {
-    mockRecord({ patientSex: "FEMALE", birthDate: `${new Date().getFullYear() - 5}-01-01` });
+    mockRecord({ patientSex: "FEMALE", patientAge: 5 });
     renderRecordRoutes("/historias/10?paso=1");
     await stepHeading(/Paciente y anamnesis/);
 
@@ -213,7 +213,7 @@ describe("orthodontic-records — Cupo de historias al crear", () => {
     const { router } = renderRecordRoutes("/historias/nueva");
 
     await userEvent.type(screen.getByRole("textbox", { name: "Nro. de historia" }), "AEO-0015");
-    await userEvent.type(screen.getByRole("textbox", { name: "Paciente" }), "Ana Quispe");
+    await userEvent.type(screen.getByRole("textbox", { name: "Alias del paciente" }), "Ana");
     await userEvent.click(screen.getByRole("button", { name: /Crear historia/ }));
 
     await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Alcanzaste el máximo de 5 historias clínicas. Comunícate con el administrador para solicitar más."));
@@ -252,11 +252,11 @@ describe("orthodontic-records — Formulario por pasos con guardado de borrador"
     renderRecordRoutes("/historias/10?paso=1");
     await stepHeading(/Paciente y anamnesis/);
 
-    await userEvent.type(screen.getByLabelText("Domicilio"), "Av. Ejército 512");
+    await userEvent.type(screen.getByLabelText("Odontólogo tratante"), "Av. Ejército 512");
     await userEvent.click(screen.getByRole("button", { name: /Diagnóstico y planes/ }));
 
     await stepHeading(/Diagnóstico y planes/);
-    expect(calls.put[0].address).toBe("Av. Ejército 512");
+    expect(calls.put[0].treatingDentist).toBe("Av. Ejército 512");
   });
 
   it("cambiar de paso lleva la vista al inicio y el foco al título; abrir no la mueve", async () => {
@@ -285,13 +285,32 @@ describe("orthodontic-records — Formulario por pasos con guardado de borrador"
     renderRecordRoutes("/historias/10?paso=1");
     await stepHeading(/Paciente y anamnesis/);
 
-    await userEvent.click(screen.getByRole("radio", { name: "DNI" }));
-    await userEvent.type(screen.getByLabelText("Número"), "7412589");
+    await userEvent.type(screen.getByRole("textbox", { name: "Alias del paciente" }), " Lucía Quispe");
     await userEvent.click(screen.getByRole("button", { name: /Siguiente/ }));
 
-    expect(await screen.findByText("El DNI debe tener 8 dígitos.")).toBeInTheDocument();
+    expect(await screen.findByText("Usa una o dos palabras, sin apellidos.")).toBeInTheDocument();
     expect(scrollTo).not.toHaveBeenCalled();
     scrollTo.mockRestore();
+  });
+
+  it("un alias de dos palabras avisa que no debe ser el nombre real y pide confirmar antes de guardar", async () => {
+    const { calls } = mockRecord();
+    renderRecordRoutes("/historias/10?paso=1");
+    await stepHeading(/Paciente y anamnesis/);
+    // Un alias ya guardado no pide confirmación.
+    expect(screen.queryByRole("checkbox", { name: /no es el nombre real/ })).not.toBeInTheDocument();
+
+    await userEvent.type(screen.getByRole("textbox", { name: "Alias del paciente" }), " Q");
+    expect(await screen.findByRole("alert")).toHaveTextContent(/puede ser el nombre real/);
+    await userEvent.click(screen.getByRole("button", { name: /Siguiente/ }));
+    expect(await screen.findByText("Confirma que el alias no es el nombre real del paciente.")).toBeInTheDocument();
+    expect(calls.put).toHaveLength(0);
+
+    await userEvent.click(screen.getByRole("checkbox", { name: /no es el nombre real/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Siguiente/ }));
+    await waitFor(() => expect(calls.put).toHaveLength(1));
+    expect(calls.put[0].patientAlias).toBe("Ana Q");
+    expect("aliasConfirmed" in calls.put[0]).toBe(false);
   });
 
   it("la separación interlabial aparece solo con 'Presenta' en el sellado labial", async () => {
@@ -313,11 +332,10 @@ describe("orthodontic-records — Formulario por pasos con guardado de borrador"
     renderRecordRoutes("/historias/10?paso=1");
     await stepHeading(/Paciente y anamnesis/);
 
-    await userEvent.click(screen.getByRole("radio", { name: "DNI" }));
-    await userEvent.type(screen.getByLabelText("Número"), "7412589");
+    await userEvent.type(screen.getByRole("textbox", { name: "Alias del paciente" }), " Lucía Quispe");
     await userEvent.click(screen.getByRole("button", { name: /Siguiente/ }));
 
-    expect(await screen.findByText("El DNI debe tener 8 dígitos.")).toBeInTheDocument();
+    expect(await screen.findByText("Usa una o dos palabras, sin apellidos.")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: /Paciente y anamnesis/ })).toBeInTheDocument();
     expect(calls.put).toHaveLength(0);
   });
@@ -328,7 +346,7 @@ describe("orthodontic-records — Formulario por pasos con guardado de borrador"
       http.put("*/api/orthodontic-records/:id", () =>
         HttpResponse.json(
           { type: "/errors/validation-error", detail: "Uno o más campos son inválidos.",
-            errors: [{ field: "address", message: "Domicilio no válido según el servidor." }] },
+            errors: [{ field: "treatingDentist", message: "Domicilio no válido según el servidor." }] },
           { status: 400 },
         ),
       ),
@@ -336,7 +354,7 @@ describe("orthodontic-records — Formulario por pasos con guardado de borrador"
     renderRecordRoutes("/historias/10?paso=1");
     await stepHeading(/Paciente y anamnesis/);
 
-    await userEvent.type(screen.getByLabelText("Domicilio"), "x");
+    await userEvent.type(screen.getByLabelText("Odontólogo tratante"), "x");
     await userEvent.click(screen.getByRole("button", { name: /Siguiente/ }));
 
     expect(await screen.findByText("Domicilio no válido según el servidor.")).toBeInTheDocument();
@@ -349,12 +367,12 @@ describe("orthodontic-records — Formulario por pasos con guardado de borrador"
     renderRecordRoutes("/historias/10?paso=1");
     await stepHeading(/Paciente y anamnesis/);
 
-    await userEvent.type(screen.getByLabelText("Domicilio"), "Av. Ejército 512");
+    await userEvent.type(screen.getByLabelText("Odontólogo tratante"), "Av. Ejército 512");
     await userEvent.click(screen.getByRole("button", { name: /Siguiente/ }));
 
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
     expect(toast.error.mock.calls[0][1]).toMatchObject({ action: { label: "Reintentar" } });
-    expect(screen.getByLabelText("Domicilio")).toHaveValue("Av. Ejército 512");
+    expect(screen.getByLabelText("Odontólogo tratante")).toHaveValue("Av. Ejército 512");
     expect(screen.getByRole("heading", { level: 2, name: /Paciente y anamnesis/ })).toBeInTheDocument();
   });
 
@@ -363,7 +381,7 @@ describe("orthodontic-records — Formulario por pasos con guardado de borrador"
     const { router } = renderRecordRoutes("/historias/10?paso=1");
     await stepHeading(/Paciente y anamnesis/);
 
-    await userEvent.type(screen.getByLabelText("Domicilio"), "x");
+    await userEvent.type(screen.getByLabelText("Odontólogo tratante"), "x");
     await act(() => router.navigate("/fuera"));
 
     expect(await screen.findByRole("alertdialog", { name: "¿Salir sin guardar?" })).toBeInTheDocument();
@@ -374,7 +392,7 @@ describe("orthodontic-records — Formulario por pasos con guardado de borrador"
 
 describe("orthodontic-records — Abrir un paso no cuenta como cambio", () => {
   it.each([1, 2, 3, 4, 5, 6, 7, 8])("paso %i recién abierto: sin cambios y con 'Vista previa' disponible", async (paso) => {
-    mockRecord({ patientSex: "FEMALE", birthDate: "1990-01-01" });
+    mockRecord({ patientSex: "FEMALE", patientAge: 36 });
     renderRecordRoutes(`/historias/10?paso=${paso}`);
     await screen.findByRole("heading", { level: 2 });
 
@@ -389,7 +407,7 @@ describe("orthodontic-records — Vista previa con cambios sin guardar", () => {
     renderRecordRoutes("/historias/10?paso=1");
     await stepHeading(/Paciente y anamnesis/);
 
-    await userEvent.type(screen.getByRole("textbox", { name: "Paciente" }), " B");
+    await userEvent.type(screen.getByRole("textbox", { name: "Alias del paciente" }), " B");
     const button = screen.getByRole("button", { name: /Vista previa/ });
     expect(button).toBeDisabled();
     expect(button).toHaveAccessibleDescription("Guarda los cambios para ver la vista previa e imprimir");
@@ -406,13 +424,13 @@ describe("orthodontic-records — Edición concurrente y acceso", () => {
     await stepHeading(/Paciente y anamnesis/);
     backend.bump(); // otra sesión guardó
 
-    await userEvent.type(screen.getByLabelText("Domicilio"), "x");
+    await userEvent.type(screen.getByLabelText("Odontólogo tratante"), "x");
     await userEvent.click(screen.getByRole("button", { name: /Siguiente/ }));
 
     expect(await screen.findByText(/La historia cambió desde que la abriste/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Recargar historia" }));
     await waitFor(() => expect(screen.queryByText(/La historia cambió desde que la abriste/)).not.toBeInTheDocument());
-    expect(screen.getByLabelText("Domicilio")).toHaveValue("");
+    expect(screen.getByLabelText("Odontólogo tratante")).toHaveValue("");
   });
 
   it("una historia ajena o inexistente muestra 'Historia no encontrada'", async () => {
@@ -502,13 +520,26 @@ describe("orthodontic-records — Secciones clínicas de la fase 1", () => {
   });
 
   it("firmas: con paciente menor de edad se pide el apoderado", async () => {
-    mockRecord({ birthDate: "2012-05-20", treatmentStartDate: "2026-05-19", ageYears: 13 });
+    mockRecord({ treatmentStartDate: "2026-05-19", patientAge: 13 });
     renderRecordRoutes("/historias/10?paso=8");
     await stepHeading(/Firmas/);
 
-    expect(screen.getByLabelText("Nombre del apoderado")).toBeInTheDocument();
-    expect(screen.getByLabelText("Parentesco")).toBeInTheDocument();
+    // El servidor ya no guarda el nombre de quien firma: se indica quién firma y el nombre vive solo en la
+    // libreta del dispositivo.
+    expect(screen.getByText(/menor de edad: firma el apoderado/)).toBeInTheDocument();
+    const notebook = screen.getByRole("region", { name: "Solo en este dispositivo" });
+    expect(within(notebook).getByLabelText("Nombre del apoderado")).toBeInTheDocument();
+    expect(within(notebook).getByLabelText("Parentesco")).toBeInTheDocument();
     expect(screen.queryByLabelText("Nombre del paciente")).not.toBeInTheDocument();
+  });
+
+  it("firmas: con una paciente adulta firma ella, y sin edad se trata como adulta", async () => {
+    mockRecord({ patientAge: 18 });
+    renderRecordRoutes("/historias/10?paso=8");
+    await stepHeading(/Firmas/);
+
+    expect(screen.getByText(/Firma el paciente\./)).toBeInTheDocument();
+    expect(screen.queryByText(/firma el apoderado/)).not.toBeInTheDocument();
   });
 });
 

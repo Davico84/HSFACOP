@@ -5,12 +5,20 @@
  * Tu portal al conocimiento y al éxito profesional.
  * OpenAPI spec version: v1
  */
+import type { SearchRecordsRequestQ } from './searchRecordsRequestQ';
+import type { SearchRecordsRequestRecordIds } from './searchRecordsRequestRecordIds';
 
 export interface SearchRecordsRequest {
   /**
-   * Busca en paciente, documento y número (sin distinguir tildes ni mayúsculas); vacío lista sin filtrar
+   * Busca en alias y número (sin distinguir tildes ni mayúsculas); vacío lista sin filtrar. No va con recordIds
    * @minLength 0
    * @maxLength 120
    */
-  q: string;
+  q?: SearchRecordsRequestQ;
+  /**
+   * Identificadores de historias (hasta 50), de la búsqueda local de la libreta. No va con q
+   * @minItems 0
+   * @maxItems 50
+   */
+  recordIds?: SearchRecordsRequestRecordIds;
 }

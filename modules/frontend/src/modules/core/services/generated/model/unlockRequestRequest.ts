@@ -5,11 +5,9 @@
  * Tu portal al conocimiento y al éxito profesional.
  * OpenAPI spec version: v1
  */
+import type { UnlockRequestRequestReason } from './unlockRequestRequestReason';
 
 export interface UnlockRequestRequest {
-  /**
-   * @minLength 0
-   * @maxLength 200
-   */
-  reason: string;
+  /** Motivo del catálogo: ALIAS, SEXO, EDAD u OTRO */
+  reason: UnlockRequestRequestReason;
 }

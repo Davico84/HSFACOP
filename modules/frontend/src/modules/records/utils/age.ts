@@ -1,23 +1,18 @@
 /**
- * Edad en años cumplidos (misma regla que `RecordAgeCalculator` del backend): a la fecha de
- * inicio de tratamiento o, si no la hay, a hoy. Fechas ISO `yyyy-mm-dd`. Sin nacimiento → `null`.
+ * Edad escrita del paciente (misma regla que `RecordAgeCalculator` del backend): años cumplidos al
+ * inicio del tratamiento, de 0 a 99, opcional. La aplicación ya no la calcula: la escribe el
+ * tratante.
  */
-export function ageYears(birthDate: string | null | undefined, treatmentStartDate?: string | null, todayIso = today()): number | null {
-  if (!birthDate) return null;
-  const reference = treatmentStartDate || todayIso;
-  if (reference < birthDate) return null;
-  const [by, bm, bd] = birthDate.split("-").map(Number);
-  const [ry, rm, rd] = reference.split("-").map(Number);
-  let age = ry - by;
-  if (rm < bm || (rm === bm && rd < bd)) age -= 1;
-  return age;
-}
+export const MIN_AGE = 0;
+export const MAX_AGE = 99;
+export const AGE_RANGE_MESSAGE = "Usa una edad entre 0 y 99 años.";
 
 /** Mayoría de edad: por debajo firma el apoderado. */
 export const ADULT_AGE = 18;
 
-export function isMinor(age: number | null): boolean {
-  return age !== null && age < ADULT_AGE;
+/** Sin edad (nula) se trata como adulta. */
+export function isMinor(age: number | null | undefined): boolean {
+  return age !== null && age !== undefined && age < ADULT_AGE;
 }
 
 /** Hoy en ISO local (`yyyy-mm-dd`). */

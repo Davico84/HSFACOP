@@ -136,19 +136,23 @@ describe("orthodontic-records — Impresión con presentación del PDF", () => {
 
   it("los textos escritos salen sin líneas; conservan su línea los datos del paciente, la fecha y las firmas", async () => {
     serve(withContent({ diagnosis: { generalDiagnosis: "Clase II esquelética", problemList: ["Mordida profunda"], treatmentGoals: [] } },
-      { address: "Av. Ejército 512" }));
+      { treatingDentist: "Av. Ejército 512" }));
     const { container } = renderRecordRoutes("/historias/10/imprimir");
     await screen.findAllByRole("article");
 
     for (const text of ["Clase II esquelética", "1. Mordida profunda"]) {
       expect(screen.getByText(text).className).not.toMatch(/border-b/);
     }
-    expect(screen.getByText("Av. Ejército 512").className).toMatch(/border-b/);
-    expect(screen.getByText("Av. Ejército 512").className).not.toMatch(/text-center/);
+    // El documento, el nacimiento, el domicilio y el celular quedan en blanco para escribirlos a mano
+    // (el nombre sale con el alias hasta que la libreta lo tenga).
+    for (const label of ["Documento", "Domicilio", "Celular", "Lugar y fecha de nacimiento del paciente"]) {
+      expect(screen.getByText(`${label}:`).parentElement?.querySelector(".border-b")).not.toBeNull();
+      expect(screen.getByText(`${label}:`).parentElement?.textContent).toBe(`${label}:`);
+    }
     const lined = Array.from(container.querySelectorAll("article .border-b"));
     for (const line of lined) {
       expect(line.parentElement?.textContent).toMatch(
-        /^(FECHA:|Firma|PACIENTE|Paciente|Edad|Sexo|Domicilio|Fecha de inicio de tratamiento:|Documento|Lugar y fecha de nacimiento del paciente|Celular|Nombre:|Fecha:)/,
+        /^(FECHA:|Firma|ALIAS|Alias|Nombre y apellidos|Edad|Sexo|Domicilio|Fecha de inicio de tratamiento:|Documento|Lugar y fecha de nacimiento del paciente|Celular|Nombre:|Fecha:)/,
       );
     }
   });
@@ -172,7 +176,7 @@ describe("orthodontic-records — Impresión con presentación del PDF", () => {
   it("hoja del análisis transversal tras el oclusal, con las diferencias calculadas", async () => {
     serve(withContent(
       { models: { tanaka: {}, wolford: {}, transversal: { intermolarUpper: 50.1, intermolarLower: 45.8, walaToEv: { firstMolar: 2.6 }, interpretation: "Compresión leve" }, moyers: {}, nance: {}, bolton: {} } },
-      { patientSex: "FEMALE", ageYears: 13 },
+      { patientSex: "FEMALE", patientAge: 13 },
     ));
     renderRecordRoutes("/historias/10/imprimir");
     const sheets = await screen.findAllByRole("article");
@@ -197,7 +201,7 @@ describe("orthodontic-records — Impresión con presentación del PDF", () => {
         crowdingNegative: "Mandíbula derecho",
         interpretation: "Discrepancia negativa leve",
       }, nance: {}, bolton: {} } },
-      { ageYears: 13 },
+      { patientAge: 13 },
     ));
     renderRecordRoutes("/historias/10/imprimir");
     const sheets = await screen.findAllByRole("article");
@@ -227,7 +231,7 @@ describe("orthodontic-records — Impresión con presentación del PDF", () => {
         conclusionUpper: "Falta de espacio leve",
         interpretation: "Discrepancia negativa en el maxilar",
       }, bolton: {} } },
-      { ageYears: 13 },
+      { patientAge: 13 },
     ));
     renderRecordRoutes("/historias/10/imprimir");
     const sheets = await screen.findAllByRole("article");
@@ -259,7 +263,7 @@ describe("orthodontic-records — Impresión con presentación del PDF", () => {
       },
       bolton: { analysisDate: "2026-09-01", firstMolars: { tooth16: 10.2, tooth26: 10.1, tooth46: 11.0, tooth36: 11.2 }, incisors: { tooth12: 6.7, tooth11: 8.6, tooth21: 8.5, tooth22: 6.6, tooth42: 6.0, tooth41: 5.5, tooth31: 5.4, tooth32: 6.1 }, interpretation: "Exceso mandibular leve" },
     };
-    serve(withContent({ models: boltonModels }, { ageYears: 13 }));
+    serve(withContent({ models: boltonModels }, { patientAge: 13 }));
     renderRecordRoutes("/historias/10/imprimir");
     const sheets = await screen.findAllByRole("article");
 
@@ -295,14 +299,14 @@ describe("orthodontic-records — Impresión con presentación del PDF", () => {
     }
 
     it("Hoja de Tanaka-Johnston: tras Moyers, con nombre, edad, las dos fórmulas con la suma usada y la interpretación", async () => {
-      serve(withContent({ models: measured }, { ageYears: 13 }));
+      serve(withContent({ models: measured }, { patientAge: 13 }));
       renderRecordRoutes("/historias/10/imprimir");
       const { sheets, titles } = await sheetsByTitle();
 
       const index = titles.indexOf("Fórmula de Tanaka-Johnston");
       expect(index).toBe(titles.indexOf("Ficha para el análisis de Moyers") + 1);
       const tanaka = sheets[index];
-      expect(within(tanaka).getByText("Ana Quispe")).toBeInTheDocument();
+      expect(within(tanaka).getByText("Ana")).toBeInTheDocument();
       expect(within(tanaka).getByText("13 años")).toBeInTheDocument();
       expect(within(tanaka).getByLabelText("Tanaka-Johnston MAX")).toHaveTextContent("MAX (23,0 / 2) + 11 = 22,5 mm");
       expect(within(tanaka).getByLabelText("Tanaka-Johnston MAND")).toHaveTextContent("MAND (23,0 / 2) + 10,5 = 22,0 mm");
@@ -310,7 +314,7 @@ describe("orthodontic-records — Impresión con presentación del PDF", () => {
     });
 
     it("Hoja de Wolford y su grilla: tras Bolton, anchos de Bolton y Nance por pieza y discrepancias con las sumas usadas", async () => {
-      serve(withContent({ models: measured }, { ageYears: 13 }));
+      serve(withContent({ models: measured }, { patientAge: 13 }));
       renderRecordRoutes("/historias/10/imprimir");
       const { sheets, titles } = await sheetsByTitle();
 
@@ -336,7 +340,7 @@ describe("orthodontic-records — Impresión con presentación del PDF", () => {
 
     it("Hoja con una suma vacía: la fórmula sale con lo disponible y el resultado '—', sin signo; casilla vacía si falta el ancho", async () => {
       const missing = { ...measured, nance: { ...measured.nance, lowerWidths: { ...measured.nance.lowerWidths, tooth33: undefined } } };
-      serve(withContent({ models: missing }, { ageYears: 13 }));
+      serve(withContent({ models: missing }, { patientAge: 13 }));
       renderRecordRoutes("/historias/10/imprimir");
       const { sheets, titles } = await sheetsByTitle();
 
@@ -367,43 +371,44 @@ describe("orthodontic-records — Impresión con presentación del PDF", () => {
     expect(screen.queryByText(/1ª menstruación/)).not.toBeInTheDocument();
   });
 
-  it("datos cortos del paciente centrados sobre su línea (edad, fechas, documento, celular)", async () => {
-    serve(recordResponse({ ageYears: 13, treatmentStartDate: "2026-05-19", birthPlace: "Arequipa", birthDate: "2012-05-20",
-      documentType: "DNI", documentNumber: "74125896", phone: "987 654 321" }));
+  it("datos cortos del paciente centrados sobre su línea (edad, sexo, fecha de inicio)", async () => {
+    serve(recordResponse({ patientAge: 13, patientSex: "MALE", treatmentStartDate: "2026-05-19" }));
     renderRecordRoutes("/historias/10/imprimir");
     await screen.findAllByRole("article");
 
     const first = screen.getAllByRole("article")[0];
-    for (const text of ["13 años", "19/05/2026", "Arequipa, 20/05/2012", "DNI 74125896", "987 654 321"]) {
+    for (const text of ["13 años", "Masculino", "19/05/2026"]) {
       expect(within(first).getByText(text).className).toMatch(/text-center/);
     }
   });
 
   it("las etiquetas en línea terminan en ':' para separarlas de su contenido", async () => {
-    serve(recordResponse({ address: "Av. Ejército 512" }));
+    serve(recordResponse({ treatingDentist: "Av. Ejército 512" }));
     renderRecordRoutes("/historias/10/imprimir");
     await screen.findAllByRole("article");
 
-    for (const label of ["PACIENTE:", "Domicilio:", "Documento:", "Celular:", "Lugar y fecha de nacimiento del paciente:"]) {
+    for (const label of ["Domicilio:", "Documento:", "Celular:", "Lugar y fecha de nacimiento del paciente:"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
+    // La cabecera de cada hoja con datos del paciente dice «Nombre y apellidos», nunca «Alias».
+    expect(screen.getAllByText("Nombre y apellidos:").length).toBeGreaterThanOrEqual(7);
+    expect(screen.queryByText(/^alias:?$/i)).not.toBeInTheDocument();
     expect(screen.getAllByText("Nombre:").length).toBeGreaterThanOrEqual(3);
     expect(screen.getAllByText("Firma:").length).toBeGreaterThanOrEqual(3);
     expect(screen.getByText("Mordida profunda de")).toBeInTheDocument();
   });
 
-  it("documento, edad, piezas FDI y lista numerada", async () => {
+  it("edad, piezas FDI y lista numerada", async () => {
     serve(withContent(
       {
         functional: { suckingHabitTypes: ["NONE"], bruxism: "WITH_WEAR", bruxismTeeth: [13, 26, 55] },
         diagnosis: { problemList: ["Mordida profunda", "Overjet aumentado"], treatmentGoals: [] },
       },
-      { documentType: "FOREIGNER_CARD", documentNumber: "001234567", ageYears: 13 },
+      { patientAge: 13 },
     ));
     renderRecordRoutes("/historias/10/imprimir");
     await screen.findAllByRole("article");
 
-    expect(screen.getByText("CE 001234567")).toBeInTheDocument();
     expect(within(screen.getAllByRole("article")[0]).getByText("13 años")).toBeInTheDocument();
     expect(screen.getByText("13, 26, 55")).toBeInTheDocument();
     expect(screen.getByText("1. Mordida profunda")).toBeInTheDocument();
@@ -411,13 +416,15 @@ describe("orthodontic-records — Impresión con presentación del PDF", () => {
   });
 
   it("firma del apoderado si es menor; fecha en blanco para llenarla a mano", async () => {
-    serve(withContent({ signatures: { guardianName: "Rosa Mamani", guardianRelationship: "Madre" } }, { ageYears: 13 }));
+    serve(withContent({ signatures: { supervisor1Name: "Dr. Medina" } }, { patientAge: 13 }));
     renderRecordRoutes("/historias/10/imprimir");
     await screen.findAllByRole("article");
 
     expect(screen.getByText("FIRMA DEL APODERADO:")).toBeInTheDocument();
     expect(screen.queryByText("FIRMA DEL PACIENTE:")).not.toBeInTheDocument();
-    expect(screen.getByText("Rosa Mamani")).toBeInTheDocument();
+    // El nombre y el parentesco del apoderado se escriben a mano: la hoja no los trae.
+    expect(screen.queryByText("Rosa Mamani")).not.toBeInTheDocument();
+    expect(screen.getByText("Dr. Medina")).toBeInTheDocument();
     expect(screen.getByText("FECHA:").nextElementSibling).toHaveTextContent("");
   });
 

@@ -15,7 +15,7 @@ public record UserDashboardView(
     List<ResumeItem> resume) {
 
     /** Datos faltantes; {@code emptySteps} son siempre los 7 pasos clínicos, de más a menos vacíos. */
-    public record Missing(long withoutDocument, long withoutBirthDate, long withoutTreatmentStart,
+    public record Missing(long withoutAge, long withoutTreatmentStart,
                           List<EmptyStep> emptySteps) {
     }
 

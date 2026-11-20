@@ -29,11 +29,11 @@ function mockRecord(initial: Partial<RecordResponse> = {}) {
         return HttpResponse.json({ type: "/errors/stale-record", detail: "La historia clínica cambió." }, { status: 409 });
       }
       // Como el servidor real: recorta espacios.
-      const patientAddress = typeof body.address === "string" ? body.address.trim() : body.address;
+      const patientAddress = typeof body.treatingDentist === "string" ? body.treatingDentist.trim() : body.treatingDentist;
       record = {
         ...record,
         ...body,
-        address: patientAddress,
+        treatingDentist: patientAddress,
         content: body.content ?? record.content,
         lastStep: body.lastStep ?? record.lastStep,
         version: record.version + 1,
@@ -85,7 +85,7 @@ async function openStep1(initial: Partial<RecordResponse> = {}) {
 describe("orthodontic-records — Autoguardado del paso en curso", () => {
   it("guarda unos segundos después de dejar de escribir, sin notificaciones", async () => {
     const { calls } = await openStep1();
-    await user.type(screen.getByLabelText("Domicilio"), "Av. Sol 123");
+    await user.type(screen.getByLabelText("Odontólogo tratante"), "Av. Sol 123");
     expect(screen.getByText("Cambios sin guardar")).toBeInTheDocument();
 
     await advance(2_000);
@@ -93,29 +93,29 @@ describe("orthodontic-records — Autoguardado del paso en curso", () => {
     await advance(1_500);
 
     await waitFor(() => expect(calls.put).toHaveLength(1));
-    expect(calls.put[0]).toMatchObject({ address: "Av. Sol 123", lastStep: 1, version: 0 });
+    expect(calls.put[0]).toMatchObject({ treatingDentist: "Av. Sol 123", lastStep: 1, version: 0 });
     expect(await screen.findByText("Guardado")).toBeInTheDocument();
     expect(toast.success).not.toHaveBeenCalled();
   });
 
   it("pausas cortas seguidas: como máximo un autoguardado cada 10 segundos, sin perder cambios", async () => {
     const { calls } = await openStep1();
-    await user.type(screen.getByLabelText("Domicilio"), "Av. Sol");
+    await user.type(screen.getByLabelText("Odontólogo tratante"), "Av. Sol");
     await advance(3_500);
     await waitFor(() => expect(calls.put).toHaveLength(1));
 
-    await user.type(screen.getByLabelText("Domicilio"), " 123");
+    await user.type(screen.getByLabelText("Odontólogo tratante"), " 123");
     await advance(4_000);
     expect(calls.put).toHaveLength(1);
 
     await advance(7_000);
     await waitFor(() => expect(calls.put).toHaveLength(2));
-    expect(calls.put[1]).toMatchObject({ address: "Av. Sol 123", version: 1 });
+    expect(calls.put[1]).toMatchObject({ treatingDentist: "Av. Sol 123", version: 1 });
   });
 
   it("guarda de inmediato al ocultarse la pestaña", async () => {
     const { calls } = await openStep1();
-    await user.type(screen.getByLabelText("Domicilio"), "Av. Sol 123");
+    await user.type(screen.getByLabelText("Odontólogo tratante"), "Av. Sol 123");
 
     const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
     act(() => document.dispatchEvent(new Event("visibilitychange")));
@@ -126,7 +126,7 @@ describe("orthodontic-records — Autoguardado del paso en curso", () => {
 
   it("paso con errores: no guarda, marca el campo y lo indica", async () => {
     const { calls } = await openStep1();
-    await user.click(screen.getByLabelText("Domicilio"));
+    await user.click(screen.getByLabelText("Odontólogo tratante"));
     await user.paste("x".repeat(201));
 
     await advance(3_500);
@@ -138,31 +138,31 @@ describe("orthodontic-records — Autoguardado del paso en curso", () => {
   it("lo escrito durante el guardado se conserva, sigue pendiente y se guarda después", async () => {
     const backend = await openStep1();
     const release = backend.hold();
-    const address = screen.getByLabelText("Domicilio");
-    await user.type(address, "Av. Sol");
+    const treatingDentist = screen.getByLabelText("Odontólogo tratante");
+    await user.type(treatingDentist, "Av. Sol");
     await advance(3_500);
     await waitFor(() => expect(backend.calls.put).toHaveLength(1));
     expect(screen.getByText("Guardando…")).toBeInTheDocument();
 
-    await user.type(address, " 123");
+    await user.type(treatingDentist, " 123");
     release();
 
     await waitFor(() => expect(screen.getByText("Cambios sin guardar")).toBeInTheDocument());
-    expect(address).toHaveValue("Av. Sol 123");
+    expect(treatingDentist).toHaveValue("Av. Sol 123");
 
     await advance(10_500);
     await waitFor(() => expect(backend.calls.put).toHaveLength(2));
-    expect(backend.calls.put[1]).toMatchObject({ address: "Av. Sol 123", version: 1 });
+    expect(backend.calls.put[1]).toMatchObject({ treatingDentist: "Av. Sol 123", version: 1 });
   });
 
   it("un valor que el servidor ajusta no queda pendiente ni se guarda sin fin", async () => {
     const { calls } = await openStep1();
-    await user.type(screen.getByLabelText("Domicilio"), "Av. Sol 123   ");
+    await user.type(screen.getByLabelText("Odontólogo tratante"), "Av. Sol 123   ");
     await advance(3_500);
     await waitFor(() => expect(calls.put).toHaveLength(1));
 
     expect(await screen.findByText("Guardado")).toBeInTheDocument();
-    expect(screen.getByLabelText("Domicilio")).toHaveValue("Av. Sol 123");
+    expect(screen.getByLabelText("Odontólogo tratante")).toHaveValue("Av. Sol 123");
     await advance(30_000);
     expect(calls.put).toHaveLength(1);
   });
@@ -170,12 +170,12 @@ describe("orthodontic-records — Autoguardado del paso en curso", () => {
   it("fallo de red: avisa, conserva lo escrito y 'Reintentar' vuelve a guardar", async () => {
     const backend = await openStep1();
     backend.state.fail = true;
-    await user.type(screen.getByLabelText("Domicilio"), "Av. Sol 123");
+    await user.type(screen.getByLabelText("Odontólogo tratante"), "Av. Sol 123");
     await advance(3_500);
 
     expect(await screen.findByText("No se pudo guardar")).toBeInTheDocument();
     expect(toast.error).not.toHaveBeenCalled();
-    expect(screen.getByLabelText("Domicilio")).toHaveValue("Av. Sol 123");
+    expect(screen.getByLabelText("Odontólogo tratante")).toHaveValue("Av. Sol 123");
 
     backend.state.fail = false;
     await user.click(screen.getByRole("button", { name: "Reintentar" }));
@@ -186,7 +186,7 @@ describe("orthodontic-records — Autoguardado del paso en curso", () => {
   it("al recuperar la conexión reintenta", async () => {
     const backend = await openStep1();
     backend.state.fail = true;
-    await user.type(screen.getByLabelText("Domicilio"), "Av. Sol 123");
+    await user.type(screen.getByLabelText("Odontólogo tratante"), "Av. Sol 123");
     await advance(3_500);
     await screen.findByText("No se pudo guardar");
 
@@ -198,11 +198,11 @@ describe("orthodontic-records — Autoguardado del paso en curso", () => {
   it("guardada desde otro dispositivo (409): muestra el aviso y no vuelve a autoguardar", async () => {
     const backend = await openStep1();
     backend.bump();
-    await user.type(screen.getByLabelText("Domicilio"), "Av. Sol");
+    await user.type(screen.getByLabelText("Odontólogo tratante"), "Av. Sol");
     await advance(3_500);
 
     expect(await screen.findByRole("button", { name: /Recargar historia/ })).toBeInTheDocument();
-    await user.type(screen.getByLabelText("Domicilio"), " 123");
+    await user.type(screen.getByLabelText("Odontólogo tratante"), " 123");
     await advance(30_000);
     expect(backend.calls.put).toHaveLength(1);
   });
@@ -216,7 +216,7 @@ describe("orthodontic-records — Autoguardado del paso en curso", () => {
   it("una historia nueva no se crea ni se guarda sola", async () => {
     const { calls } = mockRecord();
     renderRecordRoutes("/historias/nueva");
-    await user.type(screen.getByRole("textbox", { name: "Paciente" }), "Ana Quispe");
+    await user.type(screen.getByRole("textbox", { name: "Alias del paciente" }), "Ana");
     await advance(30_000);
     expect(calls.post).toBe(0);
     expect(calls.put).toHaveLength(0);
@@ -246,7 +246,7 @@ describe("orthodontic-records — Retomar en el último paso trabajado", () => {
 
   it("al cambiar de paso con cambios guarda el destino como último paso; 'Guardar' el actual", async () => {
     const { calls } = await openStep1();
-    await user.type(screen.getByLabelText("Domicilio"), "Av. Sol");
+    await user.type(screen.getByLabelText("Odontólogo tratante"), "Av. Sol");
     await user.click(screen.getByRole("button", { name: /Siguiente/ }));
     await stepHeading(/Análisis facial/);
     expect(calls.put[0]).toMatchObject({ lastStep: 2 });

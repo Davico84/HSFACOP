@@ -1179,12 +1179,78 @@
         }
       }
     },
+    "/api/orthodontic-records/{id}/notebook-backup": {
+      "post": {
+        "tags": [
+          "orthodontic-records"
+        ],
+        "summary": "El autor marca su historia como respaldada en su libreta local",
+        "description": "Sin datos del paciente. Idempotente. Solo el autor, hasta la fecha límite de copia y mientras la historia no se migre; si no, responde 404.",
+        "operationId": "confirmNotebookBackup",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Historia marcada como respaldada (o ya lo estaba)"
+          },
+          "404": {
+            "description": "No existe, no es tuya, ya pasó la fecha límite o ya se migró",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error inesperado",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso para realizar esta acción",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/orthodontic-records/search": {
       "post": {
         "tags": [
           "orthodontic-records"
         ],
-        "summary": "Buscar historias por texto (el texto va en el cuerpo, no en la URL)",
+        "summary": "Buscar historias por texto o por identificadores (van en el cuerpo, no en la URL)",
         "operationId": "searchRecords",
         "parameters": [
           {
@@ -2129,6 +2195,79 @@
           },
           "400": {
             "description": "Página o tamaño inválidos",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error inesperado",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso para realizar esta acción",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orthodontic-records/{id}/legacy-identity": {
+      "get": {
+        "tags": [
+          "orthodontic-records"
+        ],
+        "summary": "Datos antiguos del paciente, solo para su autor y hasta la fecha límite de copia",
+        "description": "Para copiarlos a la libreta local. Responde 404 a cualquiera que no sea el autor, tras la fecha límite de copia o con la historia ya migrada. Nunca se cachea (Cache-Control: no-store) ni se registra.",
+        "operationId": "getLegacyIdentity",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Datos antiguos del paciente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LegacyIdentityResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No existe, no es tuya, ya pasó la fecha límite o ya se migró",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3424,21 +3563,6 @@
       "Signatures": {
         "type": "object",
         "properties": {
-          "patientSignatureName": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 0
-          },
-          "guardianName": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 0
-          },
-          "guardianRelationship": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 0
-          },
           "supervisor1Name": {
             "type": "string",
             "maxLength": 200,
@@ -3544,23 +3668,10 @@
             "maxLength": 120,
             "minLength": 0
           },
-          "patientName": {
+          "patientAlias": {
             "type": "string",
-            "maxLength": 120,
-            "minLength": 0
-          },
-          "documentType": {
-            "type": "string",
-            "enum": [
-              "DNI",
-              "FOREIGNER_CARD",
-              "PASSPORT"
-            ]
-          },
-          "documentNumber": {
-            "type": "string",
-            "maxLength": 12,
-            "minLength": 0
+            "description": "Alias del paciente: una o dos palabras, sin apellidos (máx. 30)",
+            "example": "Mateo"
           },
           "patientSex": {
             "type": "string",
@@ -3569,24 +3680,15 @@
               "MALE"
             ]
           },
-          "birthDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "birthPlace": {
-            "type": "string",
-            "maxLength": 120,
-            "minLength": 0
-          },
-          "address": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 0
-          },
-          "phone": {
-            "type": "string",
-            "maxLength": 20,
-            "minLength": 0
+          "patientAge": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Años cumplidos al inicio del tratamiento (0–99); se escribe, no se calcula",
+            "maximum": 99,
+            "minimum": 0
           },
           "treatmentStartDate": {
             "type": "string",
@@ -3614,7 +3716,7 @@
           }
         },
         "required": [
-          "patientName",
+          "patientAlias",
           "recordNumber",
           "version"
         ]
@@ -3772,19 +3874,9 @@
           "treatingDentist": {
             "type": "string"
           },
-          "patientName": {
-            "type": "string"
-          },
-          "documentType": {
+          "patientAlias": {
             "type": "string",
-            "enum": [
-              "DNI",
-              "FOREIGNER_CARD",
-              "PASSPORT"
-            ]
-          },
-          "documentNumber": {
-            "type": "string"
+            "description": "Alias del paciente (una o dos palabras, sin apellidos)"
           },
           "patientSex": {
             "type": "string",
@@ -3793,27 +3885,17 @@
               "MALE"
             ]
           },
-          "birthDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "birthPlace": {
-            "type": "string"
-          },
-          "address": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
+          "patientAge": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Años cumplidos al inicio del tratamiento, escritos por el tratante; vacío = sin edad"
           },
           "treatmentStartDate": {
             "type": "string",
             "format": "date"
-          },
-          "ageYears": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Años cumplidos a la fecha de inicio de tratamiento (o a hoy); vacío sin fecha de nacimiento"
           },
           "content": {
             "$ref": "#/components/schemas/RecordContent"
@@ -3869,7 +3951,7 @@
           "content",
           "createdAt",
           "id",
-          "patientName",
+          "patientAlias",
           "recordNumber",
           "updatedAt",
           "version"
@@ -3884,7 +3966,13 @@
           },
           "reason": {
             "type": "string",
-            "description": "Motivo del tratante"
+            "description": "Motivo del catálogo cerrado",
+            "enum": [
+              "ALIAS",
+              "SEXO",
+              "EDAD",
+              "OTRO"
+            ]
           }
         },
         "required": [
@@ -4297,23 +4385,10 @@
             "maxLength": 120,
             "minLength": 0
           },
-          "patientName": {
+          "patientAlias": {
             "type": "string",
-            "maxLength": 120,
-            "minLength": 0
-          },
-          "documentType": {
-            "type": "string",
-            "enum": [
-              "DNI",
-              "FOREIGNER_CARD",
-              "PASSPORT"
-            ]
-          },
-          "documentNumber": {
-            "type": "string",
-            "maxLength": 12,
-            "minLength": 0
+            "description": "Alias del paciente: una o dos palabras, sin apellidos (máx. 30)",
+            "example": "Mateo"
           },
           "patientSex": {
             "type": "string",
@@ -4322,24 +4397,15 @@
               "MALE"
             ]
           },
-          "birthDate": {
-            "type": "string",
-            "format": "date"
-          },
-          "birthPlace": {
-            "type": "string",
-            "maxLength": 120,
-            "minLength": 0
-          },
-          "address": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 0
-          },
-          "phone": {
-            "type": "string",
-            "maxLength": 20,
-            "minLength": 0
+          "patientAge": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Años cumplidos al inicio del tratamiento (0–99); se escribe, no se calcula",
+            "maximum": 99,
+            "minimum": 0
           },
           "treatmentStartDate": {
             "type": "string",
@@ -4360,7 +4426,7 @@
           }
         },
         "required": [
-          "patientName",
+          "patientAlias",
           "recordNumber"
         ]
       },
@@ -4369,9 +4435,14 @@
         "properties": {
           "reason": {
             "type": "string",
-            "example": "Error en el número de DNI",
-            "maxLength": 200,
-            "minLength": 0
+            "description": "Motivo del catálogo: ALIAS, SEXO, EDAD u OTRO",
+            "enum": [
+              "ALIAS",
+              "SEXO",
+              "EDAD",
+              "OTRO"
+            ],
+            "example": "ALIAS"
           }
         },
         "required": [
@@ -4422,15 +4493,28 @@
         "type": "object",
         "properties": {
           "q": {
-            "type": "string",
-            "description": "Busca en paciente, documento y número (sin distinguir tildes ni mayúsculas); vacío lista sin filtrar",
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Busca en alias y número (sin distinguir tildes ni mayúsculas); vacío lista sin filtrar. No va con recordIds",
             "maxLength": 120,
             "minLength": 0
+          },
+          "recordIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "description": "Identificadores de historias (hasta 50), de la búsqueda local de la libreta. No va con q",
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            },
+            "maxItems": 50,
+            "minItems": 0
           }
-        },
-        "required": [
-          "q"
-        ]
+        }
       },
       "PageResponseRecordSummaryResponse": {
         "type": "object",
@@ -4484,18 +4568,7 @@
             "type": "string",
             "example": "AEO-0015"
           },
-          "patientName": {
-            "type": "string"
-          },
-          "documentType": {
-            "type": "string",
-            "enum": [
-              "DNI",
-              "FOREIGNER_CARD",
-              "PASSPORT"
-            ]
-          },
-          "documentNumber": {
+          "patientAlias": {
             "type": "string"
           },
           "treatingDentist": {
@@ -4527,8 +4600,8 @@
         "required": [
           "authorName",
           "id",
+          "patientAlias",
           "patientLocked",
-          "patientName",
           "recordNumber",
           "updatedAt"
         ]
@@ -4830,6 +4903,81 @@
           "totalPages"
         ]
       },
+      "LegacyIdentityResponse": {
+        "type": "object",
+        "properties": {
+          "patientName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nombre completo original del paciente"
+          },
+          "documentType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "DNI",
+              "FOREIGNER_CARD",
+              "PASSPORT"
+            ]
+          },
+          "documentNumber": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "birthDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          },
+          "birthPlace": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "patientSignatureName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nombre de quien firma si es el paciente"
+          },
+          "guardianName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Nombre del apoderado si el paciente es menor de edad"
+          },
+          "guardianRelationship": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Parentesco del apoderado"
+          }
+        }
+      },
       "RecordQuotaResponse": {
         "type": "object",
         "properties": {
@@ -4949,11 +5097,7 @@
       "UserDashboardMissing": {
         "type": "object",
         "properties": {
-          "withoutDocument": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "withoutBirthDate": {
+          "withoutAge": {
             "type": "integer",
             "format": "int64"
           },
@@ -4971,8 +5115,7 @@
         },
         "required": [
           "emptySteps",
-          "withoutBirthDate",
-          "withoutDocument",
+          "withoutAge",
           "withoutTreatmentStart"
         ]
       },
@@ -5373,7 +5516,14 @@
             "format": "date-time"
           },
           "reason": {
-            "type": "string"
+            "type": "string",
+            "description": "Motivo del catálogo cerrado",
+            "enum": [
+              "ALIAS",
+              "SEXO",
+              "EDAD",
+              "OTRO"
+            ]
           }
         },
         "required": [

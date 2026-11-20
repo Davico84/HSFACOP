@@ -5,6 +5,7 @@
  * Tu portal al conocimiento y al éxito profesional.
  * OpenAPI spec version: v1
  */
+import type { DashboardUnlockRequestReason } from './dashboardUnlockRequestReason';
 
 export interface DashboardUnlockRequest {
   recordId: number;
@@ -13,5 +14,6 @@ export interface DashboardUnlockRequest {
   /** Tratante (autor de la historia) */
   authorName: string;
   requestedAt: string;
-  reason: string;
+  /** Motivo del catálogo cerrado */
+  reason: DashboardUnlockRequestReason;
 }

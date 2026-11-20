@@ -38,13 +38,10 @@ test("crear, llenar e imprimir una historia clínica", async ({ page }) => {
   // Paso 1: número y paciente; se crea al avanzar y pasa a su URL en el paso 2
   const number = uniqueRecordNumber();
   await page.getByRole("textbox", { name: "Nro. de historia" }).fill(number);
-  await page.getByRole("textbox", { name: "Paciente" }).fill("Ana Lucía Quispe Mamani");
+  await page.getByRole("textbox", { name: "Alias del paciente" }).fill("Ana");
   await page.getByRole("radio", { name: "Femenino" }).check();
-  await page.getByLabel("Fecha de nacimiento").fill("2012-05-20");
+  await page.getByLabel("Edad al inicio del tratamiento").fill("13");
   await page.getByLabel("Fecha de inicio de tratamiento").fill("2026-05-19");
-  await expect(page.getByLabel("Edad")).toHaveValue("13 años");
-  await page.getByRole("radio", { name: "DNI" }).check();
-  await page.getByLabel("Número").fill("74125896");
   await page.getByRole("button", { name: /Crear historia/ }).click();
   await expect(stepHeading(page, /Análisis facial/)).toBeVisible();
   await expect(page).toHaveURL(/\/historias\/\d+\?paso=2$/);
@@ -76,7 +73,7 @@ test("crear, llenar e imprimir una historia clínica", async ({ page }) => {
   // Listado: aparece la historia
   const id = page.url().match(/\/historias\/(\d+)/)?.[1];
   await page.goto("/historias");
-  await expect(page.getByRole("row", { name: new RegExp(number) })).toContainText("Ana Lucía Quispe Mamani");
+  await expect(page.getByRole("row", { name: new RegExp(number) })).toContainText("Ana");
 
   // Impresión: hojas A4 con los datos y PDF real
   await page.goto(`/historias/${id}/imprimir`);
@@ -97,7 +94,7 @@ test("el autor corrige el número de una historia ya impresa", async ({ page }) 
   const number = uniqueRecordNumber();
   await page.goto("/historias/nueva");
   await page.getByRole("textbox", { name: "Nro. de historia" }).fill(number);
-  await page.getByRole("textbox", { name: "Paciente" }).fill("Rosa Díaz");
+  await page.getByRole("textbox", { name: "Alias del paciente" }).fill("Rosa");
   await page.getByRole("button", { name: /Crear historia/ }).click();
   await expect(page).toHaveURL(/\?paso=2$/);
   const id = page.url().match(/historias\/(\d+)/)![1];
@@ -111,7 +108,7 @@ test("el autor corrige el número de una historia ya impresa", async ({ page }) 
   let corrected = uniqueRecordNumber();
   while (corrected === number) corrected = uniqueRecordNumber();
   await page.goto(`/historias/${id}?paso=1`);
-  await expect(page.getByRole("textbox", { name: "Paciente" })).toHaveAttribute("readonly", "");
+  await expect(page.getByRole("textbox", { name: "Alias del paciente" })).toHaveAttribute("readonly", "");
   const field = page.getByRole("textbox", { name: "Nro. de historia" });
   await field.fill(corrected);
   await page.getByRole("button", { name: /Guardar/ }).click();

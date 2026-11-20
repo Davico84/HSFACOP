@@ -1,5 +1,7 @@
 // Matchers de jest-dom (toBeInTheDocument, etc.) para el `expect` de Vitest.
 import "@testing-library/jest-dom/vitest";
+import { IDBFactory } from "fake-indexeddb";
+import "fake-indexeddb/auto";
 import { afterAll, afterEach, beforeAll } from "vitest";
 import { cleanup, configure } from "@testing-library/react";
 import { server } from "./mocks/server";
@@ -18,7 +20,7 @@ globalThis.ResizeObserver = class ResizeObserverStub {
 
 // `findBy…`/`waitFor` esperan 1 s por defecto: con la suite entera en paralelo, pintar un paso del
 // formulario de historia puede tardar más y el test fallaba de forma intermitente (aislado pasa).
-configure({ asyncUtilTimeout: 3000 });
+configure({ asyncUtilTimeout: 5000 });
 
 // MSW: intercepta las peticiones HTTP a nivel de red durante los tests.
 // `onUnhandledRequest: "error"` obliga a mockear explícitamente cada petición.
@@ -27,6 +29,7 @@ beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {
   server.resetHandlers();
   useRecordsSearchStore.getState().clear(); // el texto buscado vive en sessionStorage: no pasa de un test a otro.
+  globalThis.indexedDB = new IDBFactory(); // la libreta local no pasa de un test a otro.
   cleanup(); // con globals desactivados, RTL no limpia solo entre tests.
 });
 

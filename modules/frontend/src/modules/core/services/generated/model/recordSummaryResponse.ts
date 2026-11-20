@@ -5,15 +5,12 @@
  * Tu portal al conocimiento y al éxito profesional.
  * OpenAPI spec version: v1
  */
-import type { RecordSummaryResponseDocumentType } from './recordSummaryResponseDocumentType';
 import type { RecordSummaryResponseCohortName } from './recordSummaryResponseCohortName';
 
 export interface RecordSummaryResponse {
   id: number;
   recordNumber: string;
-  patientName: string;
-  documentType?: RecordSummaryResponseDocumentType;
-  documentNumber?: string;
+  patientAlias: string;
   treatingDentist?: string;
   treatmentStartDate?: string;
   authorName: string;

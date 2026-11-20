@@ -5,8 +5,8 @@
  * Tu portal al conocimiento y al éxito profesional.
  * OpenAPI spec version: v1
  */
-import type { CreateRecordRequestDocumentType } from './createRecordRequestDocumentType';
 import type { CreateRecordRequestPatientSex } from './createRecordRequestPatientSex';
+import type { CreateRecordRequestPatientAge } from './createRecordRequestPatientAge';
 import type { RecordContent } from './recordContent';
 
 export interface CreateRecordRequest {
@@ -21,34 +21,15 @@ export interface CreateRecordRequest {
    * @maxLength 120
    */
   treatingDentist?: string;
-  /**
-   * @minLength 0
-   * @maxLength 120
-   */
-  patientName: string;
-  documentType?: CreateRecordRequestDocumentType;
-  /**
-   * @minLength 0
-   * @maxLength 12
-   */
-  documentNumber?: string;
+  /** Alias del paciente: una o dos palabras, sin apellidos (máx. 30) */
+  patientAlias: string;
   patientSex?: CreateRecordRequestPatientSex;
-  birthDate?: string;
   /**
-   * @minLength 0
-   * @maxLength 120
+   * Años cumplidos al inicio del tratamiento (0–99); se escribe, no se calcula
+   * @minimum 0
+   * @maximum 99
    */
-  birthPlace?: string;
-  /**
-   * @minLength 0
-   * @maxLength 200
-   */
-  address?: string;
-  /**
-   * @minLength 0
-   * @maxLength 20
-   */
-  phone?: string;
+  patientAge?: CreateRecordRequestPatientAge;
   treatmentStartDate?: string;
   content?: RecordContent;
   /** Pasos del formulario (1–8) con datos; el paso 1 siempre cuenta */

@@ -13,8 +13,7 @@ interface MissingDataProps {
 /** Datos del paciente que faltan y pasos clínicos que más se dejan vacíos. */
 export function MissingData({ missing, computed }: MissingDataProps) {
   const patient = [
-    { label: "Sin documento", value: missing.withoutDocument },
-    { label: "Sin fecha de nacimiento", value: missing.withoutBirthDate },
+    { label: "Sin edad", value: missing.withoutAge },
     { label: "Sin fecha de inicio de tratamiento", value: missing.withoutTreatmentStart },
   ];
   return (

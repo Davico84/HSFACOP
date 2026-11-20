@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { IconAction } from "@/modules/core/components/IconAction";
 import { copyToClipboard } from "@/modules/core/utils/clipboard";
 import type { UserSummaryResponse } from "@/modules/core/services/generated/model";
-import { formatDocument } from "@/modules/records/utils/recordDisplay";
+import { formatDocument } from "../config/documentTypes";
 
 interface UserContactDialogProps {
   /** Cuenta cuyos datos se muestran; `null` = cerrado. */

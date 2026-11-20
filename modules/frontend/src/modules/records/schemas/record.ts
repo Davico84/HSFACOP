@@ -4,7 +4,6 @@ import {
   AnamnesisMenarche,
   AnamnesisOralHygiene,
   AngleRelationAngleClass,
-  CreateRecordRequestDocumentType,
   CreateRecordRequestPatientSex,
   FacialAnalysisChinNeckAngle,
   FacialAnalysisChinNeckLine,
@@ -36,12 +35,13 @@ import {
   RadiographicAnalysisCephalometricAnalysesItem,
 } from "@/modules/core/services/generated/model";
 import { isValidFdi } from "../utils/fdi";
-import { ageYears, today } from "../utils/age";
+import { AGE_RANGE_MESSAGE, MAX_AGE, MIN_AGE, today } from "../utils/age";
+import { aliasLooksReal, aliasViolation } from "../utils/alias";
 
 /**
  * Schema del formulario de la historia, en paridad con el backend (docs/coding-style.md §7):
  * `CreateRecordRequest`/`UpdateRecordRequest`, `PatientFields.Consistent`, `ContentLimits`,
- * `Midline.Consistent` y `@FdiTooth`. Salvo el número de historia y el nombre del paciente, nada
+ * `Midline.Consistent` y `@FdiTooth`. Salvo el número de historia y el alias del paciente, nada
  * es obligatorio (borrador). Las reglas condicionales se aplican al guardar en el servidor; aquí solo se valida
  * el formato de lo escrito.
  */
@@ -331,19 +331,13 @@ const diagnosis = z.object({
 });
 
 const signatures = z.object({
-  patientSignatureName: text(SHORT_TEXT),
-  guardianName: text(SHORT_TEXT),
-  guardianRelationship: text(SHORT_TEXT),
   supervisor1Name: text(SHORT_TEXT),
   supervisor2Name: text(SHORT_TEXT),
   treatingSignatureName: text(SHORT_TEXT),
 });
 
-export const DOCUMENT_PATTERNS: Record<CreateRecordRequestDocumentType, { regex: RegExp; message: string }> = {
-  DNI: { regex: /^\d{8}$/, message: "El DNI debe tener 8 dígitos." },
-  FOREIGNER_CARD: { regex: /^\d{9}$/, message: "El carné de extranjería debe tener 9 dígitos." },
-  PASSPORT: { regex: /^\d{6,12}$/, message: "El pasaporte debe tener entre 6 y 12 dígitos." },
-};
+/** Aviso del alias parecido a un nombre real: se confirma antes de guardar (nunca se envía al servidor). */
+export const ALIAS_CONFIRM_MESSAGE = "Confirma que el alias no es el nombre real del paciente.";
 
 export const recordFormSchema = z
   .object({
@@ -353,14 +347,15 @@ export const recordFormSchema = z
       .min(1, { message: "Indica el número de historia.", abort: true })
       .regex(RECORD_NUMBER_PATTERN, RECORD_NUMBER_FORMAT_MESSAGE),
     treatingDentist: text(120),
-    patientName: z.string().trim().min(1, "Indica el nombre del paciente.").max(120, tooLong(120)),
-    documentType: one(CreateRecordRequestDocumentType),
-    documentNumber: text(12),
+    // Regla de campo (no del objeto): se informa aunque haya otros errores, como el número de historia.
+    patientAlias: z.string().nullish().superRefine((value, ctx) => {
+      const problem = aliasViolation(value);
+      if (problem) ctx.addIssue({ code: "custom", message: problem });
+    }),
     patientSex: one(CreateRecordRequestPatientSex),
-    birthDate: z.string().nullish(),
-    birthPlace: text(120),
-    address: text(200),
-    phone: text(20),
+    patientAge: z.number().int(AGE_RANGE_MESSAGE).min(MIN_AGE, AGE_RANGE_MESSAGE).max(MAX_AGE, AGE_RANGE_MESSAGE).nullish(),
+    /** Solo del formulario: confirma que el alias no es el nombre real. No se envía al servidor. */
+    aliasConfirmed: z.boolean().nullish(),
     treatmentStartDate: z.string().nullish(),
     content: z.object({
       schemaVersion: z.number().nullish(),
@@ -375,29 +370,14 @@ export const recordFormSchema = z
     }),
   })
   .superRefine((r, ctx) => {
-    const number = r.documentNumber?.trim() ?? "";
-    if (!r.documentType && number) {
-      ctx.addIssue({ code: "custom", path: ["documentType"], message: "Indica el tipo de documento." });
-    } else if (r.documentType && !number) {
-      ctx.addIssue({ code: "custom", path: ["documentNumber"], message: "Indica el número del documento." });
-    } else if (r.documentType && !DOCUMENT_PATTERNS[r.documentType].regex.test(number)) {
-      ctx.addIssue({ code: "custom", path: ["documentNumber"], message: DOCUMENT_PATTERNS[r.documentType].message });
-    }
-    if (r.birthDate && r.birthDate > today()) {
-      ctx.addIssue({ code: "custom", path: ["birthDate"], message: "La fecha de nacimiento no puede ser futura." });
-    }
-    if (r.birthDate && r.treatmentStartDate && r.treatmentStartDate < r.birthDate) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["treatmentStartDate"],
-        message: "La fecha de inicio de tratamiento no puede ser anterior a la de nacimiento.",
-      });
+    if (aliasViolation(r.patientAlias) === null && aliasLooksReal(r.patientAlias, r.content) && r.aliasConfirmed !== true) {
+      ctx.addIssue({ code: "custom", path: ["aliasConfirmed"], message: ALIAS_CONFIRM_MESSAGE });
     }
     // Primera menstruación: solo se valida si aplica (sexo femenino y respuesta Sí); si no, el
     // servidor la descarta al guardar.
     const menarcheAge = r.content.anamnesis.menarcheAge;
     const menarcheApplies = r.patientSex === "FEMALE" && r.content.anamnesis.menarche === "YES";
-    const currentAge = ageYears(r.birthDate);
+    const currentAge = r.patientAge ?? null;
     if (menarcheApplies && currentAge !== null && currentAge < MIN_MENARCHE_AGE) {
       ctx.addIssue({ code: "custom", path: ["content", "anamnesis", "menarche"], message: MENARCHE_TOO_YOUNG });
     }
@@ -406,7 +386,7 @@ export const recordFormSchema = z
       if (menarcheAge < MIN_MENARCHE_AGE || menarcheAge > MAX_MENARCHE_AGE) {
         ctx.addIssue({ code: "custom", path, message: "Usa una edad entre 8 y 18 años." });
       } else if (currentAge !== null && menarcheAge > currentAge) {
-        ctx.addIssue({ code: "custom", path, message: "La edad de la primera menstruación no puede superar la edad actual de la paciente." });
+        ctx.addIssue({ code: "custom", path, message: "La edad de la primera menstruación no puede superar la edad registrada de la paciente." });
       }
     }
   });

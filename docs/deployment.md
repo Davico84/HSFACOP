@@ -83,6 +83,7 @@ Las de `modules/backend/secrets.properties.example`, más:
 | `COOKIE_SECURE` | `true` |
 | `CORS_ALLOWED_ORIGINS` | el origen exacto del frontend (si hay CORS; ver §3) |
 | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | de Neon (§2) |
+| `LEGACY_COPY_DEADLINE` | instante ISO-8601 (p. ej. `2026-12-04T05:00:00Z`): fecha límite en que el autor de cada historia puede copiar a su libreta local los datos antiguos del paciente (§7). Vacía = ventana cerrada. Se escribe una sola vez al desplegar la libreta |
 
 `DB_POOL_*` ya tienen defaults pensados para Neon; no hace falta definirlas.
 
@@ -290,3 +291,28 @@ Producción = rama **`main`** (Render y Vercel). `dev` llega por PR con el CI en
 | Memoria en Render | métricas del servicio tras el arranque | < 512 MB | ✅ sin reinicios por memoria (Live desde el deploy, `ExitOnOutOfMemoryError` no saltó). Render Free solo muestra métricas de red; medido en local con 512 MB: ~293 MiB |
 | Monitor y ADMIN | UptimeRobot a liveness; primer ADMIN | Up; ve Usuarios | ✅ (UptimeRobot pausado desde 2026-10-11) |
 | Monitor con horario | `wake-up.yml` (Dentdesk) a mano con el servicio dormido; pings de cron-job.org | `UP` tras el arranque; pings solo lun–sáb 9:00–20:50 | ✅ 2026-10-12: despertar verificado (Dentdesk dormida 63 s; HSO `UP`) |
+
+## 7. Migración de la identidad del paciente (alias, sexo y edad)
+
+Cambio `update-orthodontic-records-pseudonymous-patient`: el servidor deja de guardar nombre completo, documento, nacimiento, lugar, domicilio y celular del paciente. **El orden importa**: la acción borra datos en producción y las columnas no se eliminan hasta que ya no quede nada.
+
+1. **Copia de seguridad verificada** de la base (§2.1) y anotar cuántas historias hay.
+2. **Desplegar el binario nuevo junto con la libreta local** (`add-orthodontic-records-local-patient-notebook`) y escribir `LEGACY_COPY_DEADLINE` (14 días después). El servidor ya no mapea ni escribe las columnas antiguas; V21 y V22 solo añaden columnas y guardan el nombre original y los nombres de firma. Hasta la fecha, cada autor ve sus datos antiguos con `GET /api/orthodontic-records/{id}/legacy-identity` y los pasa a su libreta.
+3. **Esperar a que funcione sin errores** y a que venza la fecha límite. Pasada la fecha se borra igual lo que nadie copió: queda solo en el papel firmado.
+4. **Revisar la lista de alias** (no cambia nada) y el informe de historias sin respaldo, y obtener la **aprobación escrita** del responsable:
+
+   ```bash
+   java -jar backend.jar --spring.main.web-application-type=none --app.identity-migration.mode=list
+   ```
+
+5. **Ejecutar la acción** con la base y las variables del servicio. Se niega sin copia verificada, sin la referencia a la aprobación, antes de la fecha límite y sin la confirmación escrita (`MIGRAR <n>`). Solo escribe conteos por la salida estándar; es reanudable:
+
+   ```bash
+   java -jar backend.jar --spring.main.web-application-type=none --app.identity-migration.mode=apply      --app.identity-migration.backup-verified=true --app.identity-migration.approval="aprobación escrita del AAAA-MM-DD"
+   ```
+
+6. **Comprobar** que la verificación final informa cero historias con columnas retiradas, nombres de firma o motivos en texto libre.
+7. **Retirar las columnas** con un segundo despliegue (migración guardada que aborta, sin mostrar valores, si queda alguna fila con datos) y **purgar las copias anteriores** (artifacts del respaldo diario, ramas de la base del proveedor, descargas) con fecha de corte y registro de quién lo verificó.
+
+> [!WARNING]
+> **Después del retiro de las columnas está prohibido volver al binario anterior**: mapea columnas que ya no existen. Solo se restaura un par base + binario compatible desde una copia verificada, en un entorno aislado. Antes del retiro sí se puede volver, porque V21 y V22 no renombran ni borran nada.

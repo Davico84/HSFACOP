@@ -229,7 +229,7 @@ class OpenApiContractIT extends AbstractIntegrationTest {
         List<String> ids = allOperations().stream().map(op -> op.get("operationId").stringValue()).toList();
         assertThat(ids).doesNotHaveDuplicates()
             .containsExactlyInAnyOrder("register", "login", "refresh", "logout", "listUsers", "changeUserStatus",
-                "listRecords", "searchRecords", "createRecord", "getRecord", "updateRecord", "changeRecordQuota", "getRecordQuota",
+                "listRecords", "searchRecords", "createRecord", "getRecord", "getLegacyIdentity", "confirmNotebookBackup", "updateRecord", "changeRecordQuota", "getRecordQuota",
                 "getMyDashboard", "getAdminDashboard", "getCoordinatorDashboard",
                 "listCohorts", "createCohort", "renameCohort", "changeUserCohort", "changeUserRole",
                 "regenerateCohortCode", "changeCohortRegistration", "getMyProfile", "updateMyProfile",
@@ -289,8 +289,8 @@ class OpenApiContractIT extends AbstractIntegrationTest {
         assertThat(names(schemaByName("RecordContent").get("properties"))).containsExactlyInAnyOrder(
             "schemaVersion", "anamnesis", "facial", "functional", "occlusal", "models", "radiographic", "diagnosis", "signatures");
         // El número de historia lo asignan los docentes: obligatorio al crear y al guardar.
-        assertThat(strings(schemaByName("UpdateRecordRequest").get("required"))).contains("version", "recordNumber", "patientName");
-        assertThat(strings(schemaByName("CreateRecordRequest").get("required"))).contains("recordNumber", "patientName");
+        assertThat(strings(schemaByName("UpdateRecordRequest").get("required"))).contains("version", "recordNumber", "patientAlias");
+        assertThat(strings(schemaByName("CreateRecordRequest").get("required"))).contains("recordNumber", "patientAlias");
         assertThat(names(schemaByName("UpdateRecordRequest").get("properties"))).doesNotContain("authorId");
         assertThat(names(schemaByName("RecordSummaryResponse").get("properties"))).doesNotContain("content");
     }

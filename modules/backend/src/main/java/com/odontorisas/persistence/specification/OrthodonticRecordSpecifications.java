@@ -16,6 +16,11 @@ public final class OrthodonticRecordSpecifications {
         return (root, query, cb) -> cb.equal(root.get("author").get("id"), authorId);
     }
 
+    /** Solo las historias con esos identificadores (la búsqueda local de la libreta). */
+    public static Specification<OrthodonticRecord> idIn(Collection<Long> ids) {
+        return (root, query, cb) -> root.get("id").in(ids);
+    }
+
     /** Historias cuyos autores son alumnos de alguna de esas turmas (alcance de un COORDINATOR). */
     public static Specification<OrthodonticRecord> authorInCohorts(Collection<Long> cohortIds) {
         return (root, query, cb) -> root.get("author").get("cohort").get("id").in(cohortIds);

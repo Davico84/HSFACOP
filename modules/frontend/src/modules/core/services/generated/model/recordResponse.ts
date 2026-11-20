@@ -5,8 +5,8 @@
  * Tu portal al conocimiento y al éxito profesional.
  * OpenAPI spec version: v1
  */
-import type { RecordResponseDocumentType } from './recordResponseDocumentType';
 import type { RecordResponsePatientSex } from './recordResponsePatientSex';
+import type { RecordResponsePatientAge } from './recordResponsePatientAge';
 import type { RecordContent } from './recordContent';
 import type { RecordResponsePatientLockedAt } from './recordResponsePatientLockedAt';
 import type { RecordLastUnlock } from './recordLastUnlock';
@@ -18,17 +18,12 @@ export interface RecordResponse {
   authorId: number;
   authorName: string;
   treatingDentist?: string;
-  patientName: string;
-  documentType?: RecordResponseDocumentType;
-  documentNumber?: string;
+  /** Alias del paciente (una o dos palabras, sin apellidos) */
+  patientAlias: string;
   patientSex?: RecordResponsePatientSex;
-  birthDate?: string;
-  birthPlace?: string;
-  address?: string;
-  phone?: string;
+  /** Años cumplidos al inicio del tratamiento, escritos por el tratante; vacío = sin edad */
+  patientAge?: RecordResponsePatientAge;
   treatmentStartDate?: string;
-  /** Años cumplidos a la fecha de inicio de tratamiento (o a hoy); vacío sin fecha de nacimiento */
-  ageYears?: number;
   content: RecordContent;
   /** Último paso (1–8) en que se guardaron cambios; vacío = paso 1 */
   lastStep?: number;

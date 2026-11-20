@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 interface RecordsSearchState {
-  /** Texto buscado en el listado de historias. Puede ser el nombre o el documento de un paciente. */
+  /** Texto buscado en el listado de historias. Puede ser el alias de un paciente. */
   text: string;
   /** Cuenta que lo escribió: otra cuenta en la misma pestaña no lo hereda. */
   userId: number | null;

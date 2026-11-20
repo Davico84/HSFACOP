@@ -2,7 +2,7 @@ import type { Role } from "@/store/useSessionStore";
 import { PATHS } from "@/routes/paths";
 
 /** Secciones de la zona privada (cada proyecto derivado sustituye las de ejemplo). */
-export type SectionId = "home" | "moduleA" | "moduleB" | "users" | "records" | "profile";
+export type SectionId = "home" | "moduleA" | "moduleB" | "users" | "records" | "notebook" | "profile";
 
 /**
  * Política de una sección: dónde vive y quién la ve. Sin `roles` = cualquier usuario
@@ -29,6 +29,8 @@ export const sections: readonly SectionConfig[] = [
   // Historias clínicas: todos los autenticados; el alcance (las propias / todas / las de sus turmas)
   // lo aplica el backend. El formulario solo para quienes escriben (RECORD_EDITOR_ROLES).
   { id: "records", path: PATHS.RECORDS },
+  // Libreta local de datos del paciente: quienes escriben historias (la coordinación es de solo lectura).
+  { id: "notebook", path: PATHS.NOTEBOOK, roles: ["ADMIN", "USER"] },
   // "Mis datos": cada cuenta, la suya (el backend toma la cuenta del token).
   { id: "profile", path: PATHS.PROFILE },
 ];

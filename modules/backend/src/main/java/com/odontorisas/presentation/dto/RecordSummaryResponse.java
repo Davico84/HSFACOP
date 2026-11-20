@@ -1,6 +1,5 @@
 package com.odontorisas.presentation.dto;
 
-import com.odontorisas.common.DocumentType;
 import com.odontorisas.service.records.RecordSummaryView;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -13,9 +12,7 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 public record RecordSummaryResponse(
     @Schema(requiredMode = REQUIRED) Long id,
     @Schema(requiredMode = REQUIRED, example = "AEO-0015") String recordNumber,
-    @Schema(requiredMode = REQUIRED) String patientName,
-    DocumentType documentType,
-    String documentNumber,
+    @Schema(requiredMode = REQUIRED) String patientAlias,
     String treatingDentist,
     LocalDate treatmentStartDate,
     @Schema(requiredMode = REQUIRED) String authorName,
@@ -24,8 +21,7 @@ public record RecordSummaryResponse(
     @Schema(requiredMode = REQUIRED, description = "Datos del paciente fijos (ya se imprimió)") boolean patientLocked) {
 
     public static RecordSummaryResponse from(RecordSummaryView v) {
-        return new RecordSummaryResponse(v.id(), v.recordNumber(), v.patientName(), v.documentType(),
-            v.documentNumber(), v.treatingDentist(), v.treatmentStartDate(), v.authorName(), v.cohortName(), v.updatedAt(),
+        return new RecordSummaryResponse(v.id(), v.recordNumber(), v.patientAlias(), v.treatingDentist(), v.treatmentStartDate(), v.authorName(), v.cohortName(), v.updatedAt(),
             v.patientLocked());
     }
 }

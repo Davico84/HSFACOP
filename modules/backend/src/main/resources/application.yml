@@ -13,6 +13,10 @@ spring:
   config:
     import: "optional:file:./secrets.properties"
 
+  jackson:
+    deserialization:
+      accept-float-as-int: false   # 12,5 no es una edad entera: se rechaza con 400, no se trunca a 12
+
   mvc:
     problemdetails:
       enabled: true          # errores en formato RFC 9457 (ProblemDetail) de forma nativa
@@ -49,6 +53,10 @@ app:
     # Cupo de historias con el que nace toda cuenta nueva (0–9999). Vacío = sin límite.
     # Las cuentas existentes no cambian; el ADMIN lo ajusta en "Usuarios".
     default-quota: ${RECORDS_DEFAULT_QUOTA:1}
+  legacy-copy:
+    # Fecha límite en que el autor de una historia puede copiar a su libreta local los datos antiguos
+    # del paciente (instante ISO-8601). Vacía = ventana cerrada. Se escribe al desplegar la libreta.
+    deadline: ${LEGACY_COPY_DEADLINE:}
   auth:
     lockout:
       max-attempts: ${AUTH_LOCKOUT_MAX_ATTEMPTS:5}   # fallos consecutivos que bloquean la cuenta

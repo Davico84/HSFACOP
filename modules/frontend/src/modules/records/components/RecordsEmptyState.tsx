@@ -10,14 +10,18 @@ interface RecordsEmptyStateProps {
   onBack?: () => void;
   /** Solo lectura (coordinación): sin "Nueva historia" y con un texto propio. */
   readOnly?: boolean;
+  /** La búsqueda se resolvió solo en este dispositivo (libreta local): el texto aclara dónde se buscó. */
+  localOnly?: boolean;
 }
 
-export function RecordsEmptyState({ searching, onClear, onBack, readOnly = false }: RecordsEmptyStateProps) {
+export function RecordsEmptyState({ searching, onClear, onBack, readOnly = false, localOnly = false }: RecordsEmptyStateProps) {
   if (searching) {
     return (
       <div className="flex flex-col items-center gap-3 py-12 text-center">
         <SearchX className="size-10 text-muted-foreground" aria-hidden="true" />
-        <p className="text-muted-foreground">No hay historias que coincidan.</p>
+        <p className="text-muted-foreground">
+          {localOnly ? "No hay historias que coincidan en este dispositivo." : "No hay historias que coincidan."}
+        </p>
         <Button variant="outline" size="sm" onClick={onClear}>
           Limpiar búsqueda
         </Button>

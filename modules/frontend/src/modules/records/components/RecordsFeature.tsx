@@ -10,12 +10,14 @@ import { useSessionStore } from "@/store/useSessionStore";
 import { useRecordsListStore } from "@/store/useRecordsListStore";
 import { useRecordsSearchStore } from "@/store/useRecordsSearchStore";
 import { useRecords } from "../hooks/useRecords";
+import { MAX_LOCAL_MATCHES, planSearch, useLocalMatches } from "../notebook/localSearch";
 import { RecordsCardList } from "./RecordsCardList";
 import { RecordsTable } from "./RecordsTable";
 import { RecordsPagination } from "./RecordsPagination";
 import { RecordsEmptyState } from "./RecordsEmptyState";
 import { NewRecordLink } from "./NewRecordLink";
 import { RecordQuotaNotice } from "./RecordQuotaNotice";
+import { NotebookReminder } from "./NotebookReminder";
 import { RecordsCohortFilter } from "./RecordsCohortFilter";
 import { recordsListViewFor } from "../utils/recordsListView";
 
@@ -45,7 +47,11 @@ export function RecordsFeature() {
   const debounced = useDebouncedValue(search, 300);
   const role = useSessionStore((s) => s.user?.role);
   const view = recordsListViewFor(role);
-  const records = useRecords(query, page, view === "cohorts" ? cohortId : null);
+  // Quienes escriben historias tienen libreta local: el nombre y el documento se buscan en el dispositivo y
+  // las historias se piden por identificadores, sin enviar el texto. La coordinación busca como siempre.
+  const local = useLocalMatches(view === "cohorts" ? null : userId, query);
+  const plan = planSearch(query, view === "cohorts" ? null : local);
+  const records = useRecords(plan, page, view === "cohorts" ? cohortId : null);
   // Tabla desde 1024 px; debajo, tarjetas (la tabla dejaba las acciones fuera de la pantalla).
   const desktop = useMediaQuery("(min-width: 1024px)", true);
   const { pathname, search: urlSearch } = useLocation();
@@ -100,7 +106,9 @@ export function RecordsFeature() {
   };
 
   let content;
-  if (records.isPending) {
+  if (plan.kind === "none") {
+    content = <RecordsEmptyState searching onClear={clearSearch} localOnly />;
+  } else if (records.isPending) {
     content = (
       <p className="flex items-center gap-2 text-muted-foreground" role="status">
         <Loader2 className="size-4 animate-spin" aria-hidden="true" /> Cargando historias…
@@ -119,6 +127,7 @@ export function RecordsFeature() {
     content = (
       <RecordsEmptyState
         searching={query.trim() !== ""}
+        localOnly={plan.kind === "ids"}
         onClear={clearSearch}
         onBack={page > 0 ? () => setPage((p) => p - 1) : undefined}
         readOnly={view === "cohorts"}
@@ -132,6 +141,11 @@ export function RecordsFeature() {
         ) : (
           <RecordsCardList records={records.data.content} view={view} />
         )}
+        {plan.kind === "ids" && plan.total > MAX_LOCAL_MATCHES ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Hay {plan.total} coincidencias: se muestran las {MAX_LOCAL_MATCHES} más recientes. Afina la búsqueda.
+          </p>
+        ) : null}
         <RecordsPagination
           page={records.data.page}
           totalPages={records.data.totalPages}
@@ -157,12 +171,13 @@ export function RecordsFeature() {
         {view === "cohorts" ? null : <NewRecordLink />}
       </header>
       {view === "own" ? <RecordQuotaNotice /> : null}
+      {view === "cohorts" ? null : <NotebookReminder />}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="w-full max-w-md">
         <IconInput
           type="search"
           aria-label="Buscar historias"
-          placeholder="Buscar por paciente, documento o número (AEO-0001)"
+          placeholder="Buscar por alias o número (AEO-0001)"
           icon={<Search className="size-4" />}
           value={search}
           onChange={(e) => onSearch(e.target.value)}

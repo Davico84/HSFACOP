@@ -13,11 +13,13 @@ interface MeasureFieldProps<T extends FieldValues> {
   /** Rango de las flechas (la validación sigue en el schema). */
   min?: number;
   max?: number;
+  /** Solo lectura (datos fijos): el valor se ve pero no se cambia. */
+  readOnly?: boolean;
   className?: string;
 }
 
 /** Número (con su unidad, si tiene). Vacío = `null`; el rango lo valida el schema. */
-export function MeasureField<T extends FieldValues>({ name, label, unit, step = 0.1, min, max, className }: MeasureFieldProps<T>) {
+export function MeasureField<T extends FieldValues>({ name, label, unit, step = 0.1, min, max, readOnly = false, className }: MeasureFieldProps<T>) {
   const { control, formState } = useFormContext<T>();
   const id = fieldId(name);
   const error = fieldError(formState.errors, name);
@@ -33,6 +35,7 @@ export function MeasureField<T extends FieldValues>({ name, label, unit, step = 
               step={step}
               min={min}
               max={max}
+              disabled={readOnly}
               className="w-28"
               aria-invalid={error ? true : undefined}
               value={field.value}

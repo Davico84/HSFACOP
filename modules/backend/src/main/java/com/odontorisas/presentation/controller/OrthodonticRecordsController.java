@@ -8,6 +8,7 @@ import com.odontorisas.presentation.dto.RecordQuotaResponse;
 import com.odontorisas.common.Role;
 import com.odontorisas.presentation.dto.ApiProblem;
 import com.odontorisas.presentation.dto.CreateRecordRequest;
+import com.odontorisas.presentation.dto.LegacyIdentityResponse;
 import com.odontorisas.presentation.dto.PageResponse;
 import com.odontorisas.presentation.dto.RecordResponse;
 import com.odontorisas.presentation.dto.RecordSummaryResponse;
@@ -26,6 +27,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -79,7 +81,7 @@ public class OrthodonticRecordsController {
     }
 
     /** Misma salida y mismo acceso por rol que el listado; el texto va en el cuerpo, nunca en la URL. */
-    @Operation(operationId = "searchRecords", summary = "Buscar historias por texto (el texto va en el cuerpo, no en la URL)")
+    @Operation(operationId = "searchRecords", summary = "Buscar historias por texto o por identificadores (van en el cuerpo, no en la URL)")
     @ApiResponse(responseCode = "200", description = "Página de historias que coinciden")
     @ApiResponse(responseCode = "400", description = "Cuerpo, texto (más de 120 caracteres), página o tamaño inválidos",
         content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = ValidationProblem.class)))
@@ -91,13 +93,20 @@ public class OrthodonticRecordsController {
             @Parameter(description = "Página (base 0)") @RequestParam(defaultValue = "0") @Min(0) int page,
             @Parameter(description = "Tamaño (1–100; uno mayor se recorta a 100)")
             @RequestParam(defaultValue = "" + DEFAULT_PAGE_SIZE) @Min(1) int size) {
-        return ResponseEntity.ok(page(request.getQ(), cohortId, page, size));
+        // Lo buscado (texto o identificadores) es privado: la respuesta nunca se cachea.
+        PageResponse<RecordSummaryResponse> result = request.getRecordIds() != null
+            ? PageResponse.from(service.listByIds(currentActor(), request.getRecordIds(), cohortId, pageable(page, size))
+                .map(RecordSummaryResponse::from))
+            : page(request.getQ(), cohortId, page, size);
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(result);
     }
 
     private PageResponse<RecordSummaryResponse> page(String q, Long cohortId, int page, int size) {
-        PageRequest pageable = PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE),
-            Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id")));
-        return PageResponse.from(service.list(currentActor(), q, cohortId, pageable).map(RecordSummaryResponse::from));
+        return PageResponse.from(service.list(currentActor(), q, cohortId, pageable(page, size)).map(RecordSummaryResponse::from));
+    }
+
+    private static PageRequest pageable(int page, int size) {
+        return PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE), Sort.by(Sort.Order.desc("updatedAt"), Sort.Order.desc("id")));
     }
 
     @Operation(operationId = "createRecord", summary = "Crear una historia (borrador) con el número que asignan los docentes")
@@ -132,6 +141,33 @@ public class OrthodonticRecordsController {
     @GetMapping("/{id}")
     public ResponseEntity<RecordResponse> getRecord(@PathVariable Long id) {
         return ResponseEntity.ok(RecordResponse.from(service.get(currentActor(), id)));
+    }
+
+    @Operation(operationId = "confirmNotebookBackup", summary = "El autor marca su historia como respaldada en su libreta local",
+        description = "Sin datos del paciente. Idempotente. Solo el autor, hasta la fecha límite de copia y mientras la historia no se migre; "
+            + "si no, responde 404.")
+    @ApiResponse(responseCode = "204", description = "Historia marcada como respaldada (o ya lo estaba)")
+    @ApiResponse(responseCode = "404", description = "No existe, no es tuya, ya pasó la fecha límite o ya se migró",
+        content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = ApiProblem.class)))
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @PostMapping("/{id}/notebook-backup")
+    public ResponseEntity<Void> confirmNotebookBackup(@PathVariable Long id) {
+        service.confirmNotebookBackup(currentActor(), id);
+        return ResponseEntity.noContent().cacheControl(CacheControl.noStore()).build();
+    }
+
+    @Operation(operationId = "getLegacyIdentity", summary = "Datos antiguos del paciente, solo para su autor y hasta la fecha límite de copia",
+        description = "Para copiarlos a la libreta local. Responde 404 a cualquiera que no sea el autor, tras la fecha límite "
+            + "de copia o con la historia ya migrada. Nunca se cachea (Cache-Control: no-store) ni se registra.")
+    @ApiResponse(responseCode = "200", description = "Datos antiguos del paciente",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = LegacyIdentityResponse.class)))
+    @ApiResponse(responseCode = "404", description = "No existe, no es tuya, ya pasó la fecha límite o ya se migró",
+        content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = ApiProblem.class)))
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @GetMapping(value = "/{id}/legacy-identity", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<LegacyIdentityResponse> getLegacyIdentity(@PathVariable Long id) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+            .body(LegacyIdentityResponse.from(service.legacyIdentity(currentActor(), id)));
     }
 
     @Operation(operationId = "updateRecord", summary = "Guardar la historia completa (con la versión cargada)")

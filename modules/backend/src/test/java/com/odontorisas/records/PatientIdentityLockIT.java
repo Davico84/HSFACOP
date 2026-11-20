@@ -65,8 +65,7 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
 
     /** Identidad de partida de las historias de estos tests. */
     private static final Map<String, Object> ANA = Map.of(
-        "patientName", "Ana Quispe", "documentType", "DNI", "documentNumber", "74125896",
-        "birthDate", "2012-05-20", "patientSex", "FEMALE", "birthPlace", "Lima");
+        "patientAlias", "Ana Q", "patientSex", "FEMALE", "patientAge", 13);
 
     @Autowired MockMvc mockMvc;
     @Autowired JdbcTemplate jdbc;
@@ -188,7 +187,7 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         assertThat(read(saved).get("recordNumber").stringValue()).isEqualTo(corrected);
         assertThat(read(saved).get("patientLockedAt")).isNotNull();
         // Los datos del paciente siguen fijos.
-        assertThat(save(torres, id, Map.of("patientName", "Rosa Díaz")).getResponse().getStatus()).isEqualTo(409);
+        assertThat(save(torres, id, Map.of("patientAlias", "Rosa Díaz")).getResponse().getStatus()).isEqualTo(409);
         // La búsqueda encuentra el número nuevo y ya no el anterior.
         assertThat(search(torres, corrected.toLowerCase()).get("content")).hasSize(1);
         assertThat(search(torres, old.toLowerCase()).get("content")).isEmpty();
@@ -206,8 +205,8 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
     void correcting_before_printing_is_saved() throws Exception {
         Session torres = register("Dra. Torres");
         long id = create(torres);
-        assertThat(save(torres, id, Map.of("patientName", "Rosa Díaz")).getResponse().getStatus()).isEqualTo(200);
-        assertThat(record(torres, id).get("patientName").stringValue()).isEqualTo("Rosa Díaz");
+        assertThat(save(torres, id, Map.of("patientAlias", "Rosa Díaz")).getResponse().getStatus()).isEqualTo(200);
+        assertThat(record(torres, id).get("patientAlias").stringValue()).isEqualTo("Rosa Díaz");
     }
 
     @Test
@@ -233,9 +232,7 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         JsonNode before = record(torres, id);
 
         List<Map<String, Object>> changes = List.of(
-            Map.of("patientName", "Rosa Díaz"), Map.of("documentNumber", "74125897"),
-            Map.of("birthDate", "2013-01-01"), Map.of("patientSex", "MALE"), Map.of("birthPlace", "Cusco"),
-            Map.of("documentType", "PASSPORT"));
+            Map.of("patientAlias", "Rosa Díaz"), Map.of("patientSex", "MALE"), Map.of("patientAge", 14));
         for (Map<String, Object> change : changes) {
             MvcResult result = save(torres, id, change);
             assertThat(result.getResponse().getStatus()).as(change.toString()).isEqualTo(409);
@@ -243,8 +240,8 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         }
         JsonNode after = record(torres, id);
         assertThat(after.get("version").asLong()).isEqualTo(before.get("version").asLong());
-        assertThat(after.get("patientName").stringValue()).isEqualTo("Ana Quispe");
-        assertThat(after.get("documentNumber").stringValue()).isEqualTo("74125896");
+        assertThat(after.get("patientAlias").stringValue()).isEqualTo("Ana Q");
+        assertThat(after.get("patientAge").asInt()).isEqualTo(13);
     }
 
     @Test
@@ -252,9 +249,9 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         Session torres = register("Dra. Torres");
         long id = create(torres);
         print(torres, id, null);
-        assertThat(save(torres, id, Map.of("patientName", "ANA  QUÍSPE", "birthPlace", "lima"))
+        assertThat(save(torres, id, Map.of("patientAlias", "ANA  Q"))
             .getResponse().getStatus()).isEqualTo(200);
-        assertThat(save(torres, id, Map.of("patientName", "Ａｎａ Quispe")).getResponse().getStatus()).isEqualTo(200);
+        assertThat(save(torres, id, Map.of("patientAlias", "Ａｎａ Q")).getResponse().getStatus()).isEqualTo(200);
     }
 
     @Test
@@ -263,15 +260,14 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         long id = create(torres);
         String lockedAt = read(print(torres, id, null)).get("record").get("patientLockedAt").stringValue();
 
-        MvcResult saved = save(torres, id, Map.of("address", "Av. Sol 123", "phone", "987654321",
-            "treatmentStartDate", "2026-05-19"));
+        MvcResult saved = save(torres, id, Map.of("treatmentStartDate", "2026-05-19"));
         assertThat(saved.getResponse().getStatus()).isEqualTo(200);
         long version = read(saved).get("version").asLong();
 
         JsonNode reprint = read(print(torres, id, null));
         assertThat(reprint.get("record").get("patientLockedAt").stringValue()).isEqualTo(lockedAt);
         assertThat(reprint.get("record").get("version").asLong()).isEqualTo(version);
-        assertThat(reprint.get("record").get("address").stringValue()).isEqualTo("Av. Sol 123");
+        assertThat(reprint.get("record").get("treatmentStartDate").stringValue()).isEqualTo("2026-05-19");
     }
 
     @Test
@@ -282,7 +278,7 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         print(torres, id, null);
 
         // La otra pestaña tenía la misma versión (imprimir no la cambia): cambiar la identidad → 409.
-        MvcResult other = save(torres, id, versionBeforePrint, Map.of("patientName", "Rosa Díaz"));
+        MvcResult other = save(torres, id, versionBeforePrint, Map.of("patientAlias", "Rosa Díaz"));
         assertThat(other.getResponse().getStatus()).isEqualTo(409);
         assertThat(type(other)).isEqualTo("/errors/patient-locked");
     }
@@ -297,20 +293,20 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
             ExecutorService pool = Executors.newFixedThreadPool(2);
             try {
                 Callable<MvcResult> printTask = () -> { start.await(); return print(torres, id, null); };
-                Callable<MvcResult> saveTask = () -> { start.await(); return save(torres, id, version, Map.of("patientName", "Rosa Díaz")); };
+                Callable<MvcResult> saveTask = () -> { start.await(); return save(torres, id, version, Map.of("patientAlias", "Rosa Díaz")); };
                 Future<MvcResult> printed = pool.submit(printTask);
                 Future<MvcResult> saved = pool.submit(saveTask);
                 start.countDown();
                 int saveStatus = saved.get().getResponse().getStatus();
-                String lockedName = read(printed.get()).get("record").get("patientName").stringValue();
+                String lockedName = read(printed.get()).get("record").get("patientAlias").stringValue();
                 // O el guardado entró antes (y se imprimió Rosa) o la impresión fijó a Ana y el guardado se rechazó.
                 if (saveStatus == 200) {
                     assertThat(lockedName).isEqualTo("Rosa Díaz");
                 } else {
                     assertThat(saveStatus).isEqualTo(409);
-                    assertThat(lockedName).isEqualTo("Ana Quispe");
+                    assertThat(lockedName).isEqualTo("Ana Q");
                 }
-                assertThat(record(torres, id).get("patientName").stringValue()).isEqualTo(lockedName);
+                assertThat(record(torres, id).get("patientAlias").stringValue()).isEqualTo(lockedName);
             } finally {
                 pool.shutdownNow();
             }
@@ -322,7 +318,7 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         Session admin = admin();
         long id = create(admin);
         print(admin, id, null);
-        assertThat(save(admin, id, Map.of("patientName", "Rosa Díaz")).getResponse().getStatus()).isEqualTo(409);
+        assertThat(save(admin, id, Map.of("patientAlias", "Rosa Díaz")).getResponse().getStatus()).isEqualTo(409);
     }
 
     @Test
@@ -331,7 +327,7 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         long id = create(torres);
         // Historia impresa antes de este cambio: sin registro de impresión, desbloqueada.
         assertThat(isNull(record(torres, id).get("patientLockedAt"))).isTrue();
-        assertThat(save(torres, id, Map.of("patientName", "Rosa Díaz")).getResponse().getStatus()).isEqualTo(200);
+        assertThat(save(torres, id, Map.of("patientAlias", "Rosa Díaz")).getResponse().getStatus()).isEqualTo(200);
     }
 
     @Test
@@ -372,9 +368,9 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM record_unlock_events WHERE record_id = ? AND action = 'UNLOCKED'"
             + " AND reason IS NULL", Integer.class, id)).isEqualTo(1);
 
-        assertThat(save(torres, id, Map.of("patientName", "Ana Lucía Quispe")).getResponse().getStatus()).isEqualTo(200);
+        assertThat(save(torres, id, Map.of("patientAlias", "Ana Lucía")).getResponse().getStatus()).isEqualTo(200);
         print(torres, id, null);
-        assertThat(save(torres, id, Map.of("patientName", "Rosa Díaz")).getResponse().getStatus()).isEqualTo(409);
+        assertThat(save(torres, id, Map.of("patientAlias", "Rosa Díaz")).getResponse().getStatus()).isEqualTo(409);
     }
 
     @Test
@@ -415,28 +411,28 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         long id = create(torres);
         print(torres, id, null);
 
-        assertThat(request(torres, id, "Error en el número de DNI").getResponse().getStatus()).isEqualTo(204);
+        assertThat(request(torres, id, "ALIAS").getResponse().getStatus()).isEqualTo(204);
         JsonNode pending = record(torres, id).get("unlockRequest");
-        assertThat(pending.get("reason").stringValue()).isEqualTo("Error en el número de DNI");
+        assertThat(pending.get("reason").stringValue()).isEqualTo("ALIAS");
         assertThat(pending.get("requestedAt").stringValue()).isEqualTo(NOW.toString());
 
         unlock(admin, id);
         assertThat(isNull(record(torres, id).get("unlockRequest"))).isTrue();
         assertThat(jdbc.queryForObject("SELECT reason FROM record_unlock_events WHERE record_id = ?", String.class, id))
-            .isEqualTo("Error en el número de DNI");
+            .isEqualTo("ALIAS");
     }
 
     @Test
     void repeated_or_unlocked_requests_are_409() throws Exception {
         Session torres = register("Dra. Torres");
         long id = create(torres);
-        MvcResult notLocked = request(torres, id, "Error");
+        MvcResult notLocked = request(torres, id, "OTRO");
         assertThat(notLocked.getResponse().getStatus()).isEqualTo(409);
         assertThat(type(notLocked)).isEqualTo("/errors/patient-not-locked");
 
         print(torres, id, null);
-        request(torres, id, "Error");
-        MvcResult again = request(torres, id, "Otra vez");
+        request(torres, id, "OTRO");
+        MvcResult again = request(torres, id, "EDAD");
         assertThat(again.getResponse().getStatus()).isEqualTo(409);
         assertThat(type(again)).isEqualTo("/errors/unlock-already-requested");
     }
@@ -450,7 +446,7 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         ExecutorService pool = Executors.newFixedThreadPool(2);
         try {
             List<Future<MvcResult>> results = new ArrayList<>();
-            for (String reason : List.of("Motivo A", "Motivo B")) {
+            for (String reason : List.of("ALIAS", "SEXO")) {
                 results.add(pool.submit(() -> { start.await(); return request(torres, id, reason); }));
             }
             start.countDown();
@@ -470,7 +466,7 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         Session admin = admin();
         long id = create(torres);
         print(torres, id, null);
-        request(torres, id, "Error en el DNI");
+        request(torres, id, "ALIAS");
 
         assertThat(discard(admin, id).getResponse().getStatus()).isEqualTo(204);
         JsonNode after = record(torres, id);
@@ -478,7 +474,7 @@ class PatientIdentityLockIT extends AbstractIntegrationTest {
         assertThat(isNull(after.get("patientLockedAt"))).isFalse();
         assertThat(jdbc.queryForObject("SELECT action FROM record_unlock_events WHERE record_id = ?", String.class, id))
             .isEqualTo("DISCARDED");
-        assertThat(request(torres, id, "Ahora sí").getResponse().getStatus()).isEqualTo(204);
+        assertThat(request(torres, id, "SEXO").getResponse().getStatus()).isEqualTo(204);
         // Descartar sin solicitud no hace nada.
         discard(admin, id);
         assertThat(discard(admin, id).getResponse().getStatus()).isEqualTo(204);

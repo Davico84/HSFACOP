@@ -12,6 +12,8 @@ export const PATHS = {
   // Historias clínicas de ortodoncia (capacidad orthodontic-records).
   RECORDS: "/historias",
   RECORD_NEW: "/historias/nueva",
+  // Libreta local de datos del paciente (capacidad patient-notebook): exportar, importar y borrar.
+  NOTEBOOK: "/libreta",
   // Datos de la propia cuenta (capacidad users), todos los roles.
   PROFILE: "/mis-datos",
   // Nueva contraseña con un enlace de restablecimiento (pública; fuera de /auth/*, que es de la API).

@@ -19,6 +19,12 @@ import { RecordLoading } from "../RecordLoading";
 import { RecordLoadError } from "../RecordLoadError";
 import { RecordNotFound } from "../RecordNotFound";
 import { RecordPrintDocument } from "./RecordPrintDocument";
+import { NotebookReadError } from "./NotebookReadError";
+import { NotebookMissingNotice } from "./NotebookMissingNotice";
+import { lookupEntry } from "../../notebook/notebookService";
+import { withNotebookLock } from "../../notebook/notebookLocks";
+import type { NotebookEntry } from "../../notebook/notebookSchema";
+import { useNotebookEntry } from "../../notebook/useNotebookEntry";
 import { PAGE_CSS, SHEET_WIDTH_PX } from "./printStyle";
 
 /** Fecha local de hoy (`2026-10-05`), para la marca en la vista previa antes de imprimir. */
@@ -32,7 +38,10 @@ function todayIso(): string {
  * Vista preliminar de impresión de una historia (fuera del shell): muestra las hojas A4 tal como
  * saldrán. "Imprimir" registra primero la impresión en el servidor (la primera fija los datos del
  * paciente) y recién entonces abre el diálogo; imprimir por otro medio saca solo un aviso. Las hojas
- * de una historia incompleta llevan la marca de avance con la fecha y el conteo del servidor. Fuerza
+ * de una historia incompleta llevan la marca de avance con la fecha y el conteo del servidor. Si el
+ * dispositivo tiene libreta local para la historia, el navegador completa con ella los datos del
+ * paciente al imprimir (copia tomada antes de registrar la impresión); el servidor nunca los recibe y
+ * el título del documento no lleva datos del paciente. Fuerza
  * el tema claro mientras está abierta. La coordinación la ve en solo lectura: sin "Imprimir" (no
  * registra impresiones ni fija datos) y "Volver" nunca lleva al formulario.
  */
@@ -48,6 +57,11 @@ export function RecordPrintFeature() {
   const [printed, setPrinted] = useState<PrintStamp | null>(null);
   // Solo mientras el botón abre el diálogo: el CSS muestra las hojas al imprimir.
   const [ready, setReady] = useState(false);
+  // Libreta local: la entrada viva para la vista previa, y la copia tomada al imprimir (undefined = viva).
+  const accountId = useSessionStore((s) => s.user?.id);
+  const live = useNotebookEntry(accountId, id, record.data?.recordNumber);
+  const [snapshot, setSnapshot] = useState<NotebookEntry | null | undefined>(undefined);
+  const [readFailed, setReadFailed] = useState(false);
 
   // Nunca queda activo: se quita al terminar o cancelar la impresión y al volver a la página.
   useEffect(() => {
@@ -60,6 +74,15 @@ export function RecordPrintFeature() {
       window.removeEventListener("focus", clear);
     };
   }, [ready]);
+
+  // El nombre propuesto del PDF sale del título: genérico, sin datos del paciente ni alias.
+  useEffect(() => {
+    const previous = document.title;
+    document.title = "Historia clínica de ortodoncia";
+    return () => {
+      document.title = previous;
+    };
+  }, []);
 
   // El papel es claro: se quita el tema oscuro mientras la vista está abierta.
   useEffect(() => {
@@ -92,7 +115,11 @@ export function RecordPrintFeature() {
     printedOn: todayIso(),
   };
 
-  const onPrint = () => {
+  const liveEntry = live.data?.status === "found" ? live.data.entry : null;
+  const entry = snapshot !== undefined ? snapshot : liveEntry;
+
+  /** Registra la impresión con la copia de la libreta ya tomada y abre el diálogo. */
+  const registerAndPrint = (copy: NotebookEntry | null) => {
     print.mutate(
       { id: data.id, filledSteps: filledStepsOf(toFormValues(data)) },
       {
@@ -100,6 +127,7 @@ export function RecordPrintFeature() {
           // Pinta ya la marca del servidor y habilita las hojas; recién entonces abre el diálogo
           // (bloqueante en escritorio) y al volver las deshabilita otra vez.
           flushSync(() => {
+            setSnapshot(copy);
             setPrinted({
               clinicalFilledSteps: response.clinicalFilledSteps ?? stamp.clinicalFilledSteps,
               printedOn: response.printedOn,
@@ -108,11 +136,33 @@ export function RecordPrintFeature() {
           });
           window.print();
           setReady(false);
+          // Reimprimir toma una copia nueva de la libreta.
+          setSnapshot(undefined);
         },
         onError: (error) =>
-          toast.error(getUserFriendlyError(error), { action: { label: "Reintentar", onClick: onPrint } }),
+          toast.error(getUserFriendlyError(error), { action: { label: "Reintentar", onClick: () => registerAndPrint(copy) } }),
       },
     );
+  };
+
+  /**
+   * Toma la copia de la libreta ANTES de registrar la impresión. Si la lectura falla (no por falta de
+   * IndexedDB, que simplemente deja las líneas en blanco) no se registra ni se fija nada.
+   */
+  const onPrint = async () => {
+    setReadFailed(false);
+    // Bajo el bloqueo de la libreta: un borrado o una importación de otra pestaña espera a esta lectura.
+    const result = await withNotebookLock(() => lookupEntry(accountId ?? 0, data.id, data.recordNumber));
+    if (result.status === "unavailable" && result.error.kind !== "unavailable") {
+      setReadFailed(true);
+      return;
+    }
+    registerAndPrint(result.status === "found" ? result.entry : null);
+  };
+
+  const onPrintBlank = () => {
+    setReadFailed(false);
+    registerAndPrint(null);
   };
 
   return (
@@ -127,7 +177,7 @@ export function RecordPrintFeature() {
           <ArrowLeft className="size-4" aria-hidden="true" /> Volver
         </Link>
         {readOnly ? null : (
-          <Button onClick={onPrint} disabled={print.isPending} className="sm:order-last">
+          <Button onClick={() => void onPrint()} disabled={print.isPending} className="sm:order-last">
             {print.isPending ? (
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
             ) : (
@@ -141,6 +191,15 @@ export function RecordPrintFeature() {
             ? `Historia ${data.recordNumber} en solo lectura: la imprime su autor.`
             : `Vista preliminar de la historia ${data.recordNumber}: revisa las hojas y pulsa Imprimir.`}
         </p>
+        {readFailed ? <NotebookReadError onRetry={() => void onPrint()} onPrintBlank={onPrintBlank} /> : null}
+        {!readOnly && live.data !== undefined && live.data.status !== "mismatch" && !liveEntry?.fullName ? (
+          <NotebookMissingNotice recordId={data.id} />
+        ) : null}
+        {live.data?.status === "mismatch" ? (
+          <p className="w-full text-sm text-destructive">
+            La libreta de este dispositivo guarda otra historia con este identificador: no corresponde y se ignora.
+          </p>
+        ) : null}
       </div>
       <p className="print-guard-notice p-[25mm] text-[14pt]">
         {readOnly ? "La coordinación consulta las historias en solo lectura." : "Usa el botón Imprimir de la vista preliminar."}
@@ -149,7 +208,7 @@ export function RecordPrintFeature() {
       <div className="print-sheets">
         <PrintStampContext.Provider value={stamp}>
           <ScaleToFit naturalWidth={SHEET_WIDTH_PX} className="px-2 sm:px-6 print:px-0">
-            <RecordPrintDocument record={data} />
+            <RecordPrintDocument record={data} notebook={entry} />
           </ScaleToFit>
         </PrintStampContext.Provider>
       </div>

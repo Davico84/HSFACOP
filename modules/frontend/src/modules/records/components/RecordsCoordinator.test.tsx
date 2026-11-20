@@ -21,10 +21,10 @@ function mockCoordinatorList() {
       cohortIds.push(cohortId);
       const rows =
         cohortId === "2"
-          ? [summary({ id: 12, recordNumber: "AEO-0003", patientName: "Rosa Mamani", authorName: "Bea Alumna", cohortName: "Turma 2" })]
+          ? [summary({ id: 12, recordNumber: "AEO-0003", patientAlias: "Rosa Mamani", authorName: "Bea Alumna", cohortName: "Turma 2" })]
           : [
               summary({ authorName: "Ana Alumna", cohortName: "Turma 1" }),
-              summary({ id: 12, recordNumber: "AEO-0003", patientName: "Rosa Mamani", authorName: "Bea Alumna", cohortName: "Turma 2" }),
+              summary({ id: 12, recordNumber: "AEO-0003", patientAlias: "Rosa Mamani", authorName: "Bea Alumna", cohortName: "Turma 2" }),
             ];
       return HttpResponse.json(page(rows));
     }),
@@ -51,7 +51,7 @@ describe("cohorts — Historias de las turmas en solo lectura", () => {
     renderRecordRoutes("/historias", "COORDINATOR");
 
     const row = await screen.findByRole("row", { name: /AEO-0001/ });
-    expect(within(row).getByRole("link", { name: "Ana Quispe" })).toHaveAttribute("href", "/historias/10/imprimir");
+    expect(within(row).getByRole("link", { name: "Ana" })).toHaveAttribute("href", "/historias/10/imprimir");
     expect(within(row).queryByRole("link", { name: /Editar historia/ })).not.toBeInTheDocument();
   });
 

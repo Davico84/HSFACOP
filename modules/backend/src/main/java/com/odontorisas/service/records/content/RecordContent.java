@@ -30,7 +30,7 @@ public record RecordContent(
      * 7: {@code models.bolton.incisors} propios de Bolton (migración V10 los copia de Nance).
      * 11: subsecciones {@code models.tanaka} y {@code models.wolford}; sin migración, llegan vacías.
      */
-    public static final int CURRENT_SCHEMA_VERSION = 11;
+    public static final int CURRENT_SCHEMA_VERSION = 12;
 
     public static RecordContent empty() {
         return new RecordContent(CURRENT_SCHEMA_VERSION, Anamnesis.empty(), FacialAnalysis.empty(),
