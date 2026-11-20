@@ -143,8 +143,9 @@ describe("orthodontic-records — Impresión con presentación del PDF", () => {
     for (const text of ["Clase II esquelética", "1. Mordida profunda"]) {
       expect(screen.getByText(text).className).not.toMatch(/border-b/);
     }
-    // El nombre, el documento, el nacimiento, el domicilio y el celular quedan en blanco para escribirlos a mano.
-    for (const label of ["Nombre y apellidos", "Documento", "Domicilio", "Celular", "Lugar y fecha de nacimiento del paciente"]) {
+    // El documento, el nacimiento, el domicilio y el celular quedan en blanco para escribirlos a mano
+    // (el nombre sale con el alias hasta que la libreta lo tenga).
+    for (const label of ["Documento", "Domicilio", "Celular", "Lugar y fecha de nacimiento del paciente"]) {
       expect(screen.getByText(`${label}:`).parentElement?.querySelector(".border-b")).not.toBeNull();
       expect(screen.getByText(`${label}:`).parentElement?.textContent).toBe(`${label}:`);
     }
@@ -386,9 +387,12 @@ describe("orthodontic-records — Impresión con presentación del PDF", () => {
     renderRecordRoutes("/historias/10/imprimir");
     await screen.findAllByRole("article");
 
-    for (const label of ["ALIAS:", "Nombre y apellidos:", "Domicilio:", "Documento:", "Celular:", "Lugar y fecha de nacimiento del paciente:"]) {
+    for (const label of ["Domicilio:", "Documento:", "Celular:", "Lugar y fecha de nacimiento del paciente:"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
+    // La cabecera de cada hoja con datos del paciente dice «Nombre y apellidos», nunca «Alias».
+    expect(screen.getAllByText("Nombre y apellidos:").length).toBeGreaterThanOrEqual(7);
+    expect(screen.queryByText(/^alias:?$/i)).not.toBeInTheDocument();
     expect(screen.getAllByText("Nombre:").length).toBeGreaterThanOrEqual(3);
     expect(screen.getAllByText("Firma:").length).toBeGreaterThanOrEqual(3);
     expect(screen.getByText("Mordida profunda de")).toBeInTheDocument();

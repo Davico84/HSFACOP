@@ -20,6 +20,7 @@ import { RecordLoadError } from "../RecordLoadError";
 import { RecordNotFound } from "../RecordNotFound";
 import { RecordPrintDocument } from "./RecordPrintDocument";
 import { NotebookReadError } from "./NotebookReadError";
+import { NotebookMissingNotice } from "./NotebookMissingNotice";
 import { lookupEntry } from "../../notebook/notebookService";
 import { withNotebookLock } from "../../notebook/notebookLocks";
 import type { NotebookEntry } from "../../notebook/notebookSchema";
@@ -191,6 +192,9 @@ export function RecordPrintFeature() {
             : `Vista preliminar de la historia ${data.recordNumber}: revisa las hojas y pulsa Imprimir.`}
         </p>
         {readFailed ? <NotebookReadError onRetry={() => void onPrint()} onPrintBlank={onPrintBlank} /> : null}
+        {!readOnly && live.data !== undefined && live.data.status !== "mismatch" && !liveEntry?.fullName ? (
+          <NotebookMissingNotice recordId={data.id} />
+        ) : null}
         {live.data?.status === "mismatch" ? (
           <p className="w-full text-sm text-destructive">
             La libreta de este dispositivo guarda otra historia con este identificador: no corresponde y se ignora.

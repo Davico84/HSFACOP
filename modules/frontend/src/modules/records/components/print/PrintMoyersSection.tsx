@@ -31,7 +31,7 @@ export function PrintMoyersSection({ record }: PrintMoyersSectionProps) {
   return (
     <PrintPage recordNumber={record.recordNumber} title="Ficha para el análisis de Moyers">
       <div className="mt-[4pt] flex flex-col">
-        <PrintField label="Alias" value={record.patientAlias} lined />
+        <PrintField label="Nombre y apellidos" value={record.patientAlias} lined />
         <div className="flex gap-4">
           <PrintField label="Edad" value={formatAge(record.patientAge)} lined center />
           <PrintField label="Fecha" value={formatDate(m?.analysisDate)} grow={2} lined center />

@@ -194,7 +194,7 @@ Los datos escritos SHALL imprimirse como texto, sin las líneas del PDF; los cam
 #### Scenario: Datos escritos sin líneas de llenado a mano
 - **WHEN** se imprime una historia con diagnóstico general y lista de problemas escritos
 - **THEN** esos datos salen como texto sin subrayado ni renglones debajo
-- **AND** conservan su línea solo "FECHA:", las líneas "Firma" y la hoja 1 (ALIAS, Edad, Sexo y Fecha de inicio con su dato; Nombre y apellidos, Documento, Lugar y fecha de nacimiento, Domicilio y Celular en blanco, o completados con la libreta local del dispositivo cuando tiene entrada de esa historia)
+- **AND** conservan su línea solo "FECHA:", las líneas "Firma" y la hoja 1 (Nombre y apellidos con el alias, Edad, Sexo y Fecha de inicio con su dato; Documento, Lugar y fecha de nacimiento, Domicilio y Celular en blanco, o completados con la libreta local del dispositivo cuando tiene entrada de esa historia, con lo que Nombre y apellidos pasa a ser el nombre de la libreta; sin él, la vista previa avisa de que faltan datos)
 
 #### Scenario: Textos largos
 - **WHEN** un campo de texto libre ocupa más de lo que el PDF reserva

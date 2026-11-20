@@ -64,7 +64,8 @@ describe("patient-notebook — Hoja impresa con los datos de la libreta", () => 
 
     const first = (await screen.findAllByRole("article"))[0];
     await within(first).findByText("Ana Lucía Quispe Mamani");
-    for (const text of ["DNI 74125896", "Arequipa, 20/05/2012", "Av. Sol 123", "987654321", "Ana", "13 años"]) {
+    expect(screen.queryByText(/Faltan datos del paciente/)).not.toBeInTheDocument();
+    for (const text of ["DNI 74125896", "Arequipa, 20/05/2012", "Av. Sol 123", "987654321", "13 años"]) {
       expect(within(first).getByText(text)).toBeInTheDocument();
     }
     // Menor de edad: firma el apoderado, con el nombre y el parentesco de la libreta.
@@ -88,9 +89,12 @@ describe("patient-notebook — Hoja impresa con los datos de la libreta", () => 
     renderRecordRoutes("/historias/10/imprimir");
 
     const first = (await screen.findAllByRole("article"))[0];
-    for (const label of ["Nombre y apellidos", "Documento", "Domicilio", "Celular", "Lugar y fecha de nacimiento del paciente"]) {
+    for (const label of ["Documento", "Domicilio", "Celular", "Lugar y fecha de nacimiento del paciente"]) {
       expect(within(first).getByText(`${label}:`).parentElement?.textContent).toBe(`${label}:`);
     }
+    // Sin nombre en la libreta, «Nombre y apellidos» lleva el alias y la vista previa avisa de que faltan datos.
+    expect(within(first).getByText("Nombre y apellidos:").parentElement?.textContent).toBe("Nombre y apellidos:Ana");
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Faltan datos del paciente en este dispositivo/);
     await click("Imprimir");
     await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
   });
@@ -160,7 +164,9 @@ describe("patient-notebook — Hoja impresa con los datos de la libreta", () => 
 
     await click("Imprimir");
     await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    // Solo el aviso de que faltan datos; ningún error de lectura.
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.getByRole("alert")).toHaveTextContent(/Faltan datos del paciente/);
     expect(sent.calls).toBe(1);
     vi.unstubAllGlobals();
   });

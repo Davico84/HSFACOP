@@ -37,7 +37,7 @@ export function PrintNanceSection({ record }: PrintNanceSectionProps) {
   return (
     <PrintPage recordNumber={record.recordNumber} title="Análisis de Nance · discrepancia óseo dentaria">
       <div className="mt-[4pt] flex flex-col">
-        <PrintField label="Alias" value={record.patientAlias} lined />
+        <PrintField label="Nombre y apellidos" value={record.patientAlias} lined />
         <div className="flex gap-4">
           <PrintField label="Edad" value={formatAge(record.patientAge)} lined center />
           <PrintField label="Fecha" value={formatDate(n?.analysisDate)} grow={2} lined center />

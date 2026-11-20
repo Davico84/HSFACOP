@@ -29,11 +29,11 @@ export function PrintPatientSection({ record, notebook = null }: PrintPatientSec
       <div className="flex"><PrintField label="ODONTÓLOGO TRATANTE:" value={record.treatingDentist} /></div>
       <PrintTitle>ANAMNESIS</PrintTitle>
       <div className="flex gap-4">
-        <PrintField label="ALIAS" value={record.patientAlias} grow={2} lined />
+        {/* Sin nombre en la libreta de este dispositivo sale el alias (la vista previa avisa de que faltan datos). */}
+        <PrintField label="Nombre y apellidos:" value={notebook?.fullName || record.patientAlias} grow={2} lined />
         <PrintField label="Edad:" value={formatAge(record.patientAge)} lined center />
         <PrintField label="Sexo:" value={sex} lined center />
       </div>
-      <div className="flex"><PrintField label="Nombre y apellidos" value={notebook?.fullName ?? ""} lined /></div>
       <div className="flex gap-4">
         <PrintField label="Fecha de inicio de tratamiento:" value={formatDate(record.treatmentStartDate)} grow={2} lined center />
         <PrintField label="Documento" value={notebook ? formatNotebookDocument(notebook.documentType, notebook.documentNumber) : ""} lined center />

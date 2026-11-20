@@ -43,7 +43,7 @@ export function PrintWolfordSection({ record }: PrintWolfordSectionProps) {
   return (
     <PrintPage recordNumber={record.recordNumber} title="Análisis de Wolford">
       <div className="mt-[4pt] flex flex-col">
-        <PrintField label="Alias" value={record.patientAlias} lined />
+        <PrintField label="Nombre y apellidos" value={record.patientAlias} lined />
         <div className="flex">
           <PrintField label="Edad" value={formatAge(record.patientAge)} grow={0} lined center className="w-[50%]" />
         </div>

@@ -33,7 +33,7 @@ export function PrintModelsSection({ record }: PrintModelsSectionProps) {
     <PrintPage recordNumber={record.recordNumber} title="Análisis de modelos">
       <p className="mt-[4pt] text-center text-[12pt] font-bold">Análisis Transversal de los Modelos</p>
       <div className="mt-[4pt] flex gap-4">
-        <PrintField label="Alias" value={record.patientAlias} grow={3} lined />
+        <PrintField label="Nombre y apellidos" value={record.patientAlias} grow={3} lined />
         <PrintField label="Edad" value={formatAge(record.patientAge)} lined center />
         <PrintField label="Sexo" value={labelOf(sexOptions, sex)} lined center />
       </div>
