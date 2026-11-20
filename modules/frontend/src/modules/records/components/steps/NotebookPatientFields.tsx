@@ -45,19 +45,21 @@ export function NotebookPatientFields({ record }: NotebookPatientFieldsProps) {
       <FormProvider {...draft.form}>
         <TextField<NotebookFields> name="fullName" label="Nombre y apellidos" className="md:col-span-2" autoComplete="off" readOnly={readOnly} />
         {suggestion && !readOnly ? (
-          <div className="flex flex-wrap items-center gap-2 text-sm md:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm md:col-span-2">
             <span className="text-muted-foreground">
-              Alias propuesto: <strong>{suggestion}</strong>
+              Alias propuesto: <strong className="text-foreground">{suggestion}</strong>
             </span>
             {aliasEmpty ? (
-              <Button type="button" size="sm" variant="outline" onClick={applySuggestion}>
+              <Button type="button" size="sm" variant="secondary" onClick={applySuggestion}>
                 Usar este alias
               </Button>
             ) : alias?.trim() !== suggestion ? (
-              <Button type="button" size="sm" variant="ghost" onClick={applySuggestion}>
+              <Button type="button" size="sm" variant="secondary" onClick={applySuggestion}>
                 Reemplazar el alias actual
               </Button>
-            ) : null}
+            ) : (
+              <span className="text-muted-foreground">Ya es el alias de la historia</span>
+            )}
           </div>
         ) : null}
         <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">

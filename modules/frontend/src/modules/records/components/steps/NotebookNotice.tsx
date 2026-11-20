@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ShieldCheck } from "lucide-react";
 import { PATHS } from "@/routes/paths";
 import type { NotebookDraft } from "../../notebook/useNotebookDraft";
 
@@ -12,16 +13,19 @@ interface NotebookNoticeProps {
  * y la libreta perdida (el navegador la borró).
  */
 export function NotebookNotice({ draft }: NotebookNoticeProps) {
-  const { blocked, error, firstSave, lost } = draft;
+  const { blocked, noRecord, error, firstSave, lost } = draft;
   const base = "text-sm";
   return (
     <div className="flex flex-col gap-2 md:col-span-2">
-      <p className={`${base} text-muted-foreground`}>
-        Estos datos <strong>no se envían al servidor</strong>: se guardan en este navegador y se imprimen en la hoja. El
-        papel firmado es el registro oficial.
-      </p>
-      {blocked === "no-record" ? (
-        <p className={`${base} text-muted-foreground`}>Crea la historia para poder guardar estos datos en este dispositivo.</p>
+      <div role="note" className="flex items-start gap-3 rounded-md border border-primary/40 bg-primary/10 p-3 text-sm">
+        <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-primary" />
+        <p>
+          Estos datos <strong>no se envían al servidor</strong>: se guardan solo en este navegador y se imprimen en la
+          hoja. El papel firmado es el registro oficial.
+        </p>
+      </div>
+      {noRecord ? (
+        <p className={`${base} text-muted-foreground`}>Se guardarán en este dispositivo al crear la historia (al pasar al siguiente paso).</p>
       ) : null}
       {blocked === "unavailable" ? (
         <p role="alert" className={`${base} text-destructive`}>

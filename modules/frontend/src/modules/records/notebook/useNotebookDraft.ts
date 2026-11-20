@@ -5,6 +5,7 @@ import { useSessionStore } from "@/store/useSessionStore";
 import { NotebookError, hasIndexedDb, notebookErrorMessage } from "./notebookDb";
 import { hadEntry, markHadEntry } from "./notebookMarkers";
 import { EMPTY_NOTEBOOK_FIELDS, fieldsOf, notebookFieldsSchema, type NotebookFields } from "./notebookSchema";
+import { discardPending, stashPending } from "./notebookPending";
 import { requestPersistence, updateEntry } from "./notebookService";
 import { useNotebookEntry } from "./useNotebookEntry";
 
@@ -14,11 +15,13 @@ export interface NotebookRecordRef {
 }
 
 /** Por qué los campos de la libreta no se pueden editar (null = se pueden). */
-export type NotebookBlock = "no-record" | "unavailable" | "mismatch" | null;
+export type NotebookBlock = "unavailable" | "mismatch" | null;
 
 export interface NotebookDraft {
   form: UseFormReturn<NotebookFields>;
   blocked: NotebookBlock;
+  /** La historia aún no existe: lo escrito espera en memoria y pasa a la libreta al crearla. */
+  noRecord: boolean;
   /** Mensaje visible del último fallo al guardar (cuota, actualización bloqueada…); la entrada no figura como guardada. */
   error: string | null;
   /** Se guardó al menos una vez en esta sesión (o ya había entrada). */
@@ -52,8 +55,7 @@ export function useNotebookDraft(record: NotebookRecordRef | null, keys: readonl
 
   const status = lookup.data?.status;
   let blocked: NotebookBlock = null;
-  if (!record) blocked = "no-record";
-  else if (!hasIndexedDb() || status === "unavailable") blocked = "unavailable";
+  if (!hasIndexedDb() || status === "unavailable") blocked = "unavailable";
   else if (status === "mismatch") blocked = "mismatch";
 
   const hadBefore = accountId !== null && record !== null && hadEntry(accountId, record.id);
@@ -119,5 +121,22 @@ export function useNotebookDraft(record: NotebookRecordRef | null, keys: readonl
     };
   }, [recordId, recordNumber, accountId, blocked, form, keys]);
 
-  return { form, blocked, error, saved, firstSave, lost };
+  // Sin historia aún: lo escrito espera en memoria y se pasa a la libreta al crearla (RecordForm).
+  const noRecord = record === null;
+  useEffect(() => {
+    if (!noRecord || accountId === null || blocked) return;
+    const unsubscribe = form.subscribe({
+      formState: { values: true },
+      callback: ({ type, values }) => {
+        if (type !== "change") return;
+        stashPending(accountId, Object.fromEntries(keys.map((key) => [key, values[key]])) as Partial<NotebookFields>);
+      },
+    });
+    return () => {
+      unsubscribe();
+      discardPending();   // si se abandona la creación, no queda nada (al crear, RecordForm ya lo tomó)
+    };
+  }, [noRecord, accountId, blocked, form, keys]);
+
+  return { form, blocked, noRecord, error, saved, firstSave, lost };
 }
