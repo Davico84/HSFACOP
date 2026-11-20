@@ -42,26 +42,26 @@ beforeEach(() => {
 });
 
 describe("app-shell — Navegación filtrada por rol", () => {
-  it("Ítem sin roles visible para todos: Inicio y Módulo A para USER y ADMIN", async () => {
+  it("Ítem sin roles visible para todos: Inicio y Mi libreta para USER y ADMIN", async () => {
     for (const user of [USER, ADMIN]) {
       signIn(user);
       const { unmount } = renderApp("/");
       const nav = await mainNav();
       expect(nav.getByRole("link", { name: "Inicio" })).toBeInTheDocument();
-      expect(nav.getByRole("link", { name: "Módulo A" })).toBeInTheDocument();
+      expect(nav.getByRole("link", { name: "Mi libreta" })).toBeInTheDocument();
       unmount();
     }
   });
 
-  it("Ítem restringido oculto en la barra fija: USER no ve Módulo B, ADMIN sí", async () => {
+  it("Ítem restringido oculto en la barra fija: USER no ve Usuarios, ADMIN sí", async () => {
     signIn(USER);
     const first = renderApp("/");
-    expect((await mainNav()).queryByRole("link", { name: "Módulo B" })).not.toBeInTheDocument();
+    expect((await mainNav()).queryByRole("link", { name: "Usuarios" })).not.toBeInTheDocument();
     first.unmount();
 
     signIn(ADMIN);
     renderApp("/");
-    expect((await mainNav()).getByRole("link", { name: "Módulo B" })).toBeInTheDocument();
+    expect((await mainNav()).getByRole("link", { name: "Usuarios" })).toBeInTheDocument();
   });
 
   it("Ítem restringido oculto en el cajón móvil", async () => {
@@ -70,37 +70,36 @@ describe("app-shell — Navegación filtrada por rol", () => {
     const first = renderApp("/");
     await user.click(await screen.findByRole("button", { name: "Abrir menú" }));
     let drawer = screen.getByRole("dialog", { name: "Menú de navegación" });
-    expect(within(drawer).getByRole("link", { name: "Módulo A" })).toBeInTheDocument();
-    expect(within(drawer).queryByRole("link", { name: "Módulo B" })).not.toBeInTheDocument();
+    expect(within(drawer).getByRole("link", { name: "Mi libreta" })).toBeInTheDocument();
+    expect(within(drawer).queryByRole("link", { name: "Usuarios" })).not.toBeInTheDocument();
     first.unmount();
 
     signIn(ADMIN);
     renderApp("/");
     await user.click(await screen.findByRole("button", { name: "Abrir menú" }));
     drawer = screen.getByRole("dialog", { name: "Menú de navegación" });
-    expect(within(drawer).getByRole("link", { name: "Módulo B" })).toBeInTheDocument();
+    expect(within(drawer).getByRole("link", { name: "Usuarios" })).toBeInTheDocument();
   });
 
   it("ADMIN en la sección restringida: la ve y su ítem está activo", async () => {
     signIn(ADMIN);
-    renderApp("/modulo-b");
+    renderApp("/usuarios");
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Módulo B" })).toBeInTheDocument();
-    expect((await mainNav()).getByRole("link", { name: "Módulo B" })).toHaveAttribute("aria-current", "page");
+    expect(await screen.findByRole("heading", { level: 1, name: "Usuarios" })).toBeInTheDocument();
+    expect((await mainNav()).getByRole("link", { name: "Usuarios" })).toHaveAttribute("aria-current", "page");
     expect(denied()).not.toBeInTheDocument();
   });
 
   it("Acceso denegado dentro del shell: USER por URL ve el estado enfocado, el shell, y puede volver", async () => {
     const user = userEvent.setup();
     signIn(USER);
-    const { router } = renderApp("/modulo-b");
+    const { router } = renderApp("/usuarios");
 
     const heading = await screen.findByRole("heading", { level: 1, name: "Acceso denegado" });
     expect(heading.closest("section")).toHaveFocus();
     expect(await mainNav()).toBeTruthy(); // el shell sigue visible
     expect(screen.getAllByRole("main")).toHaveLength(1); // sin <main> anidado
-    expect(screen.queryByRole("heading", { name: "Módulo B" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/próximamente/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Usuarios" })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("link", { name: "Volver al inicio" }));
     expect(router.state.location.pathname).toBe("/");
@@ -127,14 +126,14 @@ describe("app-shell — Navegación filtrada por rol", () => {
 
   it("Cambio de rol en caliente: ADMIN → USER oculta el ítem y deniega la ruta", async () => {
     signIn(ADMIN);
-    renderApp("/modulo-b");
-    expect(await screen.findByRole("heading", { level: 1, name: "Módulo B" })).toBeInTheDocument();
+    renderApp("/usuarios");
+    expect(await screen.findByRole("heading", { level: 1, name: "Usuarios" })).toBeInTheDocument();
 
     act(() => {
       useSessionStore.setState({ user: { ...ADMIN, role: "USER" }, status: "authenticated" });
     });
 
     expect(await screen.findByRole("heading", { level: 1, name: "Acceso denegado" })).toBeInTheDocument();
-    expect((await mainNav()).queryByRole("link", { name: "Módulo B" })).not.toBeInTheDocument();
+    expect((await mainNav()).queryByRole("link", { name: "Usuarios" })).not.toBeInTheDocument();
   });
 });

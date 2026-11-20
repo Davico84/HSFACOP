@@ -9,28 +9,26 @@ describe("sections — una sola fuente de verdad", () => {
   });
 
   it("sectionById devuelve la sección declarada", () => {
-    expect(sectionById("moduleB")).toMatchObject({ path: "/modulo-b", roles: ["ADMIN"] });
+    expect(sectionById("users")).toMatchObject({ path: "/usuarios", roles: ["ADMIN"] });
   });
 
   it("canAccess: sin roles cualquiera; con roles solo los listados", () => {
-    expect(canAccess(sectionById("moduleA"), "USER")).toBe(true);
-    expect(canAccess(sectionById("moduleA"), "ADMIN")).toBe(true);
-    expect(canAccess(sectionById("moduleB"), "USER")).toBe(false);
-    expect(canAccess(sectionById("moduleB"), "ADMIN")).toBe(true);
+    expect(canAccess(sectionById("notebook"), "USER")).toBe(true);
+    expect(canAccess(sectionById("notebook"), "ADMIN")).toBe(true);
+    expect(canAccess(sectionById("users"), "USER")).toBe(false);
+    expect(canAccess(sectionById("users"), "ADMIN")).toBe(true);
   });
 
   it("los roles salen del contrato: uno mal escrito no compila", () => {
     // @ts-expect-error "ADMN" no es un UserResponseRole (si compilara, typecheck fallaría aquí)
-    const typo: SectionConfig = { id: "moduleB", path: "/x", roles: ["ADMN"] };
+    const typo: SectionConfig = { id: "users", path: "/x", roles: ["ADMN"] };
     expect(typo).toBeDefined();
   });
 
   it("navItemsFor filtra por rol y toma la ruta de la sección", () => {
-    expect(navItemsFor("USER").map((i) => i.label)).toEqual(["Inicio", "Módulo A", "Historias clínicas", "Mi libreta", "Mis datos"]);
+    expect(navItemsFor("USER").map((i) => i.label)).toEqual(["Inicio", "Historias clínicas", "Mi libreta", "Mis datos"]);
     expect(navItemsFor("ADMIN").map((i) => [i.label, i.to])).toEqual([
       ["Inicio", "/"],
-      ["Módulo A", "/modulo-a"],
-      ["Módulo B", "/modulo-b"],
       ["Historias clínicas", "/historias"],
       ["Mi libreta", "/libreta"],
       ["Usuarios", "/usuarios"],

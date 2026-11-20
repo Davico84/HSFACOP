@@ -1,8 +1,8 @@
 import type { Role } from "@/store/useSessionStore";
 import { PATHS } from "@/routes/paths";
 
-/** Secciones de la zona privada (cada proyecto derivado sustituye las de ejemplo). */
-export type SectionId = "home" | "moduleA" | "moduleB" | "users" | "records" | "notebook" | "profile";
+/** Secciones de la zona privada. */
+export type SectionId = "home" | "users" | "records" | "notebook" | "profile";
 
 /**
  * Política de una sección: dónde vive y quién la ve. Sin `roles` = cualquier usuario
@@ -20,10 +20,6 @@ export interface SectionConfig {
 
 export const sections: readonly SectionConfig[] = [
   { id: "home", path: PATHS.ROOT },
-  // La coordinación solo ve Inicio e Historias clínicas.
-  { id: "moduleA", path: PATHS.MODULE_A, roles: ["ADMIN", "USER"] },
-  // Ejemplo de sección restringida: solo administradores.
-  { id: "moduleB", path: PATHS.MODULE_B, roles: ["ADMIN"] },
   // Gestión de cuentas (capacidad users).
   { id: "users", path: PATHS.USERS, roles: ["ADMIN"] },
   // Historias clínicas: todos los autenticados; el alcance (las propias / todas / las de sus turmas)

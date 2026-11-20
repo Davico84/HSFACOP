@@ -10,7 +10,7 @@ import { sectionRoute } from "./sectionRoute";
 
 const USER: SessionUser = { id: 1, email: "ana@empresa.test", role: "USER" };
 const ADMIN: SessionUser = { id: 2, email: "admin@empresa.test", role: "ADMIN" };
-const DATA_URL = "http://localhost/api/__test/modulo-b";
+const DATA_URL = "http://localhost/api/__test/usuarios";
 
 /** Hijo de prueba que carga datos con una query (como lo haría una sección real). */
 function SectionData() {
@@ -27,7 +27,7 @@ function renderSection(path: string) {
       {
         errorElement: <RouteError />,
         children: [
-          sectionRoute("moduleB", [
+          sectionRoute("users", [
             { index: true, element: <SectionData /> },
             { path: ":id", element: <p>Detalle</p> },
           ]),
@@ -63,32 +63,32 @@ beforeEach(() => {
 describe("sectionRoute — la sección y todas sus subrutas bajo el mismo guard", () => {
   it("Subruta de una sección restringida: USER ve acceso denegado, ADMIN el detalle", async () => {
     signIn(USER);
-    renderSection("/modulo-b/123");
+    renderSection("/usuarios/123");
     expect(await screen.findByRole("heading", { name: "Acceso denegado" })).toBeInTheDocument();
     expect(screen.queryByText("Detalle")).not.toBeInTheDocument();
   });
 
   it("Subruta de una sección restringida: ADMIN ve el detalle", async () => {
     signIn(ADMIN);
-    renderSection("/modulo-b/123");
+    renderSection("/usuarios/123");
     expect(await screen.findByText("Detalle")).toBeInTheDocument();
   });
 
   it("Subruta inexistente: USER ve acceso denegado (no puede averiguar qué subrutas existen)", async () => {
     signIn(USER);
-    renderSection("/modulo-b/a/b");
+    renderSection("/usuarios/a/b");
     expect(await screen.findByRole("heading", { name: "Acceso denegado" })).toBeInTheDocument();
   });
 
   it("Subruta inexistente para ADMIN: no encontrado dentro de la sección", async () => {
     signIn(ADMIN);
-    renderSection("/modulo-b/a/b");
+    renderSection("/usuarios/a/b");
     expect(await screen.findByRole("heading", { name: "Página no encontrada" })).toBeInTheDocument();
   });
 
   it("Sin carga de datos sin el rol: con USER la query de la sección no se lanza", async () => {
     signIn(USER);
-    renderSection("/modulo-b");
+    renderSection("/usuarios");
     await screen.findByRole("heading", { name: "Acceso denegado" });
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(requests).toBe(0);
@@ -97,7 +97,7 @@ describe("sectionRoute — la sección y todas sus subrutas bajo el mismo guard"
 
   it("Con ADMIN la query de la sección sí se lanza", async () => {
     signIn(ADMIN);
-    renderSection("/modulo-b");
+    renderSection("/usuarios");
     expect(await screen.findByText("Datos: secreto de ADMIN")).toBeInTheDocument();
     expect(requests).toBe(1);
   });

@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Boxes, ClipboardList, FolderKanban, IdCard, LayoutDashboard, NotebookPen, Users } from "lucide-react";
+import { ClipboardList, IdCard, LayoutDashboard, NotebookPen, Users } from "lucide-react";
 import { canAccess, sectionById, type SectionId } from "@/modules/core/config/sections";
 import type { Role } from "@/store/useSessionStore";
 
@@ -23,12 +23,9 @@ interface NavEntry {
 /**
  * Menú de la zona privada. Añadir una sección = declararla en `core/config/sections.ts`,
  * añadir aquí su etiqueta e icono y montar su subárbol en `routes/index.tsx` con `sectionRoute`.
- * Los "Módulo A/B" son de ejemplo.
  */
 const navEntries: readonly NavEntry[] = [
   { sectionId: "home", label: "Inicio", icon: LayoutDashboard },
-  { sectionId: "moduleA", label: "Módulo A", icon: FolderKanban },
-  { sectionId: "moduleB", label: "Módulo B", icon: Boxes },
   { sectionId: "records", label: "Historias clínicas", icon: ClipboardList },
   { sectionId: "notebook", label: "Mi libreta", icon: NotebookPen },
   { sectionId: "users", label: "Usuarios", icon: Users },
