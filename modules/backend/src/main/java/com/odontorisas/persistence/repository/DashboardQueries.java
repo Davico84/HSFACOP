@@ -9,7 +9,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,7 +21,6 @@ import java.util.List;
 public class DashboardQueries {
 
     private static final String CLINICAL = "(filled_steps & 127)";
-    private static final String FILLED_COUNT = "bit_count(" + CLINICAL + "::bit(8))";
 
     private final NamedParameterJdbcTemplate jdbc;
 
@@ -36,42 +34,33 @@ public class DashboardQueries {
             + " count(*) FILTER (WHERE created_at >= :monthStart) AS created_this_month,"
             + " count(*) FILTER (WHERE filled_steps IS NOT NULL AND " + CLINICAL + " = 127) AS complete,"
             + " count(*) FILTER (WHERE filled_steps IS NOT NULL AND " + CLINICAL + " <> 127) AS in_progress,"
-            + " count(*) FILTER (WHERE filled_steps IS NULL) AS not_computed,"
-            + " avg(" + FILLED_COUNT + ") FILTER (WHERE filled_steps IS NOT NULL) AS average_filled,"
-            + " count(*) FILTER (WHERE patient_age IS NULL) AS without_age,"
-            + " count(*) FILTER (WHERE treatment_start_date IS NULL) AS without_treatment_start");
-        for (int step = 1; step <= 7; step++) {
-            sql.append(", count(*) FILTER (WHERE filled_steps IS NOT NULL AND filled_steps & ")
-                .append(1 << (step - 1)).append(" = 0) AS empty_").append(step);
-        }
-        sql.append(" FROM orthodontic_records");
+            + " count(*) FILTER (WHERE filled_steps IS NULL) AS not_computed"
+            + " FROM orthodontic_records");
         MapSqlParameterSource params = new MapSqlParameterSource("monthStart", Timestamp.from(monthStart));
         if (authorId != null) {
             sql.append(" WHERE author_id = :authorId");
             params.addValue("authorId", authorId);
         }
-        return jdbc.queryForObject(sql.toString(), params, (rs, i) -> {
-            List<Long> empty = new ArrayList<>();
-            for (int step = 1; step <= 7; step++) {
-                empty.add(rs.getLong("empty_" + step));
-            }
-            return new RecordTotals(rs.getLong("total"), rs.getLong("created_this_month"), rs.getLong("complete"),
-                rs.getLong("in_progress"), rs.getLong("not_computed"), rs.getBigDecimal("average_filled"),
-                rs.getLong("without_age"),
-                rs.getLong("without_treatment_start"), empty);
-        });
+        return jdbc.queryForObject(sql.toString(), params,
+            (rs, i) -> new RecordTotals(rs.getLong("total"), rs.getLong("created_this_month"), rs.getLong("complete"),
+                rs.getLong("in_progress"), rs.getLong("not_computed")));
     }
 
-    /** Historias no completas (en progreso o sin calcular) de un autor, más recientes primero. */
+    /**
+     * Historias no completas (en progreso o sin calcular) de un autor, más recientes primero, con
+     * qué datos del paciente les faltan (edad y fecha de inicio de tratamiento).
+     */
     public List<ResumeRow> resume(long authorId, int limit) {
-        String sql = "SELECT id, record_number, patient_name, last_step, filled_steps, updated_at"
+        String sql = "SELECT id, record_number, patient_name, last_step, filled_steps, updated_at,"
+            + " (patient_age IS NULL) AS missing_age, (treatment_start_date IS NULL) AS missing_treatment_start"
             + " FROM orthodontic_records WHERE author_id = :authorId"
             + " AND (filled_steps IS NULL OR " + CLINICAL + " <> 127)"
             + " ORDER BY updated_at DESC, id DESC LIMIT :limit";
         return jdbc.query(sql, new MapSqlParameterSource("authorId", authorId).addValue("limit", limit),
             (rs, i) -> new ResumeRow(rs.getLong("id"), rs.getString("record_number"), rs.getString("patient_name"),
                 nullableInt(rs, "last_step"), nullableInt(rs, "filled_steps"),
-                rs.getTimestamp("updated_at").toInstant()));
+                rs.getTimestamp("updated_at").toInstant(), rs.getBoolean("missing_age"),
+                rs.getBoolean("missing_treatment_start")));
     }
 
     /** Cuentas por estado y nuevas desde {@code monthStart}. */
@@ -169,14 +158,12 @@ public class DashboardQueries {
         return rs.wasNull() ? null : value;
     }
 
-    /** Totales de historias; {@code emptyByStep} = historias calculadas con cada paso 1–7 vacío. */
-    public record RecordTotals(long total, long createdThisMonth, long complete, long inProgress, long notComputed,
-                               BigDecimal averageFilled, long withoutAge,
-                               long withoutTreatmentStart, List<Long> emptyByStep) {
+    /** Totales de historias: completas (pasos 1–7), en progreso y sin calcular. */
+    public record RecordTotals(long total, long createdThisMonth, long complete, long inProgress, long notComputed) {
     }
 
     public record ResumeRow(long id, String recordNumber, String patientName, Integer lastStep, Integer filledSteps,
-                            Instant updatedAt) {
+                            Instant updatedAt, boolean missingAge, boolean missingTreatmentStart) {
     }
 
     public record UserTotals(long total, long active, long disabled, long newThisMonth) {

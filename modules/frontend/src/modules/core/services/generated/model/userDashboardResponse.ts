@@ -8,14 +8,12 @@
 import type { UserDashboardRecords } from './userDashboardRecords';
 import type { RecordQuotaResponse } from './recordQuotaResponse';
 import type { UserDashboardCompleteness } from './userDashboardCompleteness';
-import type { UserDashboardMissing } from './userDashboardMissing';
 import type { DashboardResumeItem } from './dashboardResumeItem';
 
 export interface UserDashboardResponse {
   records: UserDashboardRecords;
   quota: RecordQuotaResponse;
   completeness: UserDashboardCompleteness;
-  missing: UserDashboardMissing;
   /** Hasta 5 historias no completas, más recientes primero */
   resume: DashboardResumeItem[];
 }

@@ -18,12 +18,10 @@ import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * Métricas de Inicio. "Este mes" y los últimos 6 meses se cortan en la zona del {@link Clock} de
@@ -54,22 +52,13 @@ public class DashboardService {
     public UserDashboardView forUser(RecordActor actor) {
         RecordTotals totals = queries.recordTotals(actor.userId(), monthStart(currentMonth()));
         RecordQuotaView quota = records.quota(actor);
-        List<UserDashboardView.EmptyStep> emptySteps = IntStream.rangeClosed(1, FilledSteps.CLINICAL_STEPS)
-            .mapToObj(step -> new UserDashboardView.EmptyStep(step, totals.emptyByStep().get(step - 1)))
-            .sorted(Comparator.comparingLong(UserDashboardView.EmptyStep::count).reversed()
-                .thenComparingInt(UserDashboardView.EmptyStep::step))
-            .toList();
         List<UserDashboardView.ResumeItem> resume = queries.resume(actor.userId(), RESUME_LIMIT).stream()
             .map(r -> new UserDashboardView.ResumeItem(r.id(), r.recordNumber(), r.patientName(), r.lastStep(),
                 r.filledSteps() == null ? null : Integer.bitCount(r.filledSteps() & FilledSteps.CLINICAL_MASK),
-                r.updatedAt()))
+                r.updatedAt(), r.missingAge(), r.missingTreatmentStart()))
             .toList();
         return new UserDashboardView(totals.total(), totals.createdThisMonth(), quota,
-            new Completeness(totals.complete(), totals.inProgress(), totals.notComputed(),
-                round(totals.averageFilled())),
-            new UserDashboardView.Missing(totals.withoutAge(),
-                totals.withoutTreatmentStart(), emptySteps),
-            resume);
+            new Completeness(totals.complete(), totals.inProgress(), totals.notComputed()), resume);
     }
 
     /** Métricas globales para el ADMIN. */
@@ -104,8 +93,7 @@ public class DashboardService {
         return new AdminDashboardView(
             new AdminDashboardView.Users(users.total(), users.active(), users.disabled(), users.newThisMonth()),
             totals.total(), totals.createdThisMonth(),
-            new Completeness(totals.complete(), totals.inProgress(), totals.notComputed(),
-                round(totals.averageFilled())),
+            new Completeness(totals.complete(), totals.inProgress(), totals.notComputed()),
             perMonth, topAuthors, new AdminDashboardView.Quotas(quotaTotal, quotaItems), unlockRequests);
     }
 
@@ -155,7 +143,7 @@ public class DashboardService {
         return average == null ? null : average.setScale(1, RoundingMode.HALF_UP).doubleValue();
     }
 
-    /** Completas (pasos 1–7 con datos), en progreso, sin calcular y promedio de pasos clínicos. */
-    public record Completeness(long complete, long inProgress, long notComputed, Double averageFilledSteps) {
+    /** Completas (pasos 1–7 con datos), en progreso y sin calcular. */
+    public record Completeness(long complete, long inProgress, long notComputed) {
     }
 }

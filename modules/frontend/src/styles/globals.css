@@ -80,7 +80,7 @@
   --warning-foreground: hsl(40 92% 10%); /* #312102 */
   --ink: hsl(0 0% 0%); /* #000000 Preto: texto y líneas de la hoja impresa */
   --border: hsl(0 0% 87%); /* #dedede */
-  --input: hsl(0 0% 87%); /* #dedede */
+  --input: hsl(0 0% 56%); /* #8f8f8f borde de los campos: 3:1 sobre blanco (WCAG 1.4.11); --border queda suave para tarjetas y divisores */
   --radius: 0.625rem;
   /* @template:brand — colores de marca: los escribe `pnpm project:apply` desde project.config.json */
   --primary: hsl(297.4 50.8% 35.1%);
@@ -104,15 +104,15 @@
   --muted-foreground: hsl(0 0% 66%); /* #a8a8a8 */
   --accent: hsl(297 18% 22%); /* #412e42 */
   --accent-foreground: hsl(297 45% 88%); /* #edd3ee */
-  --destructive: hsl(0 62% 55%); /* #d34545 */
-  --destructive-foreground: hsl(0 0% 100%); /* #ffffff */
+  --destructive: hsl(0 80% 68%); /* #f27979 texto de error legible (5,5:1 sobre la tarjeta) */
+  --destructive-foreground: hsl(0 0% 9%); /* #171717 sobre el fondo rojo claro del botón */
   --success: hsl(152 48% 55%); /* #55c390 */
   --success-foreground: hsl(0 0% 9%); /* #171717 */
   --warning: hsl(38 88% 60%); /* #f3b13f */
   --warning-foreground: hsl(40 92% 10%); /* #312102 */
   --ink: hsl(0 0% 0%); /* #000000 Preto: texto y líneas de la hoja impresa */
   --border: hsl(0 0% 22%); /* #383838 */
-  --input: hsl(0 0% 22%); /* #383838 */
+  --input: hsl(0 0% 44%); /* #707070 borde de los campos: 3:1 sobre la tarjeta */
   /* @template:brand */
   --primary: hsl(297 45% 72%);
   --ring: hsl(297 45% 72%);
@@ -141,5 +141,14 @@
   }
   .dark {
     color-scheme: dark;
+  }
+}
+
+/* Con "reducir movimiento" no hay entradas ni salidas animadas (tw-animate-css: animate-in/out, también
+   en las variantes data-[state=...]). Los indicadores de carga (animate-spin) se conservan. */
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-in"],
+  [class*="animate-out"] {
+    animation: none !important;
   }
 }

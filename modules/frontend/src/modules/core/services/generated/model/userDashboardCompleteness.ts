@@ -5,13 +5,10 @@
  * Tu portal al conocimiento y al éxito profesional.
  * OpenAPI spec version: v1
  */
-import type { UserDashboardCompletenessAverageFilledSteps } from './userDashboardCompletenessAverageFilledSteps';
 
 export interface UserDashboardCompleteness {
   complete: number;
   inProgress: number;
   /** Guardadas antes de registrar los pasos con datos */
   notComputed: number;
-  /** Promedio de pasos clínicos con datos (un decimal); vacío si no hay calculadas */
-  averageFilledSteps?: UserDashboardCompletenessAverageFilledSteps;
 }
