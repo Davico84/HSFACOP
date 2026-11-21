@@ -127,6 +127,10 @@ const READING_PAIRS: [string, string][] = [
   ["primary-foreground", "primary"],
   ["secondary-foreground", "secondary"],
   ["accent-foreground", "accent"],
+  // El rojo se usa como texto de error (text-xs) y como fondo del botón destructivo.
+  ["destructive", "background"],
+  ["destructive", "card"],
+  ["destructive-foreground", "destructive"],
 ];
 
 /**
@@ -162,6 +166,16 @@ describe.skipIf(!isFacopBrand)("project-foundation — Paleta de la marca FACOP"
       const failing = READING_PAIRS.filter(([text, bg]) => contrast(values.get(text)!, values.get(bg)!) < 4.5).map(
         ([text, bg]) => `${header} ${text}/${bg}`,
       );
+      expect(failing).toEqual([]);
+    }
+  });
+
+  it("Borde de los campos: --input se distingue del fondo y de la tarjeta (3:1, WCAG 1.4.11) en claro y en oscuro", () => {
+    for (const header of [":root", ".dark"] as const) {
+      const values = valuesOf(header);
+      const failing = ["background", "card"]
+        .filter((surface) => contrast(values.get("input")!, values.get(surface)!) < 3)
+        .map((surface) => `${header} input/${surface}`);
       expect(failing).toEqual([]);
     }
   });
