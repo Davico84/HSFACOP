@@ -16,29 +16,40 @@ function signIn(role: Role) {
   });
 }
 
-const EMPTY_STEPS = [1, 2, 3, 4, 5, 6, 7].map((step) => ({ step, count: 0 }));
-
 function userDashboard(overrides: Partial<UserDashboardResponse> = {}): UserDashboardResponse {
   return {
     records: { total: 3, createdThisMonth: 1 },
     quota: { limit: 5, used: 3, reached: false },
-    completeness: { complete: 1, inProgress: 1, notComputed: 1, averageFilledSteps: 5.5 },
-    missing: {
-      withoutAge: 2,
-      withoutTreatmentStart: 1,
-      emptySteps: [
-        { step: 5, count: 2 },
-        { step: 6, count: 2 },
-        { step: 7, count: 1 },
-        { step: 1, count: 0 },
-        { step: 2, count: 0 },
-        { step: 3, count: 0 },
-        { step: 4, count: 0 },
-      ],
-    },
+    completeness: { complete: 1, inProgress: 1, notComputed: 1 },
     resume: [
-      { id: 12, recordNumber: "AEO-0003", patientName: "Luis Rojas", lastStep: 6, filledSteps: 4, updatedAt: "2026-10-04T15:00:00Z" },
-      { id: 11, recordNumber: "AEO-0002", patientName: "Rosa Díaz", updatedAt: "2026-10-03T15:00:00Z" },
+      {
+        id: 12,
+        recordNumber: "AEO-0003",
+        patientName: "Luis",
+        lastStep: 6,
+        filledSteps: 4,
+        updatedAt: "2026-10-04T15:00:00Z",
+        missingAge: true,
+        missingTreatmentStart: true,
+      },
+      {
+        id: 11,
+        recordNumber: "AEO-0002",
+        patientName: "Rosa",
+        updatedAt: "2026-10-03T15:00:00Z",
+        missingAge: false,
+        missingTreatmentStart: true,
+      },
+      {
+        id: 10,
+        recordNumber: "AEO-0001",
+        patientName: "Marta",
+        lastStep: 2,
+        filledSteps: 1,
+        updatedAt: "2026-10-02T15:00:00Z",
+        missingAge: false,
+        missingTreatmentStart: false,
+      },
     ],
     ...overrides,
   };
@@ -88,17 +99,19 @@ function mockAdmin(data: AdminDashboardResponse) {
 
 beforeEach(() => signIn("USER"));
 
+function rowOf(recordNumber: string): HTMLElement {
+  return screen.getByText(new RegExp(`^${recordNumber} ·`)).closest("li")!;
+}
+
 describe("dashboard — Métricas del tratante en Inicio", () => {
-  it("Historias y cupo, completitud y aviso de historias sin calcular", async () => {
+  it("Historias y cupo: cupo, 'Nueva historia' junto al saludo y sin indicadores de historias", async () => {
     mockUser(userDashboard());
     renderWithProviders(<DashboardFeature />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Hola, Ana Pérez" })).toBeInTheDocument();
     expect(await screen.findByText("3 de 5")).toBeInTheDocument();
-    expect(screen.getByText("1 creadas este mes")).toBeInTheDocument();
-    expect(screen.getByText("1 en progreso")).toBeInTheDocument();
-    expect(screen.getByText("5,5")).toBeInTheDocument();
-    expect(screen.getByText("1 historia sin calcular: se calculan al volver a guardarlas.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Nueva historia/ })).toHaveAttribute("href", "/historias/nueva");
+    expect(screen.queryByText("creadas este mes")).not.toBeInTheDocument();
   });
 
   it("Sin límite de cupo", async () => {
@@ -107,38 +120,84 @@ describe("dashboard — Métricas del tratante en Inicio", () => {
     expect(await screen.findByText("Sin límite")).toBeInTheDocument();
   });
 
-  it("Promedio sin historias calculadas se muestra '—'", async () => {
-    mockUser(userDashboard({ completeness: { complete: 0, inProgress: 0, notComputed: 3, averageFilledSteps: null } }));
-    renderWithProviders(<DashboardFeature />);
-    expect(await screen.findByText("—")).toBeInTheDocument();
-  });
-
-  it("Datos faltantes y pasos vacíos en el orden del servidor, con su valor visible", async () => {
-    mockUser(userDashboard());
-    renderWithProviders(<DashboardFeature />);
-
-    const card = (await screen.findByRole("heading", { name: "Datos faltantes" })).closest("div")!;
-    expect(within(card).getByText("Sin edad").nextSibling).toHaveTextContent("2");
-    expect(within(card).getByText("Sin fecha de inicio de tratamiento").nextSibling).toHaveTextContent("1");
-    const steps = within(card).getAllByRole("listitem").filter((li) => /^\d\./.test(li.textContent ?? ""));
-    expect(steps.map((li) => li.textContent?.slice(0, 2))).toEqual(["5.", "6.", "7.", "1.", "2.", "3.", "4."]);
-    expect(steps[0]).toHaveTextContent("5. Análisis de modelos2 historias");
-  });
-
-  it("Para retomar: abre en el último paso, o en el paso 1 si no tiene", async () => {
-    mockUser(userDashboard());
-    renderWithProviders(<DashboardFeature />);
-
-    expect(await screen.findByRole("link", { name: "Retomar historia AEO-0003 en el paso 6" })).toHaveAttribute(
-      "href",
-      "/historias/12?paso=6",
+  it("Cupo lleno: 'Nueva historia' deshabilitado y el aviso dice por qué", async () => {
+    server.use(
+      http.get("*/api/orthodontic-records/quota", () => HttpResponse.json({ limit: 5, used: 5, reached: true })),
     );
-    expect(screen.getByRole("link", { name: "Retomar historia AEO-0002 en el paso 1" })).toHaveAttribute(
+    mockUser(userDashboard({ quota: { limit: 5, used: 5, reached: true } }));
+    renderWithProviders(<DashboardFeature />);
+
+    expect(await screen.findByText(/Alcanzaste el máximo de 5 historias clínicas/)).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /Nueva historia \(no disponible/ })).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("Completas y por terminar: junta las que están en progreso y las sin calcular", async () => {
+    mockUser(userDashboard());
+    renderWithProviders(<DashboardFeature />);
+
+    expect(await screen.findByText("Completas")).toBeInTheDocument();
+    expect(screen.getByText("2 por terminar")).toBeInTheDocument();
+  });
+
+  it("Historias sin calcular: cuentan como por terminar, sin aviso ni promedio", async () => {
+    mockUser(userDashboard({ completeness: { complete: 0, inProgress: 0, notComputed: 4 } }));
+    renderWithProviders(<DashboardFeature />);
+
+    expect(await screen.findByText("4 por terminar")).toBeInTheDocument();
+    expect(screen.queryByText(/sin calcular/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("Promedio de pasos")).not.toBeInTheDocument();
+  });
+
+  it("Datos faltantes: avisos por historia, sin conteos ni pasos vacíos", async () => {
+    mockUser(userDashboard());
+    renderWithProviders(<DashboardFeature />);
+    await screen.findByText("Para retomar");
+
+    const both = within(rowOf("AEO-0003"));
+    expect(both.getByText("Falta la edad")).toBeInTheDocument();
+    expect(both.getByText("Falta la fecha de inicio")).toBeInTheDocument();
+
+    const onlyStart = within(rowOf("AEO-0002"));
+    expect(onlyStart.queryByText("Falta la edad")).not.toBeInTheDocument();
+    expect(onlyStart.getByText("Falta la fecha de inicio")).toBeInTheDocument();
+
+    const complete = within(rowOf("AEO-0001"));
+    expect(complete.queryByText(/Falta/)).not.toBeInTheDocument();
+
+    expect(screen.queryByRole("heading", { name: "Datos faltantes" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Pasos vacíos/)).not.toBeInTheDocument();
+  });
+
+  it("Para retomar: 'Continuar en paso N' abre en el último paso, o en el paso 1 si no tiene", async () => {
+    mockUser(userDashboard());
+    renderWithProviders(<DashboardFeature />);
+
+    const withStep = await screen.findByRole("link", { name: "Continuar en paso 6 de la historia AEO-0003" });
+    expect(withStep).toHaveAttribute("href", "/historias/12?paso=6");
+    expect(withStep).toHaveTextContent("Continuar en paso 6");
+    expect(screen.getByRole("link", { name: "Continuar en paso 1 de la historia AEO-0002" })).toHaveAttribute(
       "href",
       "/historias/11?paso=1",
     );
-    expect(screen.getByText(/4 de 7 pasos con datos/)).toBeInTheDocument();
-    expect(screen.getByText(/Sin calcular ·/)).toBeInTheDocument();
+  });
+
+  it("Historia sin avance calculado: sin texto de pasos con datos", async () => {
+    mockUser(userDashboard());
+    renderWithProviders(<DashboardFeature />);
+    await screen.findByText("Para retomar");
+
+    expect(within(rowOf("AEO-0003")).getByText(/4 de 7 pasos con datos/)).toBeInTheDocument();
+    expect(within(rowOf("AEO-0002")).queryByText(/pasos con datos/)).not.toBeInTheDocument();
+    expect(within(rowOf("AEO-0002")).queryByText(/Sin calcular/)).not.toBeInTheDocument();
+  });
+
+  it("Orden de la pantalla: 'Para retomar' va antes que los indicadores", async () => {
+    mockUser(userDashboard());
+    renderWithProviders(<DashboardFeature />);
+
+    const resume = await screen.findByRole("heading", { name: "Para retomar" });
+    const cupo = screen.getByText("Cupo");
+    expect(resume.compareDocumentPosition(cupo) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("Todas completas: 'Para retomar' indica que no hay pendientes", async () => {
@@ -147,18 +206,19 @@ describe("dashboard — Métricas del tratante en Inicio", () => {
     expect(await screen.findByText(/No tienes historias pendientes/)).toBeInTheDocument();
   });
 
-  it("Sin historias todavía: invitación a crear la primera", async () => {
+  it("Sin historias todavía: invitación a crear la primera, sin indicadores ni lista (y un solo botón)", async () => {
     mockUser(
       userDashboard({
         records: { total: 0, createdThisMonth: 0 },
-        completeness: { complete: 0, inProgress: 0, notComputed: 0, averageFilledSteps: null },
-        missing: { withoutAge: 0, withoutTreatmentStart: 0, emptySteps: EMPTY_STEPS },
+        completeness: { complete: 0, inProgress: 0, notComputed: 0 },
         resume: [],
       }),
     );
     renderWithProviders(<DashboardFeature />);
     expect(await screen.findByText("Todavía no tienes historias clínicas")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Nueva historia/ })).toHaveAttribute("href", "/historias/nueva");
+    expect(screen.getAllByRole("link", { name: /Nueva historia/ })).toHaveLength(1);
+    expect(screen.queryByText("Para retomar")).not.toBeInTheDocument();
+    expect(screen.queryByText("Cupo")).not.toBeInTheDocument();
   });
 
   it("Error al cargar: mensaje y 'Reintentar'", async () => {
