@@ -2,7 +2,9 @@
 
 ## Purpose
 Métricas de Inicio por rol, calculadas en el servidor con consultas agregadas (sin leer el contenido clínico): el tratante (`USER`) ve el avance de sus historias —cantidad, cupo, completitud sobre los 7 pasos clínicos, datos faltantes y qué retomar en su último paso—; el `ADMIN` ve solo métricas globales —cuentas, historias por mes, tratantes con más historias y cupos cerca del tope—. Reemplaza el dashboard de ejemplo de la plantilla.
+
 ## Requirements
+
 ### Requirement: Métricas del tratante en Inicio
 Para un `USER`, Inicio SHALL mostrar métricas de sus propias historias calculadas en el servidor (`GET /api/dashboard/me`, solo para `USER`; un `ADMIN` recibe `403`): total, creadas en el mes en curso (según la zona horaria de la app) y uso del cupo ("N de M" o "sin límite"). Las métricas NO SHALL incluir historias de otros tratantes.
 
@@ -46,11 +48,11 @@ Inicio SHALL mostrar al `USER` sus historias completas, en progreso y sin calcul
 - **THEN** junto a la completitud se lee "4 sin calcular: se calculan al volver a guardarlas"
 
 ### Requirement: Datos faltantes en las historias del tratante
-Inicio SHALL mostrar al `USER` cuántas de sus historias no tienen documento, fecha de nacimiento o fecha de inicio de tratamiento y, para cada paso clínico (1–7), cuántas historias calculadas lo tienen vacío: siempre los 7, de más a menos frecuente y, a igual frecuencia, por número de paso.
+Inicio SHALL mostrar al `USER` cuántas de sus historias no tienen edad o fecha de inicio de tratamiento y, para cada paso clínico (1–7), cuántas historias calculadas lo tienen vacío: siempre los 7, de más a menos frecuente y, a igual frecuencia, por número de paso.
 
 #### Scenario: Datos faltantes
-- **WHEN** dos de sus historias no tienen número de documento y una no tiene fecha de inicio de tratamiento
-- **THEN** Inicio muestra "2 sin documento" y "1 sin fecha de inicio", y los 7 pasos clínicos ordenados de más a menos historias vacías (a igual cantidad, por número de paso)
+- **WHEN** dos de sus historias no tienen edad y una no tiene fecha de inicio de tratamiento
+- **THEN** Inicio muestra "2 sin edad" y "1 sin fecha de inicio", y los 7 pasos clínicos ordenados de más a menos historias vacías (a igual cantidad, por número de paso)
 
 ### Requirement: Historias para retomar
 Inicio del `USER` SHALL listar sus historias no completas (en progreso o sin calcular) más recientes por última modificación, hasta 5, con número, paciente, pasos clínicos con datos (o "sin calcular") y fecha; cada una SHALL enlazar a la historia en su último paso trabajado, o en el paso 1 si no tiene.
@@ -134,4 +136,3 @@ Inicio del `ADMIN` SHALL listar las solicitudes de desbloqueo pendientes, de la 
 #### Scenario: Solicitud resuelta
 - **WHEN** el ADMIN desbloquea o descarta una solicitud y vuelve a Inicio
 - **THEN** ya no aparece
-

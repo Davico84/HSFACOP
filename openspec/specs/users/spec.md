@@ -180,7 +180,7 @@ Toda cuenta nueva SHALL nacer con el cupo inicial configurado en el despliegue (
 - **THEN** siguen sin límite hasta que un `ADMIN` les asigne un cupo
 
 ### Requirement: Datos de contacto e identificación de la cuenta
-Cada cuenta SHALL poder guardar, todos opcionales: celular (9 dígitos que empiezan con 9), documento (tipo DNI, carné de extranjería o pasaporte y su número, con las mismas reglas que el documento del paciente, siempre los dos juntos) y número de colegiatura COP (1 a 6 dígitos). Un dato con formato inválido SHALL rechazarse con `400` sin guardar nada.
+Cada cuenta SHALL poder guardar, todos opcionales: celular (9 dígitos que empiezan con 9), documento (tipo DNI, carné de extranjería o pasaporte y su número, DNI de 8 dígitos, carné de extranjería de 9 y pasaporte de 6 a 12, siempre los dos juntos) y número de colegiatura COP (1 a 6 dígitos). Un dato con formato inválido SHALL rechazarse con `400` sin guardar nada.
 
 #### Scenario: Datos válidos
 - **WHEN** se guardan el celular "987654321", el carné de extranjería "001234567" y el COP "12345"
