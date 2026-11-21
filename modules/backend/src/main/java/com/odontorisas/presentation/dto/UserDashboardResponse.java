@@ -14,7 +14,6 @@ public record UserDashboardResponse(
     @Schema(requiredMode = REQUIRED) Records records,
     @Schema(requiredMode = REQUIRED) RecordQuotaResponse quota,
     @Schema(requiredMode = REQUIRED) Completeness completeness,
-    @Schema(requiredMode = REQUIRED) Missing missing,
     @Schema(requiredMode = REQUIRED, description = "Hasta 5 historias no completas, más recientes primero") List<ResumeItem> resume) {
 
     @Schema(name = "UserDashboardRecords")
@@ -28,27 +27,11 @@ public record UserDashboardResponse(
     public record Completeness(
         @Schema(requiredMode = REQUIRED) long complete,
         @Schema(requiredMode = REQUIRED) long inProgress,
-        @Schema(requiredMode = REQUIRED, description = "Guardadas antes de registrar los pasos con datos") long notComputed,
-        @Schema(description = "Promedio de pasos clínicos con datos (un decimal); vacío si no hay calculadas", nullable = true)
-        Double averageFilledSteps) {
+        @Schema(requiredMode = REQUIRED, description = "Guardadas antes de registrar los pasos con datos") long notComputed) {
 
         static Completeness from(DashboardService.Completeness c) {
-            return new Completeness(c.complete(), c.inProgress(), c.notComputed(), c.averageFilledSteps());
+            return new Completeness(c.complete(), c.inProgress(), c.notComputed());
         }
-    }
-
-    @Schema(name = "UserDashboardMissing")
-    public record Missing(
-        @Schema(requiredMode = REQUIRED) long withoutAge,
-        @Schema(requiredMode = REQUIRED) long withoutTreatmentStart,
-        @Schema(requiredMode = REQUIRED, description = "Los 7 pasos clínicos, de más a menos historias vacías")
-        List<EmptyStep> emptySteps) {
-    }
-
-    @Schema(name = "DashboardEmptyStep")
-    public record EmptyStep(
-        @Schema(requiredMode = REQUIRED) int step,
-        @Schema(requiredMode = REQUIRED) long count) {
     }
 
     @Schema(name = "DashboardResumeItem")
@@ -58,7 +41,10 @@ public record UserDashboardResponse(
         @Schema(requiredMode = REQUIRED) String patientName,
         @Schema(description = "Último paso trabajado; vacío = paso 1", nullable = true) Integer lastStep,
         @Schema(description = "Pasos clínicos con datos; vacío = sin calcular", nullable = true) Integer filledSteps,
-        @Schema(requiredMode = REQUIRED) Instant updatedAt) {
+        @Schema(requiredMode = REQUIRED) Instant updatedAt,
+        @Schema(requiredMode = REQUIRED, description = "A la historia le falta la edad del paciente") boolean missingAge,
+        @Schema(requiredMode = REQUIRED, description = "A la historia le falta la fecha de inicio de tratamiento")
+        boolean missingTreatmentStart) {
     }
 
     public static UserDashboardResponse from(UserDashboardView v) {
@@ -66,10 +52,7 @@ public record UserDashboardResponse(
             new Records(v.total(), v.createdThisMonth()),
             RecordQuotaResponse.from(v.quota()),
             Completeness.from(v.completeness()),
-            new Missing(v.missing().withoutAge(),
-                v.missing().withoutTreatmentStart(),
-                v.missing().emptySteps().stream().map(e -> new EmptyStep(e.step(), e.count())).toList()),
             v.resume().stream().map(r -> new ResumeItem(r.id(), r.recordNumber(), r.patientName(), r.lastStep(),
-                r.filledSteps(), r.updatedAt())).toList());
+                r.filledSteps(), r.updatedAt(), r.missingAge(), r.missingTreatmentStart())).toList());
     }
 }
