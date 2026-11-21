@@ -6,16 +6,16 @@ Historia clínica de ortodoncia de la clínica AEO/FACOP en formato digital: el 
 ## Requirements
 
 ### Requirement: Crear una historia clínica de ortodoncia
-El sistema SHALL permitir a cualquier usuario autenticado (`USER` o `ADMIN`) crear una historia clínica de ortodoncia indicando como mínimo el nombre del paciente y el número de historia que asignan los docentes. La historia SHALL quedar asociada a su autor, y el odontólogo tratante SHALL proponerse con el nombre completo del autor (editable).
+El sistema SHALL permitir a cualquier usuario autenticado (`USER` o `ADMIN`) crear una historia clínica de ortodoncia indicando como mínimo el alias del paciente y el número de historia que asignan los docentes. La historia SHALL quedar asociada a su autor, y el odontólogo tratante SHALL proponerse con el nombre completo del autor (editable).
 
 #### Scenario: Creación con el mínimo de datos
-- **WHEN** un usuario autenticado crea una historia con el nombre del paciente "Ana Quispe" y el número "AEO-0015"
+- **WHEN** un usuario autenticado crea una historia con el alias "Ana" y el número "AEO-0015"
 - **THEN** el sistema guarda la historia, responde `201` con su identificador y número, y la abre en el primer paso del formulario
 - **AND** el autor de la historia es ese usuario y el odontólogo tratante propuesto es su nombre completo
 
 #### Scenario: Falta el nombre del paciente
-- **WHEN** un usuario intenta crear una historia sin nombre de paciente (vacío o solo espacios)
-- **THEN** el sistema responde `400` con el error en el campo del nombre y no crea la historia
+- **WHEN** un usuario intenta crear una historia sin alias de paciente (vacío o solo espacios)
+- **THEN** el sistema responde `400` con el error en el campo del alias y no crea la historia
 - **AND** el formulario muestra el mensaje junto al campo
 
 #### Scenario: Sin sesión
@@ -63,41 +63,6 @@ Quien puede editar la historia (su autor o un `ADMIN`) SHALL poder corregir el n
 #### Scenario: El ADMIN corrige el número
 - **WHEN** un `ADMIN` cambia el número de una historia de otro autor a un número válido y libre
 - **THEN** el sistema guarda el nuevo número
-
-### Requirement: Datos del paciente con edad calculada
-La historia SHALL registrar los datos del paciente de la pág. 1 del PDF: nombre, documento, sexo, lugar y fecha de nacimiento, domicilio, celular, inicio de tratamiento y odontólogo tratante. El documento SHALL indicar su tipo y un número solo de dígitos con el largo de ese tipo: DNI (8), Carné de extranjería (9) o Pasaporte (6 a 12). La edad NO SHALL teclearse: SHALL calcularse en años cumplidos a la fecha de inicio de tratamiento o, sin ella, a la fecha actual. Las fechas SHALL ser coherentes.
-
-#### Scenario: Documento válido según su tipo
-- **WHEN** se guarda DNI `74125896`, Carné de extranjería `001234567` o Pasaporte `12345678`
-- **THEN** el documento se guarda y se imprime con su tipo ("DNI 74125896", "CE 001234567", "Pasaporte 12345678")
-
-#### Scenario: Documento con formato incorrecto
-- **WHEN** se guarda DNI `7412589` (7 dígitos), Carné de extranjería con letras o Pasaporte con letras o de 5 dígitos
-- **THEN** el sistema responde `400` con el error en el número del documento y no guarda
-
-#### Scenario: Número de documento sin tipo
-- **WHEN** se guarda un número de documento sin indicar su tipo (o un tipo sin número)
-- **THEN** el sistema responde `400` con el error en el campo que falta
-
-#### Scenario: Edad calculada a la fecha de inicio
-- **WHEN** el paciente nació el 2012-05-20 y el tratamiento inicia el 2026-05-19
-- **THEN** la historia muestra e imprime "Edad: 13 años"
-
-#### Scenario: Edad sin fecha de inicio
-- **WHEN** la historia tiene fecha de nacimiento pero no fecha de inicio de tratamiento
-- **THEN** la edad se calcula a la fecha actual
-
-#### Scenario: Sin fecha de nacimiento
-- **WHEN** la historia no tiene fecha de nacimiento
-- **THEN** la edad se muestra vacía (línea en blanco al imprimir), sin error
-
-#### Scenario: Fecha de nacimiento futura
-- **WHEN** se guarda una fecha de nacimiento posterior a hoy
-- **THEN** el sistema responde `400` con el error en ese campo y no guarda
-
-#### Scenario: Inicio de tratamiento anterior al nacimiento
-- **WHEN** se guarda una fecha de inicio de tratamiento anterior a la fecha de nacimiento
-- **THEN** el sistema responde `400` con el error en la fecha de inicio y no guarda
 
 ### Requirement: Formulario por pasos con guardado de borrador
 El sistema SHALL presentar la historia como un formulario de 8 pasos en el orden del PDF (Paciente y anamnesis · Análisis facial · Análisis funcional · Análisis oclusal y extra · Análisis de modelos · Análisis radiográfico · Diagnóstico y planes · Firmas). Salvo el nombre del paciente, ningún campo SHALL ser obligatorio: es un borrador. Al pasar a otro paso con cambios, SHALL guardarlos antes; si el guardado falla, SHALL quedarse en el paso mostrando el error.
@@ -200,12 +165,12 @@ El formulario SHALL cubrir los campos de las págs. 1–4 y 10–13 del PDF. Don
 - **AND** si la respuesta cambia a "No", la edad se oculta y se descarta al guardar
 
 #### Scenario: Fecha de la primera menstruación inválida
-- **WHEN** la edad de la primera menstruación no es un entero entre 8 y 18 años, o con fecha de nacimiento supera la edad actual de la paciente (zona horaria de la clínica)
+- **WHEN** la edad de la primera menstruación no es un entero entre 8 y 18 años, o supera la edad registrada de la paciente
 - **THEN** el sistema responde `400` con el error en ese campo y no guarda la historia
-- **AND** el formulario muestra el mensaje junto al campo; sin fecha de nacimiento solo se exige el rango de 8 a 18
+- **AND** el formulario muestra el mensaje junto al campo; sin edad registrada solo se exige el rango de 8 a 18
 
 #### Scenario: Paciente menor de la edad mínima
-- **WHEN** la paciente tiene fecha de nacimiento y hoy tiene menos de 8 años
+- **WHEN** la edad registrada de la paciente es menor de 8 años
 - **THEN** la opción "Sí" de "¿La 1ª menstruación ya ocurrió?" está deshabilitada, con un aviso que explica que antes de los 8 años no aplica; "No" se puede marcar
 - **AND** si ya estaba marcado "Sí", el formulario muestra el error junto a la pregunta y el servidor responde `400` con el error en ese campo sin guardar la historia
 
@@ -264,9 +229,9 @@ El formulario SHALL cubrir los campos de las págs. 1–4 y 10–13 del PDF. Don
 - **THEN** se imprimen ambos títulos: el Plan 1 con su texto y el Plan 2 sin texto ni líneas
 
 #### Scenario: Apoderado firma por el paciente menor de edad
-- **WHEN** la edad calculada del paciente es menor de 18 años
-- **THEN** el paso de firmas pide nombre y parentesco del apoderado y la impresión muestra "FIRMA DEL APODERADO" con nombre, parentesco y línea de firma
-- **AND** con 18 años o más, o sin fecha de nacimiento, pide el nombre del paciente (propuesto) e imprime "FIRMA DEL PACIENTE"; los datos del firmante que no aplica se descartan al guardar
+- **WHEN** la edad registrada del paciente es menor de 18 años
+- **THEN** el paso de firmas no pide nombres y la impresión muestra "FIRMA DEL APODERADO" con líneas en blanco para su nombre y parentesco, y la línea de firma
+- **AND** con 18 años o más, o sin edad registrada, imprime "FIRMA DEL PACIENTE" con línea en blanco para su nombre; el sistema no guarda nombres de paciente ni de apoderado
 
 #### Scenario: Fecha y supervisores a mano
 - **WHEN** se imprime la página de firmas
@@ -301,7 +266,7 @@ Un `USER` SHALL ver, editar e imprimir solo las historias de las que es autor; u
 - **THEN** el sistema la devuelve, y guardarla o imprimirla responde `403`
 
 ### Requirement: Listado y búsqueda de historias
-El sistema SHALL ofrecer la sección "Historias clínicas" con un listado paginado, ordenado por última modificación (más reciente primero), con número, paciente, documento, odontólogo tratante, fecha de inicio y última modificación. SHALL permitir buscar por nombre del paciente, número de documento o número de historia, sin distinguir mayúsculas ni tildes. Un `USER` SHALL ver solo sus historias; un `ADMIN`, todas, con una columna de autor.
+El sistema SHALL ofrecer la sección "Historias clínicas" con un listado paginado, ordenado por última modificación (más reciente primero), con número, alias del paciente, odontólogo tratante, fecha de inicio y última modificación. SHALL permitir buscar por alias o número de historia, sin distinguir mayúsculas ni tildes. Un `USER` SHALL ver solo sus historias; un `ADMIN`, todas, con una columna de autor.
 
 #### Scenario: USER ve solo las suyas
 - **WHEN** un `USER` abre "Historias clínicas" y existen historias suyas y de otros
@@ -312,11 +277,11 @@ El sistema SHALL ofrecer la sección "Historias clínicas" con un listado pagina
 - **THEN** el listado muestra las historias de todos los usuarios con la columna "Autor"
 
 #### Scenario: Búsqueda sin tildes ni mayúsculas
-- **WHEN** el usuario busca "quispe" y existe la paciente "Ana QUÍSPE"
+- **WHEN** el usuario busca "mateo" y existe el paciente con alias "MATEO"
 - **THEN** la historia aparece en el resultado
 
 #### Scenario: Búsqueda por documento o número
-- **WHEN** el usuario busca un número de documento o un número de historia existentes (p. ej. "aeo-0015")
+- **WHEN** el usuario busca un número de historia existente (p. ej. "aeo-0015")
 - **THEN** el resultado incluye la historia correspondiente
 
 #### Scenario: Búsqueda por el número corregido
@@ -324,7 +289,7 @@ El sistema SHALL ofrecer la sección "Historias clínicas" con un listado pagina
 - **THEN** buscar "aeo-0051" la encuentra y buscar "aeo-0015" ya no
 
 #### Scenario: Búsqueda y página en la dirección
-- **WHEN** el usuario busca "quispe" y pasa a la página 2 del listado
+- **WHEN** el usuario busca "mateo" y pasa a la página 2 del listado
 - **THEN** la dirección queda `/historias?pagina=2`, sin el texto buscado, y recargar o volver de otra pantalla conserva la búsqueda y la página
 - **AND** el texto buscado se conserva solo en la pestaña, no en la dirección ni en las peticiones a la API
 
@@ -367,7 +332,7 @@ El sistema SHALL ofrecer una vista de impresión A4 de la historia que reproduce
 - **THEN** ve "Historia no encontrada" y no se imprime contenido
 
 ### Requirement: Datos en la hoja impresa
-Los datos escritos SHALL imprimirse como texto, sin las líneas del PDF (eran para llenar a mano); los campos de opciones SHALL listar todas las opciones con la elegida marcada; un texto vacío NO SHALL imprimir líneas en blanco. Solo la fecha y las firmas (que se llenan sobre el papel) y los datos del paciente de la hoja 1 (PACIENTE a Celular, que conservan la forma del PDF) SHALL llevar su línea.
+Los datos escritos SHALL imprimirse como texto, sin las líneas del PDF; los campos de opciones SHALL listar todas las opciones con la elegida marcada; un texto vacío NO SHALL imprimir líneas en blanco. Solo la fecha, las firmas y la hoja 1 SHALL llevar línea: alias, edad, sexo y fecha de inicio con su dato, y nombre completo, documento, nacimiento, domicilio y celular en blanco para escribirlos a mano.
 
 #### Scenario: Opciones de una pregunta en la hoja impresa
 - **WHEN** una pregunta termina en ":" (p. ej. "3. PROPORCIÓN DE LOS TERCIOS FACIALES:")
@@ -386,11 +351,16 @@ Los datos escritos SHALL imprimirse como texto, sin las líneas del PDF (eran pa
 #### Scenario: Datos escritos sin líneas de llenado a mano
 - **WHEN** se imprime una historia con diagnóstico general y lista de problemas escritos
 - **THEN** esos datos salen como texto sin subrayado ni renglones debajo
-- **AND** conservan su línea solo "FECHA:", las líneas "Firma" y los datos del paciente de la hoja 1 (PACIENTE, Edad, Domicilio, Fecha de inicio, Documento, Lugar y fecha de nacimiento, Celular)
+- **AND** conservan su línea solo "FECHA:", las líneas "Firma" y la hoja 1 (Nombre y apellidos con el alias, Edad, Sexo y Fecha de inicio con su dato; Documento, Lugar y fecha de nacimiento, Domicilio y Celular en blanco, o completados con la libreta local del dispositivo cuando tiene entrada de esa historia, con lo que Nombre y apellidos pasa a ser el nombre de la libreta; sin él, la vista previa avisa de que faltan datos)
 
 #### Scenario: Textos largos
 - **WHEN** un campo de texto libre ocupa más de lo que el PDF reserva
 - **THEN** el texto se imprime completo continuando en la página siguiente, sin cortarse ni solaparse
+
+#### Scenario: Datos del paciente a mano
+- **WHEN** se imprime la hoja 1 de una historia con alias "Mateo", sexo masculino y edad 13, sin entrada en la libreta local
+- **THEN** la hoja muestra el alias, el sexo y la edad, y deja líneas en blanco para el nombre completo, el documento, el lugar y fecha de nacimiento, el domicilio y el celular
+- **AND** el servidor no guarda ningún valor para esas líneas (`add-orthodontic-records-local-patient-notebook` puede completarlas desde el navegador)
 
 ### Requirement: Análisis transversal de los modelos
 El sistema SHALL registrar el análisis transversal de los modelos de la pág. 5 del PDF: AIS, AII, AMS y AMI; ancho del borde WALA, ancho X Pc, ancho X´ Pc y ancho X ideal; distancias WALA–EV de canino, 1er y 2do premolar, 1er y 2do molar inferiores; e interpretación. Las medidas SHALL estar en milímetros, entre 0 y 99,9, con a lo sumo un decimal. Paciente, edad y sexo SHALL tomarse de la historia.
@@ -440,7 +410,7 @@ El sistema SHALL registrar la ficha del análisis de Moyers de la pág. 6 del PD
 
 #### Scenario: Hoja impresa de Moyers
 - **WHEN** se imprime una historia
-- **THEN** después de la hoja del análisis transversal sale "FICHA PARA EL ANÁLISIS DE MOYERS" con nombre, edad y fecha, la ficha con incisivos, suma, disponible, requerido y diferencia, la tabla de predisposición de apiñamiento con lo escrito y la interpretación
+- **THEN** después de la hoja del análisis transversal sale "FICHA PARA EL ANÁLISIS DE MOYERS" con alias, edad y fecha, la ficha con incisivos, suma, disponible, requerido y diferencia, la tabla de predisposición de apiñamiento con lo escrito y la interpretación
 
 ### Requirement: Datos del análisis de Moyers
 La fecha del análisis SHALL escribirla el tratante: puede ser anterior al inicio del tratamiento, pero no futura. Las medidas SHALL estar en milímetros con a lo sumo un decimal: los anchos de 42, 41, 31 y 32 entre 4,0 y 13,0 (el ancho real de una pieza) y los espacios disponibles entre 0 y 99,9.
@@ -489,7 +459,7 @@ El sistema SHALL registrar la ficha del análisis de Nance & Carey (discrepancia
 
 #### Scenario: Hoja impresa de Nance
 - **WHEN** se imprime una historia
-- **THEN** después de la hoja de la fórmula de Tanaka-Johnston (que sigue a la de Moyers) sale "ANÁLISIS DE NANCE · DISCREPANCIA ÓSEO DENTARIA" con nombre, edad y fecha, SA y ST por arcada, el dibujo de la arcada, los anchos de cada pieza con su total, la tabla con discrepancia y conclusión, y la interpretación
+- **THEN** después de la hoja de la fórmula de Tanaka-Johnston (que sigue a la de Moyers) sale "ANÁLISIS DE NANCE · DISCREPANCIA ÓSEO DENTARIA" con alias, edad y fecha, SA y ST por arcada, el dibujo de la arcada, los anchos de cada pieza con su total, la tabla con discrepancia y conclusión, y la interpretación
 - **AND** la pág. 8 del PDF (en blanco) no se imprime
 
 ### Requirement: Datos del análisis de Nance
@@ -590,7 +560,7 @@ El módulo de historia clínica (listado, formulario de 8 pasos y vista previa) 
 
 #### Scenario: Listado en tarjetas
 - **WHEN** el usuario abre el listado en una pantalla de menos de 1024 px de ancho
-- **THEN** cada historia aparece como una tarjeta con número, paciente, documento, tratante, inicio y fecha de modificación
+- **THEN** cada historia aparece como una tarjeta con número, alias del paciente, tratante, inicio y fecha de modificación
 - **AND** los botones "Editar" y "Vista previa" de cada historia están visibles sin desplazarse
 
 #### Scenario: Listado en tabla en escritorio
@@ -817,10 +787,10 @@ Al crear y al guardar una historia, el cliente SHALL enviar qué pasos tienen da
 - **THEN** la API responde `400` con el error en `filledSteps` y no guarda
 
 ### Requirement: Paso 1 siempre con datos e historias sin calcular
-Como el nombre del paciente es obligatorio, el servidor SHALL incluir siempre el paso 1 en lo que guarda, también al crear sin el dato o con una lista vacía. Una historia nunca guardada con este dato SHALL quedar "sin calcular".
+Como el alias del paciente es obligatorio, el servidor SHALL incluir siempre el paso 1 en lo que guarda, también al crear sin el dato o con una lista vacía. Una historia nunca guardada con este dato SHALL quedar "sin calcular".
 
 #### Scenario: Crear una historia
-- **WHEN** el usuario crea una historia con el nombre del paciente, se envíe o no `filledSteps` (o se envíe vacío)
+- **WHEN** el usuario crea una historia con el alias del paciente, se envíe o no `filledSteps` (o se envíe vacío)
 - **THEN** la historia nace con el paso 1 con datos, no "sin calcular"
 
 #### Scenario: Historia anterior a este cambio
@@ -828,34 +798,34 @@ Como el nombre del paciente es obligatorio, el servidor SHALL incluir siempre el
 - **THEN** sus pasos con datos figuran como sin calcular
 
 ### Requirement: Datos del paciente fijos tras imprimir
-La primera impresión registrada de una historia, completa o no, SHALL fijar los datos de identidad del paciente: nombre, tipo y número de documento, fecha de nacimiento, sexo y lugar de nacimiento. Desde entonces, un guardado que los cambie SHALL rechazarse con `409` (`/errors/patient-locked`) y el mensaje "Los datos del paciente quedaron fijos al imprimir la historia. Solicita el desbloqueo para corregirlos.", sin guardar nada. La regla SHALL aplicarse igual a historias de autor `ADMIN`.
+La primera impresión registrada de una historia, completa o no, SHALL fijar los datos del paciente: alias, sexo y edad. Desde entonces, un guardado que los cambie SHALL rechazarse con `409` (`/errors/patient-locked`) y el mensaje "Los datos del paciente quedaron fijos al imprimir la historia. Solicita el desbloqueo para corregirlos.", sin guardar nada. La regla SHALL aplicarse igual a historias de autor `ADMIN`.
 
 #### Scenario: Corregir antes de imprimir
-- **WHEN** el tratante cambia el nombre del paciente de una historia que nunca se imprimió
+- **WHEN** el tratante cambia el alias del paciente de una historia que nunca se imprimió
 - **THEN** se guarda normalmente
 
 #### Scenario: Primera impresión fija los datos
 - **WHEN** el tratante imprime una historia por primera vez
-- **THEN** nombre, documento, fecha de nacimiento, sexo y lugar de nacimiento quedan fijos y el formulario los muestra de solo lectura con el aviso
+- **THEN** alias, sexo y edad quedan fijos y el formulario los muestra de solo lectura con el aviso
 
 #### Scenario: Imprimir un avance también fija
 - **WHEN** el tratante imprime el avance de una historia con 3 de 7 pasos clínicos con datos
 - **THEN** los datos quedan fijos y puede seguir llenando los demás pasos y reimprimir
 
 #### Scenario: Cambiar un dato fijo
-- **WHEN** se intenta guardar otro nombre, documento, fecha de nacimiento, sexo o lugar de nacimiento en una historia ya impresa
+- **WHEN** se intenta guardar otro alias, sexo o edad en una historia ya impresa
 - **THEN** la API responde `409` con el mensaje de datos fijos y la historia queda exactamente como estaba
 
 #### Scenario: Guardado de otra pestaña después de imprimir
-- **WHEN** otra pestaña, abierta antes de la primera impresión, guarda un cambio en el nombre del paciente
+- **WHEN** otra pestaña, abierta antes de la primera impresión, guarda un cambio en el alias del paciente
 - **THEN** la API responde `409` de datos fijos y no guarda nada
 
 #### Scenario: Impresión y guardado simultáneos
-- **WHEN** se imprime una historia al mismo tiempo que se guarda con otro nombre de paciente
-- **THEN** o el guardado entra antes y se imprime y fija ese nombre, o la impresión fija el nombre anterior y el guardado recibe `409`; nunca queda fijo un nombre distinto del impreso
+- **WHEN** se imprime una historia al mismo tiempo que se guarda con otro alias de paciente
+- **THEN** o el guardado entra antes y se imprime y fija ese alias, o la impresión fija el alias anterior y el guardado recibe `409`; nunca queda fijo un alias distinto del impreso
 
 #### Scenario: Historia de autor ADMIN
-- **WHEN** un `ADMIN` imprime una historia propia y luego intenta cambiar el nombre
+- **WHEN** un `ADMIN` imprime una historia propia y luego intenta cambiar el alias
 - **THEN** recibe el mismo `409` de datos fijos
 
 #### Scenario: Historias impresas antes de este cambio
@@ -863,14 +833,14 @@ La primera impresión registrada de una historia, completa o no, SHALL fijar los
 - **THEN** sus datos están desbloqueados hasta la próxima impresión registrada
 
 ### Requirement: Comparación de los datos fijos
-La comparación de los datos fijos SHALL hacerse en forma canónica (sin distinguir mayúsculas, tildes, formas Unicode equivalentes ni espacios sobrantes; el documento por tipo y dígitos): un cambio que solo corrige la escritura SHALL guardarse. Domicilio, teléfono, fecha de inicio de tratamiento y el contenido clínico SHALL seguir editables y la historia reimprimible.
+La comparación de los datos fijos SHALL hacerse en forma canónica (sin distinguir mayúsculas, tildes, formas Unicode equivalentes ni espacios sobrantes): un cambio que solo corrige la escritura SHALL guardarse. La fecha de inicio de tratamiento y el contenido clínico SHALL seguir editables y la historia reimprimible.
 
 #### Scenario: Corregir solo la escritura
-- **WHEN** en una historia fijada se guarda "ANA  QUÍSPE" o "ana quispe" donde decía "Ana Quispe", o el mismo DNI
+- **WHEN** en una historia fijada se guarda "MATEO " o "mateo" donde decía "Mateo"
 - **THEN** se guarda (es la misma identidad)
 
 #### Scenario: Datos que sí cambian
-- **WHEN** el tratante cambia el domicilio, el teléfono, la fecha de inicio o el contenido clínico de una historia ya impresa, guarda y reimprime
+- **WHEN** el tratante cambia la fecha de inicio o el contenido clínico de una historia ya impresa, guarda y reimprime
 - **THEN** todo se guarda y se imprime normalmente
 
 ### Requirement: Datos fijos en el formulario
@@ -960,11 +930,11 @@ Un `ADMIN` SHALL poder desbloquear los datos fijos de una historia; se vuelven a
 - **THEN** la API responde `403`
 
 ### Requirement: Solicitud de desbloqueo
-Con los datos fijos, el autor SHALL poder pedir el desbloqueo con un motivo (1–200 caracteres); mientras esté pendiente, la historia SHALL mostrar "Desbloqueo solicitado el dd/mm/aaaa" y no admitir otra (dos simultáneas dejan una). El `ADMIN` SHALL resolverla desbloqueando o descartándola. Sin datos fijos SHALL responder `409` (`/errors/patient-not-locked`); con una pendiente, `409` (`/errors/unlock-already-requested`); en una historia ajena, `404`. Un `USER` que descarte SHALL recibir `403`.
+Con los datos fijos, el autor SHALL poder pedir el desbloqueo con un motivo de un catálogo cerrado (`ALIAS`, `SEXO`, `EDAD`, `OTRO`), sin texto libre; si está pendiente, la historia SHALL mostrar "Desbloqueo solicitado el dd/mm/aaaa" y no admitir otra. El `ADMIN` SHALL desbloquearla o descartarla. Sin datos fijos SHALL responder `409` (`/errors/patient-not-locked`); con una pendiente, `409` (`/errors/unlock-already-requested`); en historia ajena, `404`; si un `USER` descarta, `403`.
 
 #### Scenario: Solicitar el desbloqueo
-- **WHEN** el tratante solicita el desbloqueo de su historia fijada con el motivo "Error en el número de DNI"
-- **THEN** la historia muestra "Desbloqueo solicitado el <fecha>" y el ADMIN ve la solicitud con el motivo
+- **WHEN** el tratante solicita el desbloqueo de su historia fijada con el motivo `EDAD`
+- **THEN** la historia muestra "Desbloqueo solicitado el <fecha>" y el ADMIN ve la solicitud con el motivo "Edad"
 
 #### Scenario: Solicitud repetida
 - **WHEN** el tratante intenta solicitar otra vez con una solicitud pendiente
@@ -988,7 +958,14 @@ Con los datos fijos, el autor SHALL poder pedir el desbloqueo con un motivo (1�
 
 #### Scenario: USER intenta descartar
 - **WHEN** un `USER` intenta descartar una solicitud
-- **THEN** la API responde `403`
+
+#### Scenario: Motivo fuera del catálogo
+- **WHEN** un cliente envía una solicitud con un motivo que no está en el catálogo o con texto libre
+- **THEN** la API responde `400` y no guarda nada
+
+#### Scenario: Solicitudes y eventos sin texto libre
+- **WHEN** se inspeccionan las solicitudes pendientes y los eventos de desbloqueo
+- **THEN** el motivo guardado es solo un valor del catálogo y ninguno contiene texto escrito por el usuario
 
 ### Requirement: Candado en el listado
 En el listado de historias (tabla y tarjetas), cada historia con los datos del paciente fijos SHALL mostrar un candado con el texto accesible "Datos del paciente fijos", para el tratante y para el `ADMIN`.
@@ -1214,7 +1191,7 @@ El tratante SHALL poder escribir otro valor en una suma sugerida; desde entonces
 - **THEN** esos análisis no hacen que el paso figure "con datos"
 
 ### Requirement: Hojas impresas de Tanaka-Johnston y Wolford
-La impresión SHALL incluir cada análisis en su propia hoja, con nombre y edad: "FÓRMULA DE TANAKA-JOHNSTON" tras la hoja de Moyers (suma, espacios maxilar y mandibular con su fórmula e interpretación) y "ANÁLISIS DE WOLFORD" tras la de Bolton (cuatro sumas, discrepancias total y parcial con su fórmula e interpretación), con el valor usado, sugerido o escrito. Sin una suma, la fila y su fórmula SHALL imprimirse con el resultado "—".
+La impresión SHALL incluir cada análisis en su propia hoja, con alias y edad: "FÓRMULA DE TANAKA-JOHNSTON" tras la hoja de Moyers (suma, espacios maxilar y mandibular con su fórmula e interpretación) y "ANÁLISIS DE WOLFORD" tras la de Bolton (cuatro sumas, discrepancias total y parcial con su fórmula e interpretación), con el valor usado, sugerido o escrito. Sin una suma, la fila y su fórmula SHALL imprimirse con el resultado "—".
 
 #### Scenario: Hoja de Tanaka-Johnston
 - **WHEN** se imprime una historia
@@ -1248,23 +1225,39 @@ Una historia guardada antes de este cambio SHALL abrirse sin perder ni corregir 
 - **THEN** se abre mostrando ese valor tal cual y, al guardar, el error aparece solo junto a ese campo y no se guarda hasta corregirlo
 
 ### Requirement: Búsqueda de historias sin datos del paciente en las URL
-El texto buscado de un paciente (nombre, documento) SHALL NOT viajar en la URL de la API, en la dirección del navegador ni en parámetros de consulta. Si la búsqueda lo envía al servidor, SHALL hacerlo en el cuerpo de una petición `POST /api/orthodontic-records/search`, con el texto limitado a 120 caracteres. `GET /api/orthodontic-records` SHALL listar sin búsqueda por texto.
+El texto buscado de un paciente (alias, número) SHALL NOT viajar en la URL de la API, en la dirección del navegador ni en parámetros de consulta. Si la búsqueda lo envía al servidor, SHALL hacerlo en el cuerpo de `POST /api/orthodontic-records/search`, con el texto limitado a 120 caracteres. La búsqueda local de la libreta SHALL pedir las historias por una lista de hasta 50 identificadores en ese mismo cuerpo, en lugar del texto. `GET /api/orthodontic-records` SHALL listar sin búsqueda.
 
 #### Scenario: Buscar por nombre
-- **WHEN** el usuario busca "quispe" en "Historias clínicas"
-- **THEN** la aplicación envía `POST /api/orthodontic-records/search` con el texto en el cuerpo y ninguna URL de la petición contiene "quispe"
-- **AND** el resultado y su orden son los mismos que antes
+- **WHEN** el usuario busca "mateo" en "Historias clínicas"
+- **THEN** la aplicación envía `POST /api/orthodontic-records/search` con el texto en el cuerpo y ninguna URL de la petición contiene "mateo"
+
+#### Scenario: Buscar por identificadores
+- **WHEN** la búsqueda local de la libreta encuentra 3 historias
+- **THEN** la aplicación envía `POST /api/orthodontic-records/search` con `recordIds` en el cuerpo, sin texto, y ninguna URL contiene identificadores
+- **AND** la respuesta es el listado normal, con el mismo orden y el acceso por rol de siempre, y lleva `Cache-Control: no-store`
+
+#### Scenario: Más de 50 identificadores
+- **WHEN** el cuerpo trae 51 identificadores
+- **THEN** la API responde `400` sin buscar
+
+#### Scenario: Texto e identificadores a la vez
+- **WHEN** el cuerpo trae texto y también identificadores, o ninguno de los dos
+- **THEN** la API responde `400`
+
+#### Scenario: Identificadores ajenos
+- **WHEN** un `USER` pide identificadores de historias de otro tratante
+- **THEN** el resultado no las incluye
 
 #### Scenario: Paginación y turma
 - **WHEN** el usuario pasa a la página 2 o la coordinación filtra por turma
 - **THEN** la página y el identificador de turma viajan como parámetros de la operación y el listado respeta el acceso por rol
 
 #### Scenario: Parámetro q retirado
-- **WHEN** un cliente envía `GET /api/orthodontic-records?q=quispe`
+- **WHEN** un cliente envía `GET /api/orthodontic-records?q=mateo`
 - **THEN** la API ignora el parámetro y lista sin filtrar por ese texto
 
 #### Scenario: Acceso por rol en la búsqueda
-- **WHEN** un `USER` busca con el nombre de un paciente de otro tratante
+- **WHEN** un `USER` busca con el alias de un paciente de otro tratante
 - **THEN** el resultado no incluye historias ajenas
 
 #### Scenario: Texto en el límite
@@ -1276,5 +1269,120 @@ El texto buscado de un paciente (nombre, documento) SHALL NOT viajar en la URL d
 - **THEN** la API responde `400`
 
 #### Scenario: Registros del sitio estático
-- **WHEN** el usuario recarga el listado después de buscar un nombre
-- **THEN** la petición del documento al sitio estático no contiene el nombre buscado
+- **WHEN** el usuario recarga el listado después de buscar
+- **THEN** la petición del documento al sitio estático no contiene lo buscado
+
+### Requirement: Paciente identificado por alias, sexo y edad
+La historia SHALL identificar al paciente solo por un alias, su sexo y su edad en años al inicio del tratamiento (0 a 99), escritos por el tratante. El alias SHALL normalizarse (NFKC, sin espacios sobrantes) y tener de 1 a 30 caracteres Unicode, hasta 2 palabras, solo letras, marcas, dígitos, guion y apóstrofo, y ninguna secuencia de 6 o más dígitos. El servidor NO SHALL recibir ni guardar nombre completo, documento, fecha o lugar de nacimiento, domicilio ni celular del paciente.
+
+#### Scenario: Alias, sexo y edad válidos
+- **WHEN** el tratante guarda el alias "Mateo", sexo masculino y edad 13
+- **THEN** la historia guarda esos tres datos y los muestra en el paso 1 y en la hoja impresa
+
+#### Scenario: Alias con más de dos palabras
+- **WHEN** se envía el alias "Mateo Quispe Rojas"
+- **THEN** la API responde `400` con el error en el alias y no guarda nada
+
+#### Scenario: Alias con un número largo
+- **WHEN** se envía el alias "Mateo 74125896"
+- **THEN** la API responde `400` con el error en el alias y no guarda nada
+
+#### Scenario: Alias en los límites
+- **WHEN** se guarda un alias de 30 caracteres y otro de 31
+- **THEN** el de 30 se guarda y el de 31 responde `400`
+
+#### Scenario: Espacios, tildes y números cortos
+- **WHEN** se guarda el alias "  Ana   María " o "José 12"
+- **THEN** el primero se guarda como "Ana María" (2 palabras) y el segundo se guarda tal cual (el número tiene menos de 6 dígitos)
+
+#### Scenario: Caracteres no permitidos
+- **WHEN** se envía un alias con un emoji, un carácter de control o el signo "@"
+- **THEN** la API responde `400` con el error en el alias y no guarda nada
+
+#### Scenario: Conteo por caracteres Unicode
+- **WHEN** se envía un alias de 30 letras con tilde y otro de 31
+- **THEN** el de 30 se guarda y el de 31 responde `400`, igual en el navegador y en el servidor
+
+#### Scenario: Edad fuera de rango
+- **WHEN** se envía la edad -1, 100 o 12,5
+- **THEN** la API responde `400` con el error en el campo de la edad y no guarda nada
+
+#### Scenario: Edades en los límites
+- **WHEN** se guarda la edad 0, 17, 18 y 99
+- **THEN** todas se guardan; con 17 el paso de firmas pide apoderado y con 18 pide al paciente
+
+#### Scenario: Cambio de la edad o de la fecha de inicio tras imprimir
+- **WHEN** el tratante cambia la fecha de inicio de tratamiento de una historia ya impresa
+- **THEN** se guarda sin tocar la edad, que no se recalcula, y solo cambia con un desbloqueo
+
+#### Scenario: Respuestas, eventos y errores sin datos retirados
+- **WHEN** se piden la historia, el listado, el tablero, los eventos de desbloqueo y una respuesta de error de un guardado inválido
+- **THEN** ninguno contiene documento, fecha o lugar de nacimiento, domicilio, celular ni nombres de firma del paciente o apoderado
+
+#### Scenario: Campo retirado en la petición
+- **WHEN** un cliente antiguo envía `documentType`, `documentNumber`, `birthDate`, `birthPlace`, `address` o `phone` del paciente, o nombres de firma del paciente o apoderado dentro del contenido
+- **THEN** la API responde `400` y no guarda nada, en crear y en guardar
+
+#### Scenario: Aviso de nombre real
+- **WHEN** el tratante escribe en el alias dos palabras o un texto que coincide con una palabra de un texto libre de la historia
+- **THEN** el formulario avisa que el alias no debe ser el nombre real y pide confirmar antes de guardar
+
+#### Scenario: Sin edad
+- **WHEN** la historia no tiene edad registrada
+- **THEN** se trata como adulta, la edad se imprime vacía y no hay error
+
+### Requirement: Migración de las historias existentes al alias
+Las historias existentes SHALL pasar al formato con alias con una acción administrativa única fuera de la API. La acción NO SHALL ejecutarse sin una copia de seguridad de la base verificada, sin aprobación escrita ni antes de la fecha límite de copia; el respaldo individual del autor no es condición, porque pasada la fecha se borra igual. Cada historia SHALL quedar marcada como migrada; el alias, la edad y el borrado se detallan en los escenarios.
+
+#### Scenario: Migración correcta
+- **WHEN** la acción se ejecuta con aprobación y copia verificada sobre una historia con nombre "Ana Quispe" y nacimiento 2012-05-20 e inicio 2026-05-19
+- **THEN** la historia queda con alias "Ana Q" y edad 13, y se borran nombre completo, documento, nacimiento, lugar, domicilio, celular, texto de búsqueda y nombres de firma
+
+#### Scenario: Cuentas deshabilitadas o de alumnos que se fueron
+- **WHEN** la acción llega a historias de una cuenta deshabilitada o de un alumno que ya no está en la institución
+- **THEN** sus datos de identidad se borran sin copia previa y la historia queda identificada por alias y número
+
+#### Scenario: Autor que no copia antes de la fecha límite
+- **WHEN** pasa la fecha límite de copia y un autor no respaldó sus historias
+- **THEN** la acción borra los datos antiguos igual, sin esperar al autor, y esos datos quedan solo en el papel firmado
+
+#### Scenario: Historia sin fecha de nacimiento
+- **WHEN** la historia no tiene fecha de nacimiento
+- **THEN** su edad queda vacía y el resto de la migración se aplica igual
+
+#### Scenario: Nombre vacío, de una palabra o con partículas
+- **WHEN** el nombre guardado es nulo, vacío, solo espacios, "Ana", "de la Cruz Rojas" o "María José Quispe"
+- **THEN** los alias resultan "Paciente", "Paciente", "Paciente", "Ana", "Cruz R" y "María J", y ninguna historia queda sin alias
+- **AND** el alias propuesto es un valor inicial que el tratante puede cambiar
+
+#### Scenario: Reejecución e interrupción
+- **WHEN** la acción se interrumpe a la mitad y se ejecuta de nuevo, incluso con historias que quedaron sin edad por no tener fecha de nacimiento
+- **THEN** las historias ya marcadas como migradas se omiten, las demás se procesan en su propia transacción y el resultado final es el mismo que sin interrupción
+
+#### Scenario: Nombres de firma del paciente y del apoderado
+- **WHEN** el contenido tiene `patientSignatureName`, `guardianName`, `guardianRelationship`, `supervisor1Name`, `supervisor2Name` y `treatingSignatureName`
+- **THEN** la migración borra solo los tres primeros y conserva los nombres de supervisores y tratante, también en las versiones antiguas del contenido
+
+#### Scenario: Historia migrada con datos clínicos inconsistentes
+- **WHEN** la edad calculada es 7 y la historia ya tiene la primera menstruación a los 8 años
+- **THEN** la migración conserva ambos valores y la cuenta como inconsistente en su informe, y el siguiente guardado de esa historia responde `400` con el error en el campo de la menarquia hasta que el tratante lo corrija
+
+#### Scenario: Motivos de desbloqueo anteriores
+- **WHEN** hay solicitudes pendientes y eventos con motivos en texto libre
+- **THEN** la migración los reemplaza por `OTRO` y la solicitud sigue pendiente y los eventos conservan su fecha y acción
+
+#### Scenario: Sin copia verificada o sin aprobación
+- **WHEN** la acción se intenta sin copia verificada o sin la confirmación del responsable
+- **THEN** no modifica ni borra nada
+
+#### Scenario: Verificación posterior
+- **WHEN** termina la acción
+- **THEN** informa solo conteos y comprueba que no queda ninguna historia con columnas retiradas con valor, y si queda alguna aborta sin retirar las columnas
+
+#### Scenario: Retiro del esquema
+- **WHEN** no queda ninguna historia con datos en las columnas retiradas
+- **THEN** una migración elimina esas columnas y el esquema resultante no contiene identificadores del paciente
+
+#### Scenario: Retiro con historias pendientes
+- **WHEN** queda al menos una historia con datos en esas columnas
+- **THEN** la migración aborta con un error que no incluye ningún valor y no cambia el esquema

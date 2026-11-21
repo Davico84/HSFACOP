@@ -2,17 +2,23 @@
 
 ## Purpose
 Métricas de Inicio por rol, calculadas en el servidor con consultas agregadas (sin leer el contenido clínico): el tratante (`USER`) ve el avance de sus historias —cantidad, cupo, completitud sobre los 7 pasos clínicos, datos faltantes y qué retomar en su último paso—; el `ADMIN` ve solo métricas globales —cuentas, historias por mes, tratantes con más historias y cupos cerca del tope—. Reemplaza el dashboard de ejemplo de la plantilla.
+
 ## Requirements
+
 ### Requirement: Métricas del tratante en Inicio
-Para un `USER`, Inicio SHALL mostrar métricas de sus propias historias calculadas en el servidor (`GET /api/dashboard/me`, solo para `USER`; un `ADMIN` recibe `403`): total, creadas en el mes en curso (según la zona horaria de la app) y uso del cupo ("N de M" o "sin límite"). Las métricas NO SHALL incluir historias de otros tratantes.
+Para un `USER`, Inicio SHALL mostrar el uso de su cupo ("N de M" o "sin límite") y un botón "Nueva historia" junto al saludo, calculados en el servidor sobre sus propias historias (`GET /api/dashboard/me`, solo `USER`; un `ADMIN` recibe `403`). La respuesta SHALL incluir el total de historias y las creadas en el mes en curso, y NO SHALL incluir historias de otros tratantes. Con el cupo lleno, "Nueva historia" SHALL quedar deshabilitado y decir por qué.
 
 #### Scenario: Historias y cupo
 - **WHEN** un tratante con cupo 5 tiene 3 historias, una creada este mes
-- **THEN** Inicio muestra 3 historias, 1 creada este mes y "3 de 5" de cupo
+- **THEN** Inicio muestra "3 de 5" de cupo y el botón "Nueva historia" junto al saludo, y la API devuelve 3 historias y 1 creada este mes
 
 #### Scenario: Sin límite de cupo
 - **WHEN** un tratante sin cupo abre Inicio
 - **THEN** el uso del cupo dice "sin límite"
+
+#### Scenario: Cupo lleno
+- **WHEN** un tratante con cupo 5 tiene 5 historias
+- **THEN** "Nueva historia" aparece deshabilitado y el aviso del cupo lleno explica que no puede crear más
 
 #### Scenario: ADMIN pide las métricas de tratante
 - **WHEN** un `ADMIN` llama a `GET /api/dashboard/me`
@@ -24,48 +30,49 @@ Para un `USER`, Inicio SHALL mostrar métricas de sus propias historias calculad
 
 #### Scenario: Sin historias todavía
 - **WHEN** un tratante sin historias abre Inicio
-- **THEN** ve las métricas en cero y una invitación a crear su primera historia
-
-### Requirement: Completitud de las historias del tratante
-Inicio SHALL mostrar al `USER` sus historias completas, en progreso y sin calcular, y el promedio de pasos clínicos con datos (sobre las calculadas, con un decimal; vacío si no hay calculadas). Una historia es **completa** si tiene datos en los 7 pasos clínicos (1–7); el paso 8 (Firmas) no cuenta, porque se completa a mano. Si hay historias sin calcular, SHALL indicarlo junto a la completitud ("N sin calcular: se calculan al volver a guardarlas").
-
-#### Scenario: Completitud
-- **WHEN** un tratante tiene una historia con datos en los pasos 1–7 (Firmas vacío), otra con 4 pasos y otra guardada antes de este cambio
-- **THEN** Inicio muestra 1 completa, 1 en progreso, 1 sin calcular y un promedio de 5,5 pasos clínicos con datos
-
-#### Scenario: Firmas no cuenta
-- **WHEN** una historia tiene datos solo en los pasos 1–6 y en Firmas
-- **THEN** figura en progreso y Firmas no aparece en la lista de pasos vacíos
-
-#### Scenario: Promedio sin historias calculadas
-- **WHEN** todas las historias del tratante están sin calcular
-- **THEN** el promedio se muestra vacío ("—") y no como cero
-
-#### Scenario: Aviso de historias sin calcular
-- **WHEN** el tratante tiene 4 historias sin calcular
-- **THEN** junto a la completitud se lee "4 sin calcular: se calculan al volver a guardarlas"
+- **THEN** ve una invitación a crear su primera historia, sin indicadores ni lista
 
 ### Requirement: Datos faltantes en las historias del tratante
-Inicio SHALL mostrar al `USER` cuántas de sus historias no tienen documento, fecha de nacimiento o fecha de inicio de tratamiento y, para cada paso clínico (1–7), cuántas historias calculadas lo tienen vacío: siempre los 7, de más a menos frecuente y, a igual frecuencia, por número de paso.
+Inicio SHALL indicar al `USER`, en cada historia de "Para retomar", si le falta la edad ("Falta la edad") y la fecha de inicio de tratamiento ("Falta la fecha de inicio"), mostrando los dos avisos cuando faltan ambos. Inicio NO SHALL mostrar conteos de historias con datos faltantes ni la lista de pasos clínicos vacíos. `GET /api/dashboard/me` SHALL entregar ambos indicadores en cada historia para retomar.
 
 #### Scenario: Datos faltantes
-- **WHEN** dos de sus historias no tienen número de documento y una no tiene fecha de inicio de tratamiento
-- **THEN** Inicio muestra "2 sin documento" y "1 sin fecha de inicio", y los 7 pasos clínicos ordenados de más a menos historias vacías (a igual cantidad, por número de paso)
+- **WHEN** una historia incompleta no tiene edad ni fecha de inicio de tratamiento
+- **THEN** su fila en "Para retomar" muestra "Falta la edad" y "Falta la fecha de inicio", y Inicio no muestra conteos de historias sin edad o sin fecha de inicio
+
+#### Scenario: Falta solo la fecha de inicio
+- **WHEN** una historia incompleta tiene edad pero no fecha de inicio
+- **THEN** su fila muestra solo "Falta la fecha de inicio"
+
+#### Scenario: Historia con todos los datos
+- **WHEN** una historia incompleta tiene edad y fecha de inicio
+- **THEN** su fila no muestra avisos de datos faltantes
+
+#### Scenario: Sin pasos vacíos
+- **WHEN** un tratante con historias incompletas abre Inicio
+- **THEN** no ve una lista de pasos clínicos vacíos ni conteos de historias sin edad o sin fecha de inicio
 
 ### Requirement: Historias para retomar
-Inicio del `USER` SHALL listar sus historias no completas (en progreso o sin calcular) más recientes por última modificación, hasta 5, con número, paciente, pasos clínicos con datos (o "sin calcular") y fecha; cada una SHALL enlazar a la historia en su último paso trabajado, o en el paso 1 si no tiene.
+Inicio del `USER` SHALL listar, en el primer plano y a todo el ancho, sus historias no completas (en progreso o sin calcular) más recientes por última modificación, hasta 5, con número, paciente, pasos clínicos con datos (solo si ya se calculó el avance) y fecha. Cada una SHALL tener un botón "Continuar en paso N" que abre la historia en su último paso trabajado, o en el paso 1 si no tiene, y SHALL mostrar los avisos de datos faltantes de su requisito.
 
 #### Scenario: Retomar una historia
 - **WHEN** un tratante tiene una historia incompleta cuyo último paso trabajado es el 6
-- **THEN** aparece en "Para retomar" y su enlace abre `/historias/<id>?paso=6`
+- **THEN** aparece en "Para retomar" con el botón "Continuar en paso 6" y su enlace abre `/historias/<id>?paso=6`
 
 #### Scenario: Retomar sin último paso
 - **WHEN** una historia para retomar no tiene último paso trabajado
-- **THEN** su enlace abre `/historias/<id>?paso=1`
+- **THEN** su botón dice "Continuar en paso 1" y abre `/historias/<id>?paso=1`
+
+#### Scenario: Historia sin avance calculado
+- **WHEN** una historia para retomar fue guardada antes de este cambio y no tiene avance calculado
+- **THEN** su fila muestra número, paciente y fecha, sin texto de pasos con datos
 
 #### Scenario: Todas completas
 - **WHEN** todas sus historias tienen los 7 pasos clínicos con datos
 - **THEN** "Para retomar" indica que no hay historias pendientes
+
+#### Scenario: Orden de la pantalla
+- **WHEN** un tratante con historias abre Inicio
+- **THEN** "Para retomar" aparece antes que los indicadores de cupo y completas
 
 ### Requirement: Métricas globales del ADMIN en Inicio
 Para un `ADMIN`, Inicio SHALL mostrar solo métricas globales calculadas en el servidor (`GET /api/dashboard/admin`); un `USER` que las pida SHALL recibir `403`. Cuentas: totales, activas, deshabilitadas y nuevas en el mes en curso. Historias: totales, creadas en el mes, completas, en progreso y sin calcular (criterio de completa del tratante), incluidas las de autor `ADMIN` o de cuentas deshabilitadas. De las cuentas solo se exponen id y nombre, no el correo.
@@ -135,3 +142,17 @@ Inicio del `ADMIN` SHALL listar las solicitudes de desbloqueo pendientes, de la 
 - **WHEN** el ADMIN desbloquea o descarta una solicitud y vuelve a Inicio
 - **THEN** ya no aparece
 
+### Requirement: Indicadores de completas y por terminar del tratante
+Inicio SHALL mostrar al `USER` cuántas de sus historias están completas y cuántas le faltan por terminar. Una historia es **completa** si tiene datos en los 7 pasos clínicos (1–7); el paso 8 (Firmas) no cuenta, porque se completa a mano. Las historias en progreso y las guardadas antes de que se calculara su avance (sin calcular) SHALL contarse juntas como "por terminar". Inicio NO SHALL mostrar un promedio de pasos ni explicar cómo se calcula el avance.
+
+#### Scenario: Completas y por terminar
+- **WHEN** un tratante tiene una historia con datos en los pasos 1–7 (Firmas vacío), otra con 4 pasos y otra guardada antes de este cambio
+- **THEN** Inicio muestra 1 completa y 2 por terminar
+
+#### Scenario: Firmas no cuenta
+- **WHEN** una historia tiene datos solo en los pasos 1–6 y en Firmas
+- **THEN** figura por terminar y no cuenta como completa
+
+#### Scenario: Historias sin calcular
+- **WHEN** el tratante tiene 4 historias guardadas antes de este cambio y ninguna calculada
+- **THEN** Inicio muestra 0 completas y 4 por terminar, sin ningún aviso sobre "sin calcular" ni promedio

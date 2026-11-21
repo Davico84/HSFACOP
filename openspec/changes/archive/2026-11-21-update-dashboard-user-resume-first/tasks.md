@@ -24,7 +24,7 @@ Antes de escribir: `docs/frontend.md` §1 y §4.1 (skill `frontend-guard`); un a
 ## 4. Cierre
 
 - [x] 4.1 `pnpm validate` (typecheck + lint + test) y `mvn verify` en verde; `openspec validate update-dashboard-user-resume-first --strict` sin errores
-- [ ] 4.2 Actualizar `docs/vision.md` ("Estado de capacidades": change en progreso al proponer; capacidad construida y enlace a `specs/dashboard/spec.md` al archivar); verificar que el enlace existe
+- [x] 4.2 Actualizar `docs/vision.md` ("Estado de capacidades": change en progreso al proponer; capacidad construida y enlace a `specs/dashboard/spec.md` al archivar); verificar que el enlace existe
 
 ## Workflow follow-up
 

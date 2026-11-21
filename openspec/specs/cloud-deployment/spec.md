@@ -2,7 +2,9 @@
 
 ## Purpose
 Cómo se empaqueta y publica el sistema en planes gratuitos: imagen de contenedor del backend (Render), blueprint versionado, frontend en Vercel con la API en el mismo origen (cookie de sesión de primera parte) el origen del frontend permitido en el backend y las copias de seguridad diarias de la base, cifradas y verificadas. Guía y verificación: `docs/deployment.md`.
+
 ## Requirements
+
 ### Requirement: Imagen de contenedor del backend
 El backend SHALL construirse como imagen de contenedor desde `modules/backend/Dockerfile`. La imagen final SHALL contener solo el jar ejecutable, sin fuentes ni secretos, y ejecutarse como usuario sin privilegios, escuchando en el puerto de la variable `PORT` (8080 si no está). Toda la configuración SHALL llegar por variables de entorno, y la JVM SHALL quedar acotada para funcionar con 512 MB de memoria.
 
@@ -127,3 +129,17 @@ El repositorio SHALL documentar cómo descifrar una copia y restaurarla en una b
 - **WHEN** el responsable sigue la guía con un artifact y su clave privada
 - **THEN** obtiene una base con los datos de la copia, sin tocar la de producción
 
+### Requirement: Copias de seguridad sin identificadores del paciente
+Pasada la fecha de retiro de las columnas de identidad, la copia diaria SHALL excluir de su contenido los identificadores del paciente retirados, y las copias anteriores a esa fecha SHALL purgarse con una fecha de corte y un registro de quién las revisó. El workflow SHALL comprobar el volcado antes de cifrarlo.
+
+#### Scenario: Volcado sin columnas retiradas
+- **WHEN** el workflow genera la copia diaria después del retiro
+- **THEN** comprueba que el esquema del volcado no contiene las columnas retiradas ni nombres de paciente o apoderado en el contenido de las firmas, y si los encuentra falla sin subir ningún artifact
+
+#### Scenario: Purga de copias anteriores
+- **WHEN** se cumple la fecha de corte posterior al retiro
+- **THEN** se borran los artifacts y las copias descargadas anteriores a la fecha de migración, se anota quién lo verificó y la guía de restauración indica solo copias posteriores
+
+#### Scenario: Restauración de una copia previa al retiro
+- **WHEN** hace falta restaurar una copia anterior al retiro
+- **THEN** solo se restaura en una base aislada, con aprobación del responsable, y se destruye al terminar
