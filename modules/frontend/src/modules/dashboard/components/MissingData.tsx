@@ -19,7 +19,7 @@ export function MissingData({ missing, computed }: MissingDataProps) {
   return (
     <Card className="flex flex-col gap-5 p-5">
       <h2 className="font-semibold">Datos faltantes</h2>
-      <ul className="grid gap-2 text-sm sm:grid-cols-3">
+      <ul className="grid gap-2 text-sm sm:grid-cols-2">
         {patient.map((item) => (
           <li key={item.label} className="flex items-baseline justify-between gap-2 rounded-md bg-muted px-3 py-2">
             <span>{item.label}</span>
