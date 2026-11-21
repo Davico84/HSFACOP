@@ -127,12 +127,6 @@ class DashboardIT extends AbstractIntegrationTest {
         return node == null || node.isNull();
     }
 
-    private static List<Long> emptyStepOrder(JsonNode dashboard) {
-        List<Long> out = new ArrayList<>();
-        dashboard.get("missing").get("emptySteps").forEach(e -> out.add(e.get("step").asLong()));
-        return out;
-    }
-
     // --- Tratante ---
 
     @Test
@@ -167,40 +161,49 @@ class DashboardIT extends AbstractIntegrationTest {
         assertThat(c.get("complete").asLong()).isEqualTo(1);
         assertThat(c.get("inProgress").asLong()).isEqualTo(1);
         assertThat(c.get("notComputed").asLong()).isEqualTo(1);
-        assertThat(c.get("averageFilledSteps").asDouble()).isEqualTo(5.5);
 
-        // Pasos 1–6 + Firmas: en progreso, y Firmas nunca figura entre los pasos vacíos.
+        // Pasos 1–6 + Firmas: en progreso (Firmas no cuenta).
         set(record(torres), "filled_steps", 63 + 128);
-        JsonNode again = me(torres);
-        assertThat(again.get("completeness").get("inProgress").asLong()).isEqualTo(2);
-        assertThat(emptyStepOrder(again)).hasSize(7).doesNotContain(8L);
+        assertThat(me(torres).get("completeness").get("inProgress").asLong()).isEqualTo(2);
     }
 
     @Test
-    void average_is_null_without_computed() throws Exception {
+    void response_has_no_average_nor_missing_block() throws Exception {
         Session torres = register("Dra. Torres");
         set(record(torres), "filled_steps", null);
-        JsonNode c = me(torres).get("completeness");
-        assertThat(c.get("notComputed").asLong()).isEqualTo(1);
-        assertThat(isNull(c.get("averageFilledSteps"))).isTrue();
+        JsonNode d = me(torres);
+        assertThat(d.get("completeness").get("notComputed").asLong()).isEqualTo(1);
+        assertThat(d.get("completeness").has("averageFilledSteps")).isFalse();
+        assertThat(d.has("missing")).isFalse();
     }
 
     @Test
-    void missing_data_and_empty_steps_order() throws Exception {
+    void resume_flags_missing_age_and_treatment_start() throws Exception {
         Session torres = register("Dra. Torres");
-        long a = record(torres, "{\"patientAlias\":\"A\",\"patientAge\":13,\"treatmentStartDate\":\"2026-05-19\"}");
-        long b = record(torres, "{\"patientAlias\":\"B\",\"patientAge\":13,\"treatmentStartDate\":\"2026-05-19\"}");
-        long c = record(torres, "{\"patientAlias\":\"C\"}");
-        set(a, "filled_steps", 1 + 2 + 4);        // vacíos 4,5,6,7
-        set(b, "filled_steps", 1 + 2 + 8);        // vacíos 3,5,6,7
-        set(c, "filled_steps", 1 + 2 + 4 + 8);    // vacíos 5,6,7
+        long both = record(torres, "{\"patientAlias\":\"A\",\"patientAge\":13,\"treatmentStartDate\":\"2026-05-19\"}");
+        long noStart = record(torres, "{\"patientAlias\":\"B\",\"patientAge\":13}");
+        long neither = record(torres, "{\"patientAlias\":\"C\"}");
+        for (long id : new long[] {both, noStart, neither}) {
+            set(id, "filled_steps", 1);
+        }
 
-        JsonNode d = me(torres);
-        JsonNode missing = d.get("missing");
-        assertThat(missing.get("withoutAge").asLong()).isEqualTo(1);
-        assertThat(missing.get("withoutTreatmentStart").asLong()).isEqualTo(1);
-        // 5, 6 y 7 vacíos en las 3; 3 y 4 en una; 1 y 2 en ninguna (empates por número de paso).
-        assertThat(emptyStepOrder(d)).containsExactly(5L, 6L, 7L, 3L, 4L, 1L, 2L);
+        JsonNode resume = me(torres).get("resume");
+        assertThat(resume).hasSize(3);
+        for (JsonNode item : resume) {
+            long id = item.get("id").asLong();
+            boolean age = item.get("missingAge").asBoolean();
+            boolean start = item.get("missingTreatmentStart").asBoolean();
+            if (id == both) {
+                assertThat(age).isFalse();
+                assertThat(start).isFalse();
+            } else if (id == noStart) {
+                assertThat(age).isFalse();
+                assertThat(start).isTrue();
+            } else {
+                assertThat(age).isTrue();
+                assertThat(start).isTrue();
+            }
+        }
     }
 
     @Test
@@ -219,9 +222,6 @@ class DashboardIT extends AbstractIntegrationTest {
         JsonNode d = me(register("Dra. Torres"));
         assertThat(d.get("records").get("total").asLong()).isZero();
         assertThat(d.get("resume")).isEmpty();
-        assertThat(emptyStepOrder(d)).containsExactly(1L, 2L, 3L, 4L, 5L, 6L, 7L);
-        d.get("missing").get("emptySteps").forEach(e -> assertThat(e.get("count").asLong()).isZero());
-        assertThat(isNull(d.get("completeness").get("averageFilledSteps"))).isTrue();
     }
 
     @Test

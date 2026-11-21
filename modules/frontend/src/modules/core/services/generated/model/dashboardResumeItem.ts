@@ -17,4 +17,8 @@ export interface DashboardResumeItem {
   /** Pasos clínicos con datos; vacío = sin calcular */
   filledSteps?: DashboardResumeItemFilledSteps;
   updatedAt: string;
+  /** A la historia le falta la edad del paciente */
+  missingAge: boolean;
+  /** A la historia le falta la fecha de inicio de tratamiento */
+  missingTreatmentStart: boolean;
 }

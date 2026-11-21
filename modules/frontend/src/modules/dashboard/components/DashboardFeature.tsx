@@ -1,6 +1,7 @@
 import { useSessionStore } from "@/store/useSessionStore";
 import { AdminDashboardSection } from "./AdminDashboardSection";
 import { CoordinatorDashboardSection } from "./CoordinatorDashboardSection";
+import { DashboardNewRecord } from "./DashboardNewRecord";
 import { UserDashboardSection } from "./UserDashboardSection";
 
 const SUBTITLE = {
@@ -22,9 +23,12 @@ export function DashboardFeature() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{name ? `Hola, ${name}` : "Hola"}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{SUBTITLE[role]}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{name ? `Hola, ${name}` : "Hola"}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{SUBTITLE[role]}</p>
+        </div>
+        {role === "USER" ? <DashboardNewRecord /> : null}
       </div>
       {section}
     </div>

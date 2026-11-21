@@ -5009,23 +5009,6 @@
           "used"
         ]
       },
-      "DashboardEmptyStep": {
-        "type": "object",
-        "properties": {
-          "step": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "count": {
-            "type": "integer",
-            "format": "int64"
-          }
-        },
-        "required": [
-          "count",
-          "step"
-        ]
-      },
       "DashboardResumeItem": {
         "type": "object",
         "properties": {
@@ -5059,10 +5042,20 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "missingAge": {
+            "type": "boolean",
+            "description": "A la historia le falta la edad del paciente"
+          },
+          "missingTreatmentStart": {
+            "type": "boolean",
+            "description": "A la historia le falta la fecha de inicio de tratamiento"
           }
         },
         "required": [
           "id",
+          "missingAge",
+          "missingTreatmentStart",
           "patientName",
           "recordNumber",
           "updatedAt"
@@ -5083,45 +5076,12 @@
             "type": "integer",
             "format": "int64",
             "description": "Guardadas antes de registrar los pasos con datos"
-          },
-          "averageFilledSteps": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "format": "double",
-            "description": "Promedio de pasos clínicos con datos (un decimal); vacío si no hay calculadas"
           }
         },
         "required": [
           "complete",
           "inProgress",
           "notComputed"
-        ]
-      },
-      "UserDashboardMissing": {
-        "type": "object",
-        "properties": {
-          "withoutAge": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "withoutTreatmentStart": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "emptySteps": {
-            "type": "array",
-            "description": "Los 7 pasos clínicos, de más a menos historias vacías",
-            "items": {
-              "$ref": "#/components/schemas/DashboardEmptyStep"
-            }
-          }
-        },
-        "required": [
-          "emptySteps",
-          "withoutAge",
-          "withoutTreatmentStart"
         ]
       },
       "UserDashboardRecords": {
@@ -5154,9 +5114,6 @@
           "completeness": {
             "$ref": "#/components/schemas/UserDashboardCompleteness"
           },
-          "missing": {
-            "$ref": "#/components/schemas/UserDashboardMissing"
-          },
           "resume": {
             "type": "array",
             "description": "Hasta 5 historias no completas, más recientes primero",
@@ -5167,7 +5124,6 @@
         },
         "required": [
           "completeness",
-          "missing",
           "quota",
           "records",
           "resume"
