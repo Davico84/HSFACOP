@@ -19,6 +19,7 @@ import com.odontorisas.persistence.repository.OrthodonticRecordRepository;
 import com.odontorisas.persistence.repository.UserRepository;
 import com.odontorisas.persistence.specification.OrthodonticRecordSpecifications;
 import com.odontorisas.service.records.content.RecordContent;
+import com.odontorisas.service.users.AccountExpiry;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -109,6 +110,7 @@ public class OrthodonticRecordService {
         if (author.getRole() != Role.USER && author.getRole() != Role.ADMIN) {
             throw new RecordWriteForbiddenException();
         }
+        AccountExpiry.requireWritable(author, clock);
         Integer quota = quotaOf(author);
         if (quota != null && records.countByAuthorId(author.getId()) >= quota) {
             throw new RecordQuotaReachedException(quota);
@@ -167,6 +169,7 @@ public class OrthodonticRecordService {
     @Transactional
     public RecordView update(RecordActor actor, Long id, long expectedVersion, RecordData data, Integer lastStep,
                              List<Integer> filledSteps) {
+        requireWritable(actor);
         OrthodonticRecord record = loadForUpdate(actor, id);
         if (record.getVersion() != expectedVersion) {
             throw new StaleRecordException();
@@ -189,6 +192,11 @@ public class OrthodonticRecordService {
         } catch (ObjectOptimisticLockingFailureException ex) {
             throw new StaleRecordException();
         }
+    }
+
+    /** 403 {@code account-expired} si la cuenta, según la base (no el token), ya venció; el ADMIN nunca vence. */
+    private void requireWritable(RecordActor actor) {
+        users.findById(actor.userId()).ifPresent(user -> AccountExpiry.requireWritable(user, clock));
     }
 
     /** 409 si otra historia ya tiene el número (el caso común; la carrera la resuelve el índice). */
@@ -259,6 +267,7 @@ public class OrthodonticRecordService {
     /** El autor (o un ADMIN) solicita el desbloqueo de los datos fijos, con un motivo. */
     @Transactional
     public void requestUnlock(RecordActor actor, Long id, UnlockReason reason) {
+        requireWritable(actor);
         OrthodonticRecord record = loadForUpdate(actor, id);
         if (record.getPatientLockedAt() == null) {
             throw new PatientNotLockedException();

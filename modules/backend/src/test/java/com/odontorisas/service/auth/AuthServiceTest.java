@@ -19,7 +19,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.support.TransactionOperations;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
@@ -57,7 +59,8 @@ class AuthServiceTest {
 
     private AuthService service(Integer defaultQuota) {
         return new AuthService(users, refreshTokens, passwordEncoder, tokenService, loginAttempts,
-            TransactionOperations.withoutTransaction(), new RecordsProperties(defaultQuota), cohorts, resetTokens);
+            TransactionOperations.withoutTransaction(), new RecordsProperties(defaultQuota), cohorts, resetTokens,
+            Clock.fixed(Instant.parse("2026-11-24T15:00:00Z"), ZoneId.of("America/Lima")));
     }
 
     /** Registra con el cupo inicial dado y devuelve la cuenta guardada. */
@@ -125,6 +128,9 @@ class AuthServiceTest {
         assertThat(result.user().email()).isEqualTo("ana@clinica.test");
         assertThat(result.user().role()).isEqualTo(Role.USER);
         assertThat(result.user().fullName()).isEqualTo("Ana Pérez");
+        // Vencimiento: alta (2026-11-24 en Lima) más 12 meses; una cuenta nueva no está en solo lectura.
+        assertThat(result.user().expiresOn()).isEqualTo(java.time.LocalDate.of(2027, 11, 24));
+        assertThat(result.user().readOnly()).isFalse();
         verify(refreshTokens).save(any(RefreshToken.class));
     }
 

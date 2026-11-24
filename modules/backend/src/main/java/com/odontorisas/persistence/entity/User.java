@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
@@ -25,6 +26,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -116,6 +119,14 @@ public class User {
     @Column(name = "locked_until", insertable = false, updatable = false)
     private Instant lockedUntil;
 
+    /**
+     * Último día con acceso completo (fecha civil de Lima; capacidad {@code users}): pasado ese día la
+     * cuenta queda en solo lectura. Nulo solo en el ADMIN, que no vence ({@code CHECK} de V24). Lo fijan
+     * el registro y {@code UserAdminService} con la fila bloqueada.
+     */
+    @Column(name = "expires_on")
+    private LocalDate expiresOn;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -123,4 +134,12 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    /** Red de seguridad: una cuenta no ADMIN nunca se guarda sin vencimiento (alta + 12 meses, hora de Lima). */
+    @PrePersist
+    void defaultExpiry() {
+        if (expiresOn == null && role != Role.ADMIN) {
+            expiresOn = LocalDate.now(ZoneId.of("America/Lima")).plusMonths(12);
+        }
+    }
 }

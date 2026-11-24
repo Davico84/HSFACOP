@@ -14,7 +14,7 @@ public record AdminDashboardView(
     Quotas quotas,
     UnlockRequests unlockRequests) {
 
-    public record Users(long total, long active, long disabled, long newThisMonth) {
+    public record Users(long total, long active, long disabled, long expiringSoon, long expired, long newThisMonth) {
     }
 
     /** Historias creadas en el mes ("2026-05"). */

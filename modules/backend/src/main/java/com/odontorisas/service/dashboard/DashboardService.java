@@ -4,6 +4,7 @@ import com.odontorisas.persistence.repository.DashboardQueries;
 import com.odontorisas.persistence.repository.DashboardQueries.MonthCount;
 import com.odontorisas.persistence.repository.DashboardQueries.RecordTotals;
 import com.odontorisas.service.records.FilledSteps;
+import com.odontorisas.service.users.AccountExpiry;
 import com.odontorisas.service.records.OrthodonticRecordService;
 import com.odontorisas.service.records.RecordActor;
 import com.odontorisas.service.records.RecordQuotaView;
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -74,7 +76,8 @@ public class DashboardService {
             String month = first.plusMonths(i).format(MONTH);
             perMonth.add(new AdminDashboardView.MonthItem(month, perMonthFound.getOrDefault(month, 0L)));
         }
-        var users = queries.userTotals(monthStart(current));
+        LocalDate today = AccountExpiry.today(clock);
+        var users = queries.userTotals(monthStart(current), today, today.plusDays(AccountExpiry.SOON_DAYS));
         List<AdminDashboardView.AuthorItem> topAuthors = queries.topAuthors(TOP_AUTHORS_LIMIT).stream()
             .map(a -> new AdminDashboardView.AuthorItem(a.userId(), a.fullName(), a.status(), a.records(),
                 round(a.averageFilled())))
@@ -91,7 +94,7 @@ public class DashboardService {
             requestRows.stream().map(r -> new AdminDashboardView.UnlockRequestItem(r.recordId(), r.recordNumber(),
                 r.patientName(), r.authorName(), r.requestedAt(), r.reason())).toList());
         return new AdminDashboardView(
-            new AdminDashboardView.Users(users.total(), users.active(), users.disabled(), users.newThisMonth()),
+            new AdminDashboardView.Users(users.total(), users.active(), users.disabled(), users.expiringSoon(), users.expired(), users.newThisMonth()),
             totals.total(), totals.createdThisMonth(),
             new Completeness(totals.complete(), totals.inProgress(), totals.notComputed()),
             perMonth, topAuthors, new AdminDashboardView.Quotas(quotaTotal, quotaItems), unlockRequests);

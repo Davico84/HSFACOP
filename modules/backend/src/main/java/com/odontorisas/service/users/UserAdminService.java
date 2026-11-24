@@ -21,8 +21,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -53,10 +55,11 @@ public class UserAdminService {
     private final RecordsProperties recordsProperties;
     private final PasswordResetTokenRepository resetTokens;
     private final TokenService tokenService;
+    private final Clock clock;
 
     public UserAdminService(UserRepository users, RefreshTokenRepository refreshTokens, OrthodonticRecordRepository records,
                             CohortRepository cohorts, RecordsProperties recordsProperties,
-                            PasswordResetTokenRepository resetTokens, TokenService tokenService) {
+                            PasswordResetTokenRepository resetTokens, TokenService tokenService, Clock clock) {
         this.users = users;
         this.refreshTokens = refreshTokens;
         this.records = records;
@@ -64,12 +67,17 @@ public class UserAdminService {
         this.recordsProperties = recordsProperties;
         this.resetTokens = resetTokens;
         this.tokenService = tokenService;
+        this.clock = clock;
     }
 
     /** Página de cuentas con sus historias creadas y sus turmas, contadas en consultas por página (sin N+1). */
     @Transactional(readOnly = true)
-    public Page<UserSummaryView> list(Pageable pageable) {
-        Page<User> page = users.findAll(pageable);
+    public Page<UserSummaryView> list(ExpiryFilter filter, Pageable pageable) {
+        LocalDate today = AccountExpiry.today(clock);
+        Page<User> page = filter == null ? users.findAll(pageable)
+            : filter == ExpiryFilter.SOON
+                ? users.findExpiringBetween(today, today.plusDays(AccountExpiry.SOON_DAYS), pageable)
+                : users.findExpiredBefore(today, pageable);
         List<Long> ids = page.map(User::getId).getContent();
         Map<Long, Long> counts = records.countByAuthorIds(ids).stream()
             .collect(Collectors.toMap(OrthodonticRecordRepository.AuthorRecordCount::getAuthorId,
@@ -79,6 +87,36 @@ public class UserAdminService {
                 Collectors.mapping(r -> new CohortRef(r.getCohortId(), r.getCohortName()), Collectors.toList())));
         return page.map(user -> toView(user, counts.getOrDefault(user.getId(), 0L),
             coordinated.getOrDefault(user.getId(), List.of())));
+    }
+
+    /**
+     * Renueva el acceso de una cuenta USER o COORDINATOR (12 meses desde el mayor entre hoy y su
+     * vencimiento actual), con la fila bloqueada: 404 si no existe, 409 si es ADMIN. Rige de inmediato:
+     * el vencimiento se lee de la base en cada escritura, no del token.
+     */
+    @Transactional
+    public UserSummaryView renewExpiry(Long id) {
+        User user = users.findByIdForUpdate(id).orElseThrow(UserNotFoundException::new);
+        requireExpiring(user);
+        user.setExpiresOn(AccountExpiry.renewed(user, AccountExpiry.today(clock)));
+        log.info("Cuenta {}: acceso renovado hasta {}", id, user.getExpiresOn());
+        return toView(user);
+    }
+
+    /** Fija a mano el último día de acceso (también una fecha pasada), con la fila bloqueada: 404 / 409 como en la renovación. */
+    @Transactional
+    public UserSummaryView changeExpiry(Long id, LocalDate expiresOn) {
+        User user = users.findByIdForUpdate(id).orElseThrow(UserNotFoundException::new);
+        requireExpiring(user);
+        user.setExpiresOn(expiresOn);
+        log.info("Cuenta {}: último día de acceso fijado en {}", id, expiresOn);
+        return toView(user);
+    }
+
+    private static void requireExpiring(User user) {
+        if (user.getRole() == Role.ADMIN) {
+            throw new ExpiryNotApplicableException();
+        }
     }
 
     /**
@@ -210,10 +248,11 @@ public class UserAdminService {
         return toView(user, records.countByAuthorId(user.getId()), coordinated);
     }
 
-    private static UserSummaryView toView(User user, long recordCount, List<CohortRef> coordinatorCohorts) {
+    private UserSummaryView toView(User user, long recordCount, List<CohortRef> coordinatorCohorts) {
         Cohort cohort = user.getCohort();
         return new UserSummaryView(user.getId(), user.getEmail(), user.getFullName(), user.getRole(), user.getStatus(),
             user.getRecordQuota(), recordCount, cohort == null ? null : new CohortRef(cohort.getId(), cohort.getName()),
-            coordinatorCohorts, ContactData.of(user));
+            coordinatorCohorts, ContactData.of(user), user.getExpiresOn(),
+            AccountExpiry.isExpired(user, AccountExpiry.today(clock)));
     }
 }

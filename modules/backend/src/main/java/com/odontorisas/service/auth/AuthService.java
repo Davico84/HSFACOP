@@ -12,6 +12,7 @@ import com.odontorisas.persistence.repository.RefreshTokenRepository;
 import com.odontorisas.persistence.repository.UserRepository;
 import com.odontorisas.service.cohorts.CohortCodes;
 import com.odontorisas.service.cohorts.CohortService;
+import com.odontorisas.service.users.AccountExpiry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Clock;
 import java.time.Instant;
 
 /**
@@ -43,6 +45,7 @@ public class AuthService {
     private final RecordsProperties records;
     private final CohortService cohorts;
     private final PasswordResetTokenRepository resetTokens;
+    private final Clock clock;
 
     @Autowired
     public AuthService(UserRepository users,
@@ -53,9 +56,10 @@ public class AuthService {
                        PlatformTransactionManager transactionManager,
                        RecordsProperties records,
                        CohortService cohorts,
-                       PasswordResetTokenRepository resetTokens) {
+                       PasswordResetTokenRepository resetTokens,
+                       Clock clock) {
         this(users, refreshTokens, passwordEncoder, tokenService, loginAttempts,
-            new TransactionTemplate(transactionManager), records, cohorts, resetTokens);
+            new TransactionTemplate(transactionManager), records, cohorts, resetTokens, clock);
     }
 
     AuthService(UserRepository users,
@@ -66,7 +70,8 @@ public class AuthService {
                 TransactionOperations tx,
                 RecordsProperties records,
                 CohortService cohorts,
-                PasswordResetTokenRepository resetTokens) {
+                PasswordResetTokenRepository resetTokens,
+                Clock clock) {
         this.users = users;
         this.refreshTokens = refreshTokens;
         this.passwordEncoder = passwordEncoder;
@@ -76,6 +81,7 @@ public class AuthService {
         this.records = records;
         this.cohorts = cohorts;
         this.resetTokens = resetTokens;
+        this.clock = clock;
     }
 
     /**
@@ -96,6 +102,8 @@ public class AuthService {
             .fullName(cmd.fullName())
             // Cupo inicial de historias (configurable; nulo = sin límite).
             .recordQuota(records.defaultQuota())
+            // Vencimiento: alta + 12 meses (el cliente no lo envía ni lo elige).
+            .expiresOn(AccountExpiry.initial(clock))
             .cohort(code == null ? null : cohorts.forRegistration(code))
             .build();
         cmd.contact().applyTo(user);
@@ -248,6 +256,7 @@ public class AuthService {
             .revoked(false)
             .build());
         return new AuthResult(accessToken, rawRefresh, refreshExpiry,
-            new UserView(user.getId(), user.getEmail(), user.getRole(), user.getFullName()));
+            new UserView(user.getId(), user.getEmail(), user.getRole(), user.getFullName(),
+                user.getExpiresOn(), AccountExpiry.isExpired(user, AccountExpiry.today(clock))));
     }
 }

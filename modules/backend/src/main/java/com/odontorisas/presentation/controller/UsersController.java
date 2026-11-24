@@ -2,6 +2,7 @@ package com.odontorisas.presentation.controller;
 
 import com.odontorisas.presentation.dto.ApiProblem;
 import com.odontorisas.presentation.dto.ChangeRecordQuotaRequest;
+import com.odontorisas.presentation.dto.ChangeUserExpiryRequest;
 import com.odontorisas.presentation.dto.ChangeUserCohortRequest;
 import com.odontorisas.presentation.dto.ChangeUserRoleRequest;
 import com.odontorisas.presentation.dto.ChangeUserStatusRequest;
@@ -9,6 +10,7 @@ import com.odontorisas.presentation.dto.PageResponse;
 import com.odontorisas.presentation.dto.PasswordResetLinkResponse;
 import com.odontorisas.presentation.dto.UserSummaryResponse;
 import com.odontorisas.presentation.dto.ValidationProblem;
+import com.odontorisas.service.users.ExpiryFilter;
 import com.odontorisas.service.users.UserAdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -66,9 +69,11 @@ public class UsersController {
     public ResponseEntity<PageResponse<UserSummaryResponse>> listUsers(
             @Parameter(description = "Página (base 0)") @RequestParam(defaultValue = "0") @Min(0) int page,
             @Parameter(description = "Tamaño (1–100; uno mayor se recorta a 100)")
-            @RequestParam(defaultValue = "" + DEFAULT_PAGE_SIZE) @Min(1) int size) {
+            @RequestParam(defaultValue = "" + DEFAULT_PAGE_SIZE) @Min(1) int size,
+            @Parameter(description = "Solo cuentas activas por vencer en 30 días (SOON) o ya vencidas (EXPIRED)")
+            @RequestParam(required = false) ExpiryFilter expiry) {
         PageRequest pageable = PageRequest.of(page, Math.min(size, MAX_PAGE_SIZE), Sort.by("id"));
-        return ResponseEntity.ok(PageResponse.from(userAdmin.list(pageable).map(UserSummaryResponse::from)));
+        return ResponseEntity.ok(PageResponse.from(userAdmin.list(expiry, pageable).map(UserSummaryResponse::from)));
     }
 
     @Operation(operationId = "changeUserStatus", summary = "Deshabilitar o reactivar una cuenta USER o COORDINATOR")
@@ -84,6 +89,34 @@ public class UsersController {
     public ResponseEntity<UserSummaryResponse> changeUserStatus(
             @PathVariable Long id, @Valid @RequestBody ChangeUserStatusRequest request) {
         return ResponseEntity.ok(UserSummaryResponse.from(userAdmin.changeStatus(id, request.status())));
+    }
+
+    @Operation(operationId = "renewUserExpiry",
+        summary = "Renovar el acceso de una cuenta USER o COORDINATOR (12 meses desde el mayor entre hoy y su vencimiento)")
+    @ApiResponse(responseCode = "200", description = "Cuenta con su vencimiento actual",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = UserSummaryResponse.class)))
+    @ApiResponse(responseCode = "404", description = "La cuenta no existe",
+        content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = ApiProblem.class)))
+    @ApiResponse(responseCode = "409", description = "La cuenta es ADMIN: no vence (expiry-not-applicable)",
+        content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = ApiProblem.class)))
+    @PostMapping("/{id}/expiry/renew")
+    public ResponseEntity<UserSummaryResponse> renewUserExpiry(@PathVariable Long id) {
+        return ResponseEntity.ok(UserSummaryResponse.from(userAdmin.renewExpiry(id)));
+    }
+
+    @Operation(operationId = "changeUserExpiry", summary = "Fijar el último día de acceso de una cuenta USER o COORDINATOR")
+    @ApiResponse(responseCode = "200", description = "Cuenta con su vencimiento actual",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = UserSummaryResponse.class)))
+    @ApiResponse(responseCode = "400", description = "Fecha ausente o inválida",
+        content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = ValidationProblem.class)))
+    @ApiResponse(responseCode = "404", description = "La cuenta no existe",
+        content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = ApiProblem.class)))
+    @ApiResponse(responseCode = "409", description = "La cuenta es ADMIN: no vence (expiry-not-applicable)",
+        content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = ApiProblem.class)))
+    @PutMapping("/{id}/expiry")
+    public ResponseEntity<UserSummaryResponse> changeUserExpiry(
+            @PathVariable Long id, @Valid @RequestBody ChangeUserExpiryRequest request) {
+        return ResponseEntity.ok(UserSummaryResponse.from(userAdmin.changeExpiry(id, request.expiresOn())));
     }
 
     @Operation(operationId = "changeRecordQuota", summary = "Asignar, cambiar o quitar el cupo de historias de una cuenta USER")

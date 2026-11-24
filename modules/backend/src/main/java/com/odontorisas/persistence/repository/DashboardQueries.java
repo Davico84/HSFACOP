@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -63,15 +64,25 @@ public class DashboardQueries {
                 rs.getBoolean("missing_treatment_start")));
     }
 
-    /** Cuentas por estado y nuevas desde {@code monthStart}. */
-    public UserTotals userTotals(Instant monthStart) {
+    /**
+     * Cuentas por estado y nuevas desde {@code monthStart}; de las activas USER o COORDINATOR, las que
+     * vencen entre {@code today} y {@code soonUntil} (incluidos) y las ya vencidas (último día antes de {@code today}).
+     */
+    public UserTotals userTotals(Instant monthStart, LocalDate today, LocalDate soonUntil) {
         String sql = "SELECT count(*) AS total,"
             + " count(*) FILTER (WHERE status = 'ACTIVE') AS active,"
             + " count(*) FILTER (WHERE status = 'DISABLED') AS disabled,"
-            + " count(*) FILTER (WHERE created_at >= :monthStart) AS new_this_month FROM users";
-        return jdbc.queryForObject(sql, new MapSqlParameterSource("monthStart", Timestamp.from(monthStart)),
+            + " count(*) FILTER (WHERE created_at >= :monthStart) AS new_this_month,"
+            + " count(*) FILTER (WHERE status = 'ACTIVE' AND role <> 'ADMIN'"
+            + "   AND expires_on >= :today AND expires_on <= :soonUntil) AS expiring_soon,"
+            + " count(*) FILTER (WHERE status = 'ACTIVE' AND role <> 'ADMIN' AND expires_on < :today) AS expired"
+            + " FROM users";
+        MapSqlParameterSource params = new MapSqlParameterSource("monthStart", Timestamp.from(monthStart))
+            .addValue("today", java.sql.Date.valueOf(today))
+            .addValue("soonUntil", java.sql.Date.valueOf(soonUntil));
+        return jdbc.queryForObject(sql, params,
             (rs, i) -> new UserTotals(rs.getLong("total"), rs.getLong("active"), rs.getLong("disabled"),
-                rs.getLong("new_this_month")));
+                rs.getLong("new_this_month"), rs.getLong("expiring_soon"), rs.getLong("expired")));
     }
 
     /** Historias creadas por mes ("2026-05") desde {@code from}, con el mes en la zona {@code zone}. */
@@ -166,7 +177,7 @@ public class DashboardQueries {
                             Instant updatedAt, boolean missingAge, boolean missingTreatmentStart) {
     }
 
-    public record UserTotals(long total, long active, long disabled, long newThisMonth) {
+    public record UserTotals(long total, long active, long disabled, long newThisMonth, long expiringSoon, long expired) {
     }
 
     public record MonthCount(String month, long count) {
