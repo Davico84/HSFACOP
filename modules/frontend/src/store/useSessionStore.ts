@@ -9,6 +9,10 @@ export interface SessionUser {
   email: string;
   role: Role;
   fullName?: string;
+  /** Último día con acceso completo (fecha de Lima); nulo en cuentas ADMIN, que no vencen. */
+  expiresOn?: string | null;
+  /** La cuenta venció: puede ver e imprimir, no crear ni guardar (lo calcula el servidor). */
+  readOnly?: boolean;
 }
 
 /**

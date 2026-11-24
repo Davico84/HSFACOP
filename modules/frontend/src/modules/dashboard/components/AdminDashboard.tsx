@@ -2,6 +2,7 @@ import { CheckCircle2, ClipboardList, UserPlus, Users } from "lucide-react";
 import { StatCard } from "@/modules/core/components/StatCard";
 import type { AdminDashboardResponse } from "@/modules/core/services/generated/model";
 import { historias } from "../utils/format";
+import { ExpiryAlerts } from "./ExpiryAlerts";
 import { MonthlyBars } from "./MonthlyBars";
 import { QuotaAlerts } from "./QuotaAlerts";
 import { TopAuthorsList } from "./TopAuthorsList";
@@ -48,6 +49,7 @@ export function AdminDashboard({ data }: AdminDashboardProps) {
         ) : null}
       </section>
       <UnlockRequestsList requests={unlockRequests} />
+      <ExpiryAlerts users={users} />
       <MonthlyBars months={records.perMonth} />
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         <TopAuthorsList authors={topAuthors} />

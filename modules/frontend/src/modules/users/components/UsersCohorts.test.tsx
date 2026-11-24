@@ -12,12 +12,12 @@ vi.mock("sonner", () => ({ toast }));
 
 const ANA: UserSummaryResponse = {
   id: 2, email: "ana@empresa.test", fullName: "Ana Pérez", role: "USER", status: "ACTIVE",
-  recordQuota: 5, recordCount: 0, coordinatorCohorts: [],
+  recordQuota: 5, recordCount: 0, coordinatorCohorts: [], expired: false,
   phone: "987654321", documentType: "DNI", documentNumber: "74125896",
 };
 const CARLA: UserSummaryResponse = {
   id: 3, email: "carla@empresa.test", fullName: "Carla Ruiz", role: "COORDINATOR", status: "ACTIVE",
-  recordQuota: null, recordCount: 0, coordinatorCohorts: [{ id: 1, name: "Turma 1" }],
+  recordQuota: null, recordCount: 0, coordinatorCohorts: [{ id: 1, name: "Turma 1" }], expired: false,
 };
 
 /** Backend en memoria de cuentas y turmas; registra los cuerpos enviados. */

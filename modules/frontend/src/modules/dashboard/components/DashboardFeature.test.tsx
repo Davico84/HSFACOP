@@ -57,7 +57,7 @@ function userDashboard(overrides: Partial<UserDashboardResponse> = {}): UserDash
 
 function adminDashboard(overrides: Partial<AdminDashboardResponse> = {}): AdminDashboardResponse {
   return {
-    users: { total: 12, active: 10, disabled: 2, newThisMonth: 3 },
+    users: { total: 12, active: 10, disabled: 2, expiringSoon: 0, expired: 0, newThisMonth: 3 },
     records: {
       total: 40,
       createdThisMonth: 7,

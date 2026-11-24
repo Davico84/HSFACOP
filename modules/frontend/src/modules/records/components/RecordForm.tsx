@@ -10,7 +10,9 @@ import { Button } from "@/modules/core/ui/button";
 import type { RecordResponse } from "@/modules/core/services/generated/model";
 import { getRecord } from "@/modules/core/services/generated/orthodontic-records";
 import { useWindowReturn } from "@/modules/core/hooks/useWindowReturn";
-import { applyServerFieldErrors, getFieldErrors, getUserFriendlyError, problemType } from "@/modules/core/utils/apiError";
+import { ACCOUNT_EXPIRED_TYPE, applyServerFieldErrors, getFieldErrors, getUserFriendlyError, problemType } from "@/modules/core/utils/apiError";
+import { useReadOnly } from "@/modules/core/hooks/useReadOnly";
+import { EXPIRED_READ_ONLY_REASON } from "@/modules/core/utils/accountExpiry";
 import { useSessionStore } from "@/store/useSessionStore";
 import { recordPath } from "@/routes/paths";
 import { flushPending } from "../notebook/notebookPending";
@@ -91,7 +93,9 @@ export function RecordForm({ record, onReload, onRemoteUpdate, onNotFound, remot
   const dirty = form.formState.isDirty;
   // Historia nueva con el cupo lleno: aviso desde el inicio y "Crear historia" deshabilitado.
   const quota = useRecordQuota(!record);
-  const quotaLimit = !record && quota.data?.reached ? quota.data.limit : null;
+  // Cuenta vencida: la historia se abre en lectura (el vencimiento tiene prioridad sobre el cupo).
+  const readOnly = useReadOnly();
+  const quotaLimit = !readOnly && !record && quota.data?.reached ? quota.data.limit : null;
   const { blocker, allowNextNavigation } = useLeaveGuard(dirty);
 
   const showStep = (target: number) => setSearchParams({ paso: String(target) });
@@ -173,7 +177,7 @@ export function RecordForm({ record, onReload, onRemoteUpdate, onNotFound, remot
     [form],
   );
   const autosave = useAutosave({
-    enabled: record !== null && !stalePaused,
+    enabled: record !== null && !stalePaused && !readOnly,
     isDirty: () => form.formState.isDirty,
     subscribe,
     save: async () => {
@@ -246,6 +250,11 @@ export function RecordForm({ record, onReload, onRemoteUpdate, onNotFound, remot
       return;
     }
     if (markNumberTaken(error, true)) return;
+    // La cuenta venció durante el guardado: la sesión se vuelve a leer (httpClient) y pasa a lectura.
+    if (problemType(error) === ACCOUNT_EXPIRED_TYPE) {
+      toast.error(getUserFriendlyError(error));
+      return;
+    }
     // Datos del paciente fijos (p. ej. otra pestaña desactualizada): reintentar no sirve.
     if (problemType(error) === PATIENT_LOCKED_TYPE) {
       toast.error(getUserFriendlyError(error));
@@ -371,6 +380,7 @@ export function RecordForm({ record, onReload, onRemoteUpdate, onNotFound, remot
           {record && dirty ? <RecordPrintPending /> : null}
         </header>
 
+        {readOnly ? <FieldHint>{EXPIRED_READ_ONLY_REASON}</FieldHint> : null}
         {quotaLimit != null ? <FieldHint>{quotaReachedMessage(quotaLimit)}</FieldHint> : null}
         {record ? <PatientLockNotice record={record} /> : null}
 
@@ -393,8 +403,11 @@ export function RecordForm({ record, onReload, onRemoteUpdate, onNotFound, remot
             <h2 ref={stepHeading} tabIndex={-1} className="text-xl font-semibold outline-none">
               {current.number}. {current.title} <span className="text-sm font-normal text-muted-foreground">({current.pages})</span>
             </h2>
-            <RecordStepContent step={step} patientLocked={Boolean(record?.patientLockedAt)}
-              record={record ? { id: record.id, recordNumber: record.recordNumber } : null} />
+            {/* Cuenta vencida: los campos quedan en lectura (el `fieldset` deshabilita los controles nativos). */}
+            <fieldset disabled={readOnly} className="min-w-0 border-0 p-0">
+              <RecordStepContent step={step} patientLocked={Boolean(record?.patientLockedAt)}
+                record={record ? { id: record.id, recordNumber: record.recordNumber } : null} />
+            </fieldset>
 
             {/* En celular cabe en una fila: "Anterior" y "Siguiente" muestran solo el icono (el texto queda
                 para el lector de pantalla). */}
@@ -404,12 +417,12 @@ export function RecordForm({ record, onReload, onRemoteUpdate, onNotFound, remot
               </Button>
               <div className="flex gap-2">
                 {record ? (
-                  <Button type="button" variant="outline" disabled={saving || !dirty} onClick={() => void goTo(step)}>
+                  <Button type="button" variant="outline" disabled={saving || !dirty || readOnly} onClick={() => void goTo(step)}>
                     <Save className="size-4" aria-hidden="true" /> Guardar
                   </Button>
                 ) : null}
                 {step < RECORD_STEPS.length ? (
-                  <Button type="submit" disabled={saving || quotaLimit != null}>
+                  <Button type="submit" disabled={saving || quotaLimit != null || (readOnly && !record)}>
                     {saving ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
                     {record ? <span className="sr-only sm:not-sr-only">Siguiente</span> : "Crear historia"}{" "}
                     <ArrowRight className="size-4" aria-hidden="true" />

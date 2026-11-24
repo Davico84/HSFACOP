@@ -10,9 +10,9 @@ import { UsersFeature } from "./UsersFeature";
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
 
-const ADMIN: UserSummaryResponse = { id: 1, email: "admin@empresa.test", fullName: "Admin Uno", role: "ADMIN", status: "ACTIVE", recordQuota: null, recordCount: 3, coordinatorCohorts: [] };
-const ANA: UserSummaryResponse = { id: 2, email: "ana@empresa.test", fullName: "Ana Pérez", role: "USER", status: "ACTIVE", recordQuota: null, recordCount: 3, coordinatorCohorts: [] };
-const LUIS: UserSummaryResponse = { id: 3, email: "luis@empresa.test", fullName: "Luis Gómez", role: "USER", status: "DISABLED", recordQuota: null, recordCount: 0, coordinatorCohorts: [] };
+const ADMIN: UserSummaryResponse = { id: 1, email: "admin@empresa.test", fullName: "Admin Uno", role: "ADMIN", status: "ACTIVE", recordQuota: null, recordCount: 3, coordinatorCohorts: [], expired: false };
+const ANA: UserSummaryResponse = { id: 2, email: "ana@empresa.test", fullName: "Ana Pérez", role: "USER", status: "ACTIVE", recordQuota: null, recordCount: 3, coordinatorCohorts: [], expired: false };
+const LUIS: UserSummaryResponse = { id: 3, email: "luis@empresa.test", fullName: "Luis Gómez", role: "USER", status: "DISABLED", recordQuota: null, recordCount: 0, coordinatorCohorts: [], expired: false };
 
 function page(content: UserSummaryResponse[], pageNumber = 0, totalPages = 1) {
   return {
@@ -288,5 +288,72 @@ describe("users — Cupo de historias por tratante", () => {
     await user.type(input, "2.5");
     expect(within(dialog).getByRole("button", { name: "Guardar" })).toBeDisabled();
     expect(calls.quota).toEqual([]);
+  });
+  it("Cuenta vencida en el listado: la fila dice 'Vencida' y ofrece 'Renovar'", async () => {
+    const vencida = { ...ANA, expired: true, expiresOn: "2026-11-01" };
+    server.use(http.get("*/api/users", () => HttpResponse.json(page([ADMIN, vencida, { ...LUIS, expiresOn: "2027-03-05" }]))));
+    renderWithProviders(<UsersFeature />);
+
+    const ana = await screen.findByRole("row", { name: /Ana Pérez/ });
+    expect(within(ana).getByText("Vencida")).toBeInTheDocument();
+    expect(within(ana).getByText("Desde el 01/11/2026")).toBeInTheDocument();
+    expect(within(ana).getByRole("button", { name: "Renovar el acceso de Ana Pérez" })).toBeInTheDocument();
+    expect(within(row("Luis Gómez")).getByText("Vence el 05/03/2027")).toBeInTheDocument();
+    expect(within(row("Admin Uno")).queryByRole("button", { name: /Renovar/ })).not.toBeInTheDocument();
+  });
+
+  it("Renovar desde la fila: tras confirmar, la fila muestra la nueva fecha sin recargar", async () => {
+    let current: UserSummaryResponse = { ...ANA, expired: true, expiresOn: "2026-11-01" };
+    server.use(
+      http.get("*/api/users", () => HttpResponse.json(page([current]))),
+      http.post("*/api/users/:id/expiry/renew", () => {
+        current = { ...current, expired: false, expiresOn: "2027-11-24" };
+        return HttpResponse.json(current);
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<UsersFeature />);
+
+    await user.click(await screen.findByRole("button", { name: "Renovar el acceso de Ana Pérez" }));
+    await user.click(await screen.findByRole("button", { name: "Renovar" }));
+
+    expect(await within(row("Ana Pérez")).findByText("Vence el 24/11/2027")).toBeInTheDocument();
+    expect(toast.success).toHaveBeenCalled();
+  });
+
+  it("Cambiar fecha: envía la fecha elegida", async () => {
+    const sent: unknown[] = [];
+    server.use(
+      http.get("*/api/users", () => HttpResponse.json(page([{ ...ANA, expiresOn: "2026-12-01" }]))),
+      http.put("*/api/users/:id/expiry", async ({ request }) => {
+        sent.push(await request.json());
+        return HttpResponse.json({ ...ANA, expiresOn: "2027-01-31" });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<UsersFeature />);
+
+    await user.click(await screen.findByRole("button", { name: "Cambiar la fecha de vencimiento de Ana Pérez" }));
+    const date = await screen.findByLabelText("Último día de acceso");
+    await user.clear(date);
+    await user.type(date, "2027-01-31");
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() => expect(sent).toEqual([{ expiresOn: "2027-01-31" }]));
+  });
+
+  it("Filtro de cuentas por vencer: pide solo las cuentas por vencer", async () => {
+    const seen: (string | null)[] = [];
+    server.use(
+      http.get("*/api/users", ({ request }) => {
+        seen.push(new URL(request.url).searchParams.get("expiry"));
+        return HttpResponse.json(page([ANA]));
+      }),
+    );
+    renderWithProviders(<UsersFeature />, { initialEntries: ["/usuarios?vencimiento=vencidas"] });
+
+    await screen.findByRole("row", { name: /Ana Pérez/ });
+
+    expect(seen).toEqual(["EXPIRED"]);
   });
 });

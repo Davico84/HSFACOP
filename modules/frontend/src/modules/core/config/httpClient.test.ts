@@ -82,3 +82,46 @@ describe("httpClient — interceptor de refresh", () => {
     expect(toastError).toHaveBeenCalledWith("Tu cuenta está deshabilitada. Contacta con el administrador.");
   });
 });
+
+describe("httpClient — cuenta vencida", () => {
+  it("Pasa a solo lectura sin recargar: ante 403 account-expired vuelve a consultar la sesión", async () => {
+    let refreshCalls = 0;
+    server.use(
+      http.post("*/records", () =>
+        HttpResponse.json(
+          { type: "/errors/account-expired", title: "Cuenta vencida", status: 403, detail: "Tu acceso venció." },
+          { status: 403 },
+        ),
+      ),
+      http.post("*/auth/refresh", () => {
+        refreshCalls += 1;
+        return HttpResponse.json({
+          accessToken: "nuevo",
+          user: { id: 1, email: "a@b.c", role: "USER", fullName: "Ana", expiresOn: "2026-11-23", readOnly: true },
+        });
+      }),
+    );
+
+    await expect(axiosInstance.post("/records", {})).rejects.toBeTruthy();
+
+    await vi.waitFor(() => expect(useSessionStore.getState().user?.readOnly).toBe(true));
+    expect(refreshCalls).toBe(1);
+  });
+
+  it("Un 403 de otro tipo no relee la sesión", async () => {
+    let refreshCalls = 0;
+    server.use(
+      http.post("*/records", () =>
+        HttpResponse.json({ type: "/errors/access-denied", title: "x", status: 403, detail: "No." }, { status: 403 }),
+      ),
+      http.post("*/auth/refresh", () => {
+        refreshCalls += 1;
+        return new HttpResponse(null, { status: 500 });
+      }),
+    );
+
+    await expect(axiosInstance.post("/records", {})).rejects.toBeTruthy();
+
+    expect(refreshCalls).toBe(0);
+  });
+});

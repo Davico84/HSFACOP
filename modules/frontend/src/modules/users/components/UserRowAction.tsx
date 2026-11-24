@@ -1,4 +1,4 @@
-import { Gauge, GraduationCap, IdCard, KeyRound, Layers, Undo2, UserCheck, UserX } from "lucide-react";
+import { CalendarClock, Gauge, GraduationCap, IdCard, KeyRound, Layers, RefreshCw, Undo2, UserCheck, UserX } from "lucide-react";
 import { IconAction } from "@/modules/core/components/IconAction";
 import type { UserSummaryResponse } from "@/modules/core/services/generated/model";
 
@@ -10,6 +10,8 @@ export interface UserRowHandlers {
   onRequestRevert: (user: UserSummaryResponse) => void;
   onRequestContact: (user: UserSummaryResponse) => void;
   onRequestPasswordReset: (user: UserSummaryResponse) => void;
+  onRequestRenew: (user: UserSummaryResponse) => void;
+  onRequestExpiry: (user: UserSummaryResponse) => void;
 }
 
 interface UserRowActionProps extends UserRowHandlers {
@@ -17,6 +19,7 @@ interface UserRowActionProps extends UserRowHandlers {
   pending: boolean;
   quotaPending: boolean;
   rolePending: boolean;
+  expiryPending: boolean;
 }
 
 /**
@@ -29,12 +32,15 @@ export function UserRowAction({
   pending,
   quotaPending,
   rolePending,
+  expiryPending,
   onRequestChange,
   onRequestQuota,
   onRequestCoordination,
   onRequestRevert,
   onRequestContact,
   onRequestPasswordReset,
+  onRequestRenew,
+  onRequestExpiry,
 }: UserRowActionProps) {
   const disabling = user.status === "ACTIVE";
   const name = user.fullName;
@@ -88,6 +94,20 @@ export function UserRowAction({
           />
         </>
       )}
+      <IconAction
+        icon={RefreshCw}
+        label="Renovar acceso"
+        ariaLabel={`Renovar el acceso de ${name}`}
+        loading={expiryPending}
+        onClick={() => onRequestRenew(user)}
+      />
+      <IconAction
+        icon={CalendarClock}
+        label="Cambiar fecha de vencimiento"
+        ariaLabel={`Cambiar la fecha de vencimiento de ${name}`}
+        disabled={expiryPending}
+        onClick={() => onRequestExpiry(user)}
+      />
       <IconAction
         icon={KeyRound}
         label="Restablecer contraseña"
