@@ -12,7 +12,7 @@ Al registrarse, una cuenta nueva SHALL recibir como vencimiento la fecha de alta
 - **THEN** se ignora y rige alta más 12 meses
 
 ### Requirement: La sesión informa el vencimiento
-La respuesta de sesión (inicio de sesión, renovación de token y consulta de la sesión) SHALL incluir `expiresAt` y `readOnly`, calculado en el servidor contra la base. Una cuenta vencida SHALL poder iniciar sesión y renovar su token; el token NO SHALL llevar el vencimiento, de modo que una renovación rija sin nuevo inicio de sesión.
+La respuesta de sesión (inicio de sesión, renovación de token y consulta de la sesión) SHALL incluir `expiresOn` (último día con acceso completo, fecha de Lima) y `readOnly`, calculado en el servidor contra la base. Una cuenta vencida SHALL poder iniciar sesión y renovar su token; el token NO SHALL llevar el vencimiento, de modo que una renovación rija sin nuevo inicio de sesión.
 
 #### Scenario: Cuenta vencida inicia sesión
 - **WHEN** una cuenta `USER` vencida inicia sesión con credenciales correctas
@@ -24,4 +24,4 @@ La respuesta de sesión (inicio de sesión, renovación de token y consulta de l
 
 #### Scenario: ADMIN
 - **WHEN** un `ADMIN` inicia sesión
-- **THEN** `expiresAt` es nulo y `readOnly` falso
+- **THEN** `expiresOn` es nulo y `readOnly` falso

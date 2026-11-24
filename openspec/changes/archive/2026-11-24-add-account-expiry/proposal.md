@@ -12,7 +12,7 @@ Hace falta un vencimiento por cuenta que no destruya el trabajo del tratante: al
 - **Alerta al `ADMIN`:** Inicio del `ADMIN` muestra cuántas cuentas vencen en los próximos 30 días y cuántas ya vencieron, con acceso a "Usuarios" filtrado.
 - **Aviso al tratante ya vencido:** la app muestra un aviso persistente ("Tu acceso venció el … Puedes ver e imprimir tus historias; para seguir editando, pide la renovación al administrador"), deshabilita los controles de escritura y no ofrece "Nueva historia". Sin aviso previo al vencimiento.
 - **Sin cambios:** la libreta local (es del navegador, sigue funcionando), la impresión de historias (permitida; la primera impresión sigue fijando los datos del paciente), el cupo de historias, el estado `ACTIVE`/`DISABLED` y el bloqueo temporal por intentos fallidos.
-- **Contrato:** `UserResponse` (sesión) suma `expiresAt` y `readOnly`; `UserSummaryResponse` suma `expiresAt`; el Inicio del `ADMIN` suma los conteos. Nuevos endpoints de renovación y de fecha. El cliente se regenera.
+- **Contrato:** `UserResponse` (sesión) suma `expiresOn` y `readOnly`; `UserSummaryResponse` suma `expiresOn` y `expired`; el Inicio del `ADMIN` suma los conteos. Nuevos endpoints de renovación y de fecha. El cliente se regenera.
 
 ## Capabilities
 
@@ -21,14 +21,14 @@ Hace falta un vencimiento por cuenta que no destruya el trabajo del tratante: al
 
 ### Modified Capabilities
 - `users`: vencimiento por cuenta, columna y acciones "Renovar" / fijar fecha en Usuarios (solo `ADMIN`), y la regla de que `ADMIN` no vence.
-- `authentication`: el registro fija el vencimiento; la sesión informa `expiresAt` y `readOnly`; una cuenta vencida sigue iniciando sesión y renovando token.
+- `authentication`: el registro fija el vencimiento; la sesión informa `expiresOn` y `readOnly`; una cuenta vencida sigue iniciando sesión y renovando token.
 - `orthodontic-records`: una cuenta vencida solo lee e imprime; crear, guardar y solicitar desbloqueo responden `403 account-expired`.
 - `dashboard`: Inicio del `ADMIN` muestra cuentas por vencer en 30 días y vencidas.
 
 ## Impact
 
-- **Backend:** migración Flyway (columna `users.expires_at`, relleno de las cuentas existentes); `User`; `AuthService` (registro) y la construcción de la sesión; `UserAdminService` + `UsersController` (renovar, fijar fecha, listar con `expiresAt` y filtro); `OrthodonticRecordService` (guarda de escritura central); `GlobalExceptionHandler`/excepción nueva; `DashboardQueries`/`AdminDashboardResponse`; pruebas de integración; `contracts/openapi.json` (guarda de deriva).
-- **Frontend:** estado de sesión (`expiresAt`, `readOnly`), aviso de cuenta vencida en el shell, controles de escritura deshabilitados (Nueva historia, guardar, solicitar desbloqueo), columna y acciones en Usuarios, tarjeta en Inicio del `ADMIN`; cliente regenerado con `pnpm generate:api`; pruebas Vitest/MSW.
+- **Backend:** migración Flyway (columna `users.expires_on`, relleno de las cuentas existentes); `User`; `AuthService` (registro) y la construcción de la sesión; `UserAdminService` + `UsersController` (renovar, fijar fecha, listar con `expiresAt` y filtro); `OrthodonticRecordService` (guarda de escritura central); `GlobalExceptionHandler`/excepción nueva; `DashboardQueries`/`AdminDashboardResponse`; pruebas de integración; `contracts/openapi.json` (guarda de deriva).
+- **Frontend:** estado de sesión (`expiresOn`, `readOnly`), aviso de cuenta vencida en el shell, controles de escritura deshabilitados (Nueva historia, guardar, solicitar desbloqueo), columna y acciones en Usuarios, tarjeta en Inicio del `ADMIN`; cliente regenerado con `pnpm generate:api`; pruebas Vitest/MSW.
 - **Docs:** `docs/domain.md` (campo y regla), `docs/vision.md` (estado del cambio y, al archivar, capacidad construida).
 - **Relación con otros changes:** el retiro de las columnas del alias (migración pendiente, tareas 3.3–3.5 del change archivado del alias) debe numerarse **después** de la migración de este change, porque Flyway no aplica migraciones anteriores a la última ya aplicada. Ver `design.md`.
 
