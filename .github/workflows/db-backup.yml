@@ -101,7 +101,27 @@ jobs:
           for _ in $(seq 30); do pg pg_isready -q -d "$RESTORE_URL" && break; sleep 2; done
           pg pg_isready -q -d "$RESTORE_URL"
 
-          pg pg_restore --no-owner --no-acl --exit-on-error --dbname="$RESTORE_URL" /backup/db.dump
+          # Neon marca con `SET (pg_attver=N)` las columnas añadidas después de crear la tabla, y
+          # pg_dump lo vuelca como `ALTER TABLE … ALTER COLUMN … SET (pg_attver=N)`. Es una opción
+          # propia de Neon: PostgreSQL común la rechaza ("unrecognized parameter"), así que el
+          # volcado no se restaura tal cual. Se genera el SQL, se quitan solo esas sentencias
+          # (patrón estricto: una línea completa) y se aplica con psql; cualquier otra sentencia
+          # que falle detiene la restauración. El SQL queda en el runner (se borra en "Limpieza").
+          pg pg_restore --no-owner --no-acl --file=/backup/restore.sql /backup/db.dump
+          sed -E -i '/^ALTER TABLE ONLY [^ ]+ ALTER COLUMN [^ ]+ SET \(pg_attver=[0-9]+\);$/d' "$RUNNER_TEMP/backup/restore.sql"
+          # Si queda otra forma de pg_attver, se avisa por su nombre en vez de fallar a ciegas.
+          if grep -q 'pg_attver' "$RUNNER_TEMP/backup/restore.sql"; then
+            echo "::error::El volcado tiene una forma de pg_attver que el filtro no reconoce."
+            exit 1
+          fi
+          # psql imprime el contexto de la sentencia que falló (puede incluir datos) y el log es
+          # público: la salida va a un archivo y solo se informa la línea ERROR.
+          if ! pg psql -X -q -v ON_ERROR_STOP=1 -d "$RESTORE_URL" -f /backup/restore.sql \
+            > /dev/null 2> "$RUNNER_TEMP/backup/psql.err"; then
+            echo "::error::Restauración fallida: $(grep -m1 -o 'ERROR:.*' "$RUNNER_TEMP/backup/psql.err" | cut -c1-200)"
+            exit 1
+          fi
+          rm -f "$RUNNER_TEMP/backup/restore.sql"
 
           # Migraciones: la mayor versión del repo (orden numérico: V15 > V10 > V9) debe ser la
           # mayor aplicada con éxito en la copia. Sin referencia, falla (nunca "ok" por vacío).
