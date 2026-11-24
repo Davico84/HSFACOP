@@ -3,7 +3,7 @@ import { render } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { TooltipProvider } from "@/modules/core/ui/tooltip";
-import { useSessionStore, type Role } from "@/store/useSessionStore";
+import { useSessionStore, type Role, type SessionUser } from "@/store/useSessionStore";
 import { useRecordsListStore } from "@/store/useRecordsListStore";
 import { RecordsListScreen } from "@/screens/records/RecordsListScreen";
 import { RecordFormScreen } from "@/screens/records/RecordFormScreen";
@@ -13,13 +13,13 @@ import { RecordPrintScreen } from "@/screens/records/RecordPrintScreen";
  * Monta las pantallas de historias con un router de datos en memoria (como la app: `useBlocker`
  * lo exige) y una sesión del rol indicado. Incluye una ruta "fuera" para probar la salida.
  */
-export function renderRecordRoutes(initialPath: string, role: Role = "USER") {
+export function renderRecordRoutes(initialPath: string, role: Role = "USER", session: Partial<SessionUser> = {}) {
   // Cada test empieza sin listado recordado ("← Historias clínicas" va a /historias).
   useRecordsListStore.getState().clear();
   useSessionStore.setState({
     accessToken: "token",
     status: "authenticated",
-    user: { id: 1, email: "torres@empresa.test", role, fullName: "Dra. María Torres" },
+    user: { id: 1, email: "torres@empresa.test", role, fullName: "Dra. María Torres", ...session },
   });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
   const router = createMemoryRouter(
