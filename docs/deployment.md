@@ -108,7 +108,8 @@ Las de `modules/backend/secrets.properties.example`, más:
 **Qué hace.** Todos los días a las 08:00 UTC (03:00 en Lima), y a pedido desde la pestaña *Actions*:
 
 1. `pg_dump` de la base con un rol de **solo lectura**;
-2. restauración en una PostgreSQL 16 vacía del propio job, comprobando que la última migración
+2. restauración en una PostgreSQL 16 vacía del propio job (quitando antes las opciones
+   `pg_attver` propias de Neon, ver "Restaurar en local" abajo), comprobando que la última migración
    del repo (`V<n>`, en orden numérico) está aplicada y que cada tabla de la copia se restauró;
 3. cifrado con [`age`](https://age-encryption.org) a una **clave pública**;
 4. subida como artifact `db-backup-AAAA-MM-DD` (**90 días** de retención).
@@ -184,9 +185,14 @@ Nunca sobre la base de producción en uso: siempre a una base nueva.
    ```bash
    docker run -d --name restore -e POSTGRES_PASSWORD=restore -p 5433:5432 postgres:16
    docker cp db.dump restore:/db.dump
-   docker exec restore pg_restore -U postgres -d postgres --no-owner --no-acl /db.dump
+   docker exec restore sh -c "pg_restore --no-owner --no-acl -f - /db.dump \
+     | sed -E '/^ALTER TABLE ONLY [^ ]+ ALTER COLUMN [^ ]+ SET \(pg_attver=[0-9]+\);\$/d' \
+     | psql -U postgres -X -q -v ON_ERROR_STOP=1 -d postgres"
    docker exec -it restore psql -U postgres -c "select count(*) from orthodontic_records"
    ```
+   El `sed` quita las sentencias `SET (pg_attver=…)`: Neon las agrega a las columnas añadidas con
+   `ALTER TABLE` y PostgreSQL común las rechaza ("unrecognized parameter"). Una **rama de Neon**
+   las acepta, por eso la restauración en Neon (abajo) no las filtra.
    o **en una rama nueva de Neon** (*Branches → New branch*), con su cadena de conexión directa:
    ```bash
    pg_restore --no-owner --no-acl --clean --if-exists -d "<url-directa-de-la-rama>" db.dump
