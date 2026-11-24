@@ -28,7 +28,7 @@
 - [x] 4.2 Aviso persistente en el shell, "Nueva historia" oculto, guardar y solicitar desbloqueo deshabilitados con motivo; historia en modo lectura; imprimir activo (aplicar `frontend-guard`)
 - [x] 4.3 Usuarios: columna "Vence"/"Vencida", acciones "Renovar" y "Cambiar fecha" con confirmación, filtro por vencimiento
 - [x] 4.4 Inicio del `ADMIN`: cuentas por vencer y vencidas con enlace filtrado
-- [ ] 4.5 Tests Vitest/MSW por Scenario y e2e Playwright del flujo vencida → renovar; `pnpm validate` en verde — pendiente: e2e Playwright y test del formulario en lectura (Vitest/MSW por Scenario ya hechos)
+- [x] 4.5 Tests Vitest/MSW por Scenario y e2e Playwright del flujo vencida → renovar; `pnpm validate` en verde (el e2e con backend está en e2e/expiry.backend.spec.ts y el formulario en lectura en RecordReadOnly.test.tsx)
 
 ## 5. Docs y cierre
 
