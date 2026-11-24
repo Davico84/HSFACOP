@@ -1,11 +1,11 @@
 ## ADDED Requirements
 
 ### Requirement: Vencimiento de la cuenta
-Cada cuenta `USER` o `COORDINATOR` SHALL tener una fecha de vencimiento; una cuenta `ADMIN` NO SHALL vencer. La cuenta está vencida cuando el instante actual alcanza esa fecha. Al migrar, las cuentas existentes SHALL recibir su fecha de alta más 12 meses. Convertir una cuenta entre `USER` y `COORDINATOR` SHALL conservar la fecha.
+Cada cuenta `USER` o `COORDINATOR` SHALL tener una fecha de vencimiento; una cuenta `ADMIN` NO SHALL vencer. La fecha es el último día con acceso completo (fecha civil de Lima); la cuenta está vencida cuando hoy es posterior a ella. Al migrar, las cuentas existentes SHALL recibir su fecha de alta más 12 meses. Convertir una cuenta entre `USER` y `COORDINATOR` SHALL conservar la fecha.
 
 #### Scenario: Cuenta existente al migrar
 - **WHEN** se aplica la migración y una cuenta `USER` se creó el 2026-10-06
-- **THEN** su vencimiento es el 2027-10-06 y la cuenta `ADMIN` queda sin vencimiento
+- **THEN** su último día de acceso es el 2027-10-06 y la cuenta `ADMIN` queda sin vencimiento
 
 #### Scenario: Cambio de rol conserva el vencimiento
 - **WHEN** un `ADMIN` convierte una cuenta `USER` en `COORDINATOR`
