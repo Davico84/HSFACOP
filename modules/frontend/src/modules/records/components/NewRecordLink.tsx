@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { buttonVariants } from "@/modules/core/ui/button-variants";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/modules/core/ui/tooltip";
+import { useReadOnly } from "@/modules/core/hooks/useReadOnly";
 import { PATHS } from "@/routes/paths";
 import { useRecordQuota } from "../hooks/useRecordQuota";
 import { quotaReachedMessage } from "../utils/quota";
@@ -9,10 +10,12 @@ import { quotaReachedMessage } from "../utils/quota";
 /**
  * "Nueva historia": con el cupo lleno queda deshabilitado (un `span` enfocable hace de disparador
  * del tooltip, porque un control deshabilitado no recibe el puntero). El aviso visible lo muestra
- * `RecordQuotaNotice`.
+ * `RecordQuotaNotice`. Con la cuenta vencida no se muestra: el aviso del shell explica el motivo.
  */
 export function NewRecordLink() {
+  const readOnly = useReadOnly();
   const quota = useRecordQuota();
+  if (readOnly) return null;
   const reached = quota.data?.reached === true && quota.data.limit != null;
   if (!reached) {
     return (

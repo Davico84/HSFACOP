@@ -38,6 +38,108 @@
     }
   ],
   "paths": {
+    "/api/users/{id}/expiry": {
+      "put": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Fijar el último día de acceso de una cuenta USER o COORDINATOR",
+        "operationId": "changeUserExpiry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangeUserExpiryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Cuenta con su vencimiento actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSummaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fecha ausente o inválida",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La cuenta no existe",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La cuenta es ADMIN: no vence (expiry-not-applicable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error inesperado",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso para realizar esta acción",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/orthodontic-records/{id}": {
       "get": {
         "tags": [
@@ -713,6 +815,88 @@
           },
           "409": {
             "description": "La cuenta es ADMIN o está deshabilitada (password-reset-not-applicable)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error inesperado",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso para realizar esta acción",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesión ausente o inválida",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}/expiry/renew": {
+      "post": {
+        "tags": [
+          "users"
+        ],
+        "summary": "Renovar el acceso de una cuenta USER o COORDINATOR (12 meses desde el mayor entre hoy y su vencimiento)",
+        "operationId": "renewUserExpiry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cuenta con su vencimiento actual",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSummaryResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La cuenta no existe",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiProblem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La cuenta es ADMIN: no vence (expiry-not-applicable)",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -2180,6 +2364,19 @@
               "default": 20,
               "minimum": 1
             }
+          },
+          {
+            "name": "expiry",
+            "in": "query",
+            "description": "Solo cuentas activas por vencer en 30 días (SOON) o ya vencidas (EXPIRED)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "SOON",
+                "EXPIRED"
+              ]
+            }
           }
         ],
         "responses": {
@@ -2591,6 +2788,255 @@
   },
   "components": {
     "schemas": {
+      "ChangeUserExpiryRequest": {
+        "type": "object",
+        "properties": {
+          "expiresOn": {
+            "type": "string",
+            "format": "date",
+            "description": "Último día con acceso completo; una fecha pasada deja la cuenta en solo lectura",
+            "example": "2027-12-31"
+          }
+        },
+        "required": [
+          "expiresOn"
+        ]
+      },
+      "CohortRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string",
+            "example": "Turma 1"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "UserSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "email": {
+            "type": "string"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "USER",
+              "COORDINATOR"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "DISABLED"
+            ]
+          },
+          "recordQuota": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Cupo de historias clínicas; nulo = sin límite (siempre nulo en cuentas ADMIN y COORDINATOR)"
+          },
+          "recordCount": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Historias clínicas creadas por la cuenta"
+          },
+          "cohort": {
+            "type": "null",
+            "$ref": "#/components/schemas/CohortRef",
+            "description": "Turma del alumno; nula = sin turma (siempre nula si no es USER)"
+          },
+          "coordinatorCohorts": {
+            "type": "array",
+            "description": "Turmas que supervisa (vacía si no es COORDINATOR)",
+            "items": {
+              "$ref": "#/components/schemas/CohortRef"
+            }
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Celular; nulo = sin registrar",
+            "example": "987654321"
+          },
+          "documentType": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Tipo de documento; nulo = sin registrar",
+            "enum": [
+              "DNI",
+              "FOREIGNER_CARD",
+              "PASSPORT"
+            ]
+          },
+          "documentNumber": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Número de documento; nulo = sin registrar"
+          },
+          "copNumber": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Número de colegiatura (COP); nulo = sin registrar"
+          },
+          "expiresOn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Último día con acceso completo; nulo en cuentas ADMIN, que no vencen"
+          },
+          "expired": {
+            "type": "boolean",
+            "description": "La cuenta ya venció (solo lectura)"
+          }
+        },
+        "required": [
+          "coordinatorCohorts",
+          "email",
+          "expired",
+          "fullName",
+          "id",
+          "recordCount",
+          "role",
+          "status"
+        ]
+      },
+      "FieldProblem": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "example": "password"
+          },
+          "message": {
+            "type": "string",
+            "example": "La contraseña debe tener al menos 8 caracteres"
+          }
+        },
+        "required": [
+          "field",
+          "message"
+        ]
+      },
+      "ValidationProblem": {
+        "type": "object",
+        "description": "Error de validación (RFC 9457) con detalle por campo.",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "/errors/validation-error"
+          },
+          "title": {
+            "type": "string",
+            "example": "Validation failed"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "example": 400
+          },
+          "detail": {
+            "type": "string",
+            "description": "Mensaje en español apto para el usuario final."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "instance": {
+            "type": "string",
+            "example": "/auth/register"
+          },
+          "traceId": {
+            "type": "string",
+            "description": "Igual a la cabecera X-Trace-Id."
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldProblem"
+            }
+          }
+        },
+        "required": [
+          "detail",
+          "status",
+          "timestamp",
+          "title",
+          "type"
+        ]
+      },
+      "ApiProblem": {
+        "type": "object",
+        "description": "Error de la API (RFC 9457, application/problem+json).",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "/errors/email-already-exists"
+          },
+          "title": {
+            "type": "string",
+            "example": "Conflict"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "example": 409
+          },
+          "detail": {
+            "type": "string",
+            "description": "Mensaje en español apto para el usuario final."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "instance": {
+            "type": "string",
+            "example": "/auth/register"
+          },
+          "traceId": {
+            "type": "string",
+            "description": "Igual a la cabecera X-Trace-Id."
+          }
+        },
+        "required": [
+          "detail",
+          "status",
+          "timestamp",
+          "title",
+          "type"
+        ]
+      },
       "Anamnesis": {
         "type": "object",
         "properties": {
@@ -3980,113 +4426,6 @@
           "requestedAt"
         ]
       },
-      "FieldProblem": {
-        "type": "object",
-        "properties": {
-          "field": {
-            "type": "string",
-            "example": "password"
-          },
-          "message": {
-            "type": "string",
-            "example": "La contraseña debe tener al menos 8 caracteres"
-          }
-        },
-        "required": [
-          "field",
-          "message"
-        ]
-      },
-      "ValidationProblem": {
-        "type": "object",
-        "description": "Error de validación (RFC 9457) con detalle por campo.",
-        "properties": {
-          "type": {
-            "type": "string",
-            "example": "/errors/validation-error"
-          },
-          "title": {
-            "type": "string",
-            "example": "Validation failed"
-          },
-          "status": {
-            "type": "integer",
-            "format": "int32",
-            "example": 400
-          },
-          "detail": {
-            "type": "string",
-            "description": "Mensaje en español apto para el usuario final."
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "instance": {
-            "type": "string",
-            "example": "/auth/register"
-          },
-          "traceId": {
-            "type": "string",
-            "description": "Igual a la cabecera X-Trace-Id."
-          },
-          "errors": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/FieldProblem"
-            }
-          }
-        },
-        "required": [
-          "detail",
-          "status",
-          "timestamp",
-          "title",
-          "type"
-        ]
-      },
-      "ApiProblem": {
-        "type": "object",
-        "description": "Error de la API (RFC 9457, application/problem+json).",
-        "properties": {
-          "type": {
-            "type": "string",
-            "example": "/errors/email-already-exists"
-          },
-          "title": {
-            "type": "string",
-            "example": "Conflict"
-          },
-          "status": {
-            "type": "integer",
-            "format": "int32",
-            "example": 409
-          },
-          "detail": {
-            "type": "string",
-            "description": "Mensaje en español apto para el usuario final."
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "instance": {
-            "type": "string",
-            "example": "/auth/register"
-          },
-          "traceId": {
-            "type": "string",
-            "description": "Igual a la cabecera X-Trace-Id."
-          }
-        },
-        "required": [
-          "detail",
-          "status",
-          "timestamp",
-          "title",
-          "type"
-        ]
-      },
       "UpdateProfileRequest": {
         "type": "object",
         "properties": {
@@ -4237,12 +4576,25 @@
           },
           "fullName": {
             "type": "string"
+          },
+          "expiresOn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Último día con acceso completo (fecha de Lima); nulo en cuentas ADMIN, que no vencen"
+          },
+          "readOnly": {
+            "type": "boolean",
+            "description": "La cuenta venció: puede ver e imprimir, no crear ni guardar"
           }
         },
         "required": [
           "email",
           "fullName",
           "id",
+          "readOnly",
           "role"
         ]
       },
@@ -4680,121 +5032,6 @@
           }
         },
         "required": [
-          "status"
-        ]
-      },
-      "CohortRef": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "name": {
-            "type": "string",
-            "example": "Turma 1"
-          }
-        },
-        "required": [
-          "id",
-          "name"
-        ]
-      },
-      "UserSummaryResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "email": {
-            "type": "string"
-          },
-          "fullName": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string",
-            "enum": [
-              "ADMIN",
-              "USER",
-              "COORDINATOR"
-            ]
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "ACTIVE",
-              "DISABLED"
-            ]
-          },
-          "recordQuota": {
-            "type": [
-              "integer",
-              "null"
-            ],
-            "format": "int32",
-            "description": "Cupo de historias clínicas; nulo = sin límite (siempre nulo en cuentas ADMIN y COORDINATOR)"
-          },
-          "recordCount": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Historias clínicas creadas por la cuenta"
-          },
-          "cohort": {
-            "type": "null",
-            "$ref": "#/components/schemas/CohortRef",
-            "description": "Turma del alumno; nula = sin turma (siempre nula si no es USER)"
-          },
-          "coordinatorCohorts": {
-            "type": "array",
-            "description": "Turmas que supervisa (vacía si no es COORDINATOR)",
-            "items": {
-              "$ref": "#/components/schemas/CohortRef"
-            }
-          },
-          "phone": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Celular; nulo = sin registrar",
-            "example": "987654321"
-          },
-          "documentType": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Tipo de documento; nulo = sin registrar",
-            "enum": [
-              "DNI",
-              "FOREIGNER_CARD",
-              "PASSPORT"
-            ]
-          },
-          "documentNumber": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Número de documento; nulo = sin registrar"
-          },
-          "copNumber": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Número de colegiatura (COP); nulo = sin registrar"
-          }
-        },
-        "required": [
-          "coordinatorCohorts",
-          "email",
-          "fullName",
-          "id",
-          "recordCount",
-          "role",
           "status"
         ]
       },
@@ -5356,6 +5593,16 @@
             "type": "integer",
             "format": "int64"
           },
+          "expiringSoon": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Cuentas activas USER o COORDINATOR que vencen en los próximos 30 días"
+          },
+          "expired": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Cuentas activas USER o COORDINATOR ya vencidas (solo lectura)"
+          },
           "newThisMonth": {
             "type": "integer",
             "format": "int64",
@@ -5365,6 +5612,8 @@
         "required": [
           "active",
           "disabled",
+          "expired",
+          "expiringSoon",
           "newThisMonth",
           "total"
         ]

@@ -1,5 +1,8 @@
 package com.odontorisas.service.users;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import com.odontorisas.common.Role;
 import com.odontorisas.common.UserStatus;
 import com.odontorisas.infra.config.RecordsProperties;
@@ -40,7 +43,8 @@ class UserAdminServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new UserAdminService(users, refreshTokens, records, cohorts, new RecordsProperties(10), resetTokens, tokenService);
+        service = new UserAdminService(users, refreshTokens, records, cohorts, new RecordsProperties(10), resetTokens, tokenService,
+            Clock.fixed(Instant.parse("2026-11-24T15:00:00Z"), ZoneId.of("America/Lima")));
     }
 
     private static User account(Role role, UserStatus status) {

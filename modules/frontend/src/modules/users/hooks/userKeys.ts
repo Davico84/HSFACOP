@@ -2,7 +2,7 @@
 export const userKeys = {
   all: ["users"] as const,
   lists: () => [...userKeys.all, "list"] as const,
-  list: (params: { page: number; size: number }) => [...userKeys.lists(), params] as const,
+  list: (params: { page: number; size: number; expiry?: string }) => [...userKeys.lists(), params] as const,
   /** "Mis datos" de la cuenta autenticada. */
   profile: () => [...userKeys.all, "profile"] as const,
 };

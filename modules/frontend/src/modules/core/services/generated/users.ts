@@ -8,6 +8,7 @@
 import type {
   ChangeRecordQuotaRequest,
   ChangeUserCohortRequest,
+  ChangeUserExpiryRequest,
   ChangeUserRoleRequest,
   ChangeUserStatusRequest,
   ListUsersParams,
@@ -22,6 +23,20 @@ import { customInstance } from '../../config/httpClient';
 
 
   /**
+ * @summary Fijar el último día de acceso de una cuenta USER o COORDINATOR
+ */
+export const changeUserExpiry = (
+    id: number,
+    changeUserExpiryRequest: ChangeUserExpiryRequest,
+ ) => {
+      return customInstance<UserSummaryResponse>(
+      {url: `/api/users/${id}/expiry`, method: 'PUT',
+      headers: {'Content-Type': 'application/json', },
+      data: changeUserExpiryRequest
+    },
+      );
+    }
+  /**
  * @summary Generar un enlace de restablecimiento de contraseña de un solo uso (24 h) para una cuenta USER o COORDINATOR activa
  */
 export const createPasswordReset = (
@@ -29,6 +44,17 @@ export const createPasswordReset = (
  ) => {
       return customInstance<PasswordResetLinkResponse>(
       {url: `/api/users/${id}/password-reset`, method: 'POST'
+    },
+      );
+    }
+  /**
+ * @summary Renovar el acceso de una cuenta USER o COORDINATOR (12 meses desde el mayor entre hoy y su vencimiento)
+ */
+export const renewUserExpiry = (
+    id: number,
+ ) => {
+      return customInstance<UserSummaryResponse>(
+      {url: `/api/users/${id}/expiry/renew`, method: 'POST'
     },
       );
     }
@@ -100,7 +126,9 @@ export const listUsers = (
     },
       );
     }
-  export type CreatePasswordResetResult = NonNullable<Awaited<ReturnType<typeof createPasswordReset>>>
+  export type ChangeUserExpiryResult = NonNullable<Awaited<ReturnType<typeof changeUserExpiry>>>
+export type CreatePasswordResetResult = NonNullable<Awaited<ReturnType<typeof createPasswordReset>>>
+export type RenewUserExpiryResult = NonNullable<Awaited<ReturnType<typeof renewUserExpiry>>>
 export type ChangeUserStatusResult = NonNullable<Awaited<ReturnType<typeof changeUserStatus>>>
 export type ChangeUserRoleResult = NonNullable<Awaited<ReturnType<typeof changeUserRole>>>
 export type ChangeRecordQuotaResult = NonNullable<Awaited<ReturnType<typeof changeRecordQuota>>>

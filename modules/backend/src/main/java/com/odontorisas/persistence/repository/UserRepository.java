@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -24,6 +25,32 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> findAll(Pageable pageable);
 
     boolean existsByEmail(String email);
+
+    /** Cuentas activas USER o COORDINATOR que vencen entre {@code from} y {@code until} (ambos incluidos). */
+    @EntityGraph(attributePaths = "cohort")
+    @Query(value = """
+        select u from User u
+        where u.status = com.odontorisas.common.UserStatus.ACTIVE and u.role <> com.odontorisas.common.Role.ADMIN
+          and u.expiresOn >= :from and u.expiresOn <= :until
+        """, countQuery = """
+        select count(u) from User u
+        where u.status = com.odontorisas.common.UserStatus.ACTIVE and u.role <> com.odontorisas.common.Role.ADMIN
+          and u.expiresOn >= :from and u.expiresOn <= :until
+        """)
+    Page<User> findExpiringBetween(@Param("from") LocalDate from, @Param("until") LocalDate until, Pageable pageable);
+
+    /** Cuentas activas USER o COORDINATOR cuyo último día de acceso fue antes de {@code today}. */
+    @EntityGraph(attributePaths = "cohort")
+    @Query(value = """
+        select u from User u
+        where u.status = com.odontorisas.common.UserStatus.ACTIVE and u.role <> com.odontorisas.common.Role.ADMIN
+          and u.expiresOn < :today
+        """, countQuery = """
+        select count(u) from User u
+        where u.status = com.odontorisas.common.UserStatus.ACTIVE and u.role <> com.odontorisas.common.Role.ADMIN
+          and u.expiresOn < :today
+        """)
+    Page<User> findExpiredBefore(@Param("today") LocalDate today, Pageable pageable);
 
     /**
      * Registra un login fallido en un único UPDATE atómico (nunca leer-incrementar-guardar:

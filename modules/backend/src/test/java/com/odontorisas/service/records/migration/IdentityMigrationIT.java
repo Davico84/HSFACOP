@@ -119,8 +119,8 @@ class IdentityMigrationIT extends AbstractIntegrationTest {
     }
 
     private long author() {
-        return jdbc.queryForObject("INSERT INTO users (email, password_hash, role, full_name) VALUES (?, 'h', 'USER', "
-            + "'Dra. Torres') RETURNING id", Long.class, "mig-" + UUID.randomUUID() + "@empresa.test");
+        return jdbc.queryForObject("INSERT INTO users (email, password_hash, role, full_name, expires_on) VALUES (?, 'h', 'USER', "
+            + "'Dra. Torres', DATE '2099-01-01') RETURNING id", Long.class, "mig-" + UUID.randomUUID() + "@empresa.test");
     }
 
     /** Historia con identidad en claro, como las que existían antes del cambio. */

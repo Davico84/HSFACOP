@@ -6,6 +6,7 @@ import { UserCohortCell } from "./UserCohortCell";
 import { UserIdentity } from "./UserIdentity";
 import { UserRoleBadge } from "./UserRoleBadge";
 import { UserRecordUsage } from "./UserRecordUsage";
+import { UserExpiryCell } from "./UserExpiryCell";
 
 interface UsersTableProps extends UserRowHandlers {
   users: UserSummaryResponse[];
@@ -17,9 +18,11 @@ interface UsersTableProps extends UserRowHandlers {
   quotaPendingId: number | null;
   /** Cuenta cuyo cambio de rol o de turmas de coordinación está en curso. */
   rolePendingId: number | null;
+  /** Cuenta cuyo vencimiento se está renovando o cambiando. */
+  expiryPendingId: number | null;
 }
 
-export function UsersTable({ users, cohorts, pendingId, quotaPendingId, rolePendingId, ...handlers }: UsersTableProps) {
+export function UsersTable({ users, cohorts, pendingId, quotaPendingId, rolePendingId, expiryPendingId, ...handlers }: UsersTableProps) {
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-card">
       <Table>
@@ -30,6 +33,7 @@ export function UsersTable({ users, cohorts, pendingId, quotaPendingId, rolePend
             <TableHead>Turma</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Historias</TableHead>
+            <TableHead>Vence</TableHead>
             <TableHead className="pr-4 text-right">
               <span className="sr-only">Acciones</span>
             </TableHead>
@@ -53,12 +57,16 @@ export function UsersTable({ users, cohorts, pendingId, quotaPendingId, rolePend
               <TableCell>
                 <UserRecordUsage user={user} />
               </TableCell>
+              <TableCell>
+                <UserExpiryCell user={user} />
+              </TableCell>
               <TableCell className="pr-4 text-right">
                 <UserRowAction
                   user={user}
                   pending={pendingId === user.id}
                   quotaPending={quotaPendingId === user.id}
                   rolePending={rolePendingId === user.id}
+                  expiryPending={expiryPendingId === user.id}
                   {...handlers}
                 />
               </TableCell>

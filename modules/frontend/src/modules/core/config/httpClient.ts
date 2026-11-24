@@ -5,7 +5,7 @@ import axios, {
 } from "axios";
 import { toast } from "sonner";
 import { useSessionStore, type SessionUser } from "@/store/useSessionStore";
-import { accountDisabledMessage } from "@/modules/core/utils/apiError";
+import { ACCOUNT_EXPIRED_TYPE, accountDisabledMessage, problemType } from "@/modules/core/utils/apiError";
 import { resolveApiBaseUrl } from "./apiBaseUrl";
 
 const BASE_URL = resolveApiBaseUrl({ VITE_API_URL: import.meta.env.VITE_API_URL, DEV: import.meta.env.DEV });
@@ -79,6 +79,11 @@ axiosInstance.interceptors.response.use(
         useSessionStore.getState().clear(); // el RouteGuard redirige a login
         return Promise.reject(refreshError);
       }
+    }
+    // La cuenta venció mientras estaba abierta: se vuelve a leer la sesión (el servidor responde
+    // `readOnly`) para pasar a solo lectura sin recargar. Mejor esfuerzo: si falla, el 403 se muestra igual.
+    if (status === 403 && !isAuthPath(original?.url) && problemType(error) === ACCOUNT_EXPIRED_TYPE) {
+      void refreshSession().catch(() => undefined);
     }
     return Promise.reject(error);
   },

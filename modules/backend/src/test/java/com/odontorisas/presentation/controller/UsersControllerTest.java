@@ -30,6 +30,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -61,7 +62,7 @@ class UsersControllerTest {
     UserAdminService userAdmin;
 
     private static final UserSummaryView ANA =
-        new UserSummaryView(2L, "ana@empresa.test", "Ana Pérez", Role.USER, UserStatus.DISABLED, 5, 3L, null, List.of(), ContactData.EMPTY);
+        new UserSummaryView(2L, "ana@empresa.test", "Ana Pérez", Role.USER, UserStatus.DISABLED, 5, 3L, null, List.of(), ContactData.EMPTY, java.time.LocalDate.of(2027, 1, 31), false);
 
     private static String body(String json) {
         return json;
@@ -70,8 +71,8 @@ class UsersControllerTest {
     @Test
     @WithMockUser(roles = "ADMIN")
     void admin_lists_users_with_fixed_sort_and_capped_size() throws Exception {
-        when(userAdmin.list(any(Pageable.class))).thenAnswer(inv -> {
-            Pageable p = inv.getArgument(0);
+        when(userAdmin.list(any(), any(Pageable.class))).thenAnswer(inv -> {
+            Pageable p = inv.getArgument(1);
             return new PageImpl<>(List.of(ANA), p, 1);
         });
 
@@ -82,7 +83,7 @@ class UsersControllerTest {
             .andExpect(jsonPath("$.page").value(0))
             .andExpect(jsonPath("$.totalElements").value(1));
 
-        verify(userAdmin).list(eq(PageRequest.of(0, 100, org.springframework.data.domain.Sort.by("id"))));
+        verify(userAdmin).list(isNull(), eq(PageRequest.of(0, 100, org.springframework.data.domain.Sort.by("id"))));
     }
 
     @Test
@@ -173,7 +174,7 @@ class UsersControllerTest {
     @WithMockUser(roles = "ADMIN")
     void null_quota_removes_the_limit() throws Exception {
         when(userAdmin.changeRecordQuota(2L, null)).thenReturn(
-            new UserSummaryView(2L, "ana@empresa.test", "Ana Pérez", Role.USER, UserStatus.ACTIVE, null, 3L, null, List.of(), ContactData.EMPTY));
+            new UserSummaryView(2L, "ana@empresa.test", "Ana Pérez", Role.USER, UserStatus.ACTIVE, null, 3L, null, List.of(), ContactData.EMPTY, java.time.LocalDate.of(2027, 1, 31), false));
 
         mockMvc.perform(patch("/api/users/2/record-quota").contentType(MediaType.APPLICATION_JSON).content("{\"recordQuota\":null}"))
             .andExpect(status().isOk())

@@ -10,6 +10,10 @@ export interface AdminDashboardUsers {
   total: number;
   active: number;
   disabled: number;
+  /** Cuentas activas USER o COORDINATOR que vencen en los próximos 30 días */
+  expiringSoon: number;
+  /** Cuentas activas USER o COORDINATOR ya vencidas (solo lectura) */
+  expired: number;
   /** Creadas en el mes en curso */
   newThisMonth: number;
 }

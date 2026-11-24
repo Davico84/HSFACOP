@@ -7,6 +7,7 @@ import com.odontorisas.service.cohorts.CohortRef;
 import com.odontorisas.service.users.UserSummaryView;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
@@ -31,7 +32,10 @@ public record UserSummaryResponse(
     @Schema(description = "Celular; nulo = sin registrar", example = "987654321", nullable = true) String phone,
     @Schema(description = "Tipo de documento; nulo = sin registrar", nullable = true) DocumentType documentType,
     @Schema(description = "Número de documento; nulo = sin registrar", nullable = true) String documentNumber,
-    @Schema(description = "Número de colegiatura (COP); nulo = sin registrar", nullable = true) String copNumber) {
+    @Schema(description = "Número de colegiatura (COP); nulo = sin registrar", nullable = true) String copNumber,
+    @Schema(description = "Último día con acceso completo; nulo en cuentas ADMIN, que no vencen", nullable = true)
+    LocalDate expiresOn,
+    @Schema(requiredMode = REQUIRED, description = "La cuenta ya venció (solo lectura)") boolean expired) {
 
     /** Turma por id y nombre. */
     @Schema(name = "CohortRef")
@@ -48,6 +52,7 @@ public record UserSummaryResponse(
         return new UserSummaryResponse(view.id(), view.email(), view.fullName(), view.role(), view.status(),
             view.recordQuota(), view.recordCount(), CohortRefResponse.from(view.cohort()),
             view.coordinatorCohorts().stream().map(CohortRefResponse::from).toList(), view.contact().phone(),
-            view.contact().documentType(), view.contact().documentNumber(), view.contact().copNumber());
+            view.contact().documentType(), view.contact().documentNumber(), view.contact().copNumber(),
+            view.expiresOn(), view.expired());
     }
 }

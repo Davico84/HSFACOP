@@ -23,6 +23,8 @@ public record AdminDashboardResponse(
         @Schema(requiredMode = REQUIRED) long total,
         @Schema(requiredMode = REQUIRED) long active,
         @Schema(requiredMode = REQUIRED) long disabled,
+        @Schema(requiredMode = REQUIRED, description = "Cuentas activas USER o COORDINATOR que vencen en los próximos 30 días") long expiringSoon,
+        @Schema(requiredMode = REQUIRED, description = "Cuentas activas USER o COORDINATOR ya vencidas (solo lectura)") long expired,
         @Schema(requiredMode = REQUIRED, description = "Creadas en el mes en curso") long newThisMonth) {
     }
 
@@ -87,7 +89,8 @@ public record AdminDashboardResponse(
     public static AdminDashboardResponse from(AdminDashboardView v) {
         var c = v.completeness();
         return new AdminDashboardResponse(
-            new Users(v.users().total(), v.users().active(), v.users().disabled(), v.users().newThisMonth()),
+            new Users(v.users().total(), v.users().active(), v.users().disabled(), v.users().expiringSoon(),
+                v.users().expired(), v.users().newThisMonth()),
             new Records(v.totalRecords(), v.recordsCreatedThisMonth(), c.complete(), c.inProgress(), c.notComputed(),
                 v.perMonth().stream().map(m -> new MonthItem(m.month(), m.count())).toList()),
             v.topAuthors().stream().map(a -> new AuthorItem(a.userId(), a.fullName(), UserStatus.valueOf(a.status()),

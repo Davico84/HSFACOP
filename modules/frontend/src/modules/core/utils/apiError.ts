@@ -21,6 +21,9 @@ function isApiProblem(value: unknown): value is ApiProblem {
 /** `type` del error de cuenta deshabilitada por un administrador (login y refresh). */
 export const ACCOUNT_DISABLED_TYPE = "/errors/account-disabled";
 
+/** `type` del 403 de una cuenta vencida (solo lectura) al crear, guardar o pedir un desbloqueo. */
+export const ACCOUNT_EXPIRED_TYPE = "/errors/account-expired";
+
 /** Si el error es "cuenta deshabilitada", su mensaje (para avisar al cerrar la sesión); si no, `null`. */
 export function accountDisabledMessage(error: unknown): string | null {
   if (!(error instanceof AxiosError)) return null;

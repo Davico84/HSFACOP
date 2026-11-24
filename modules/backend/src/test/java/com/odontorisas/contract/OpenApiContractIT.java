@@ -233,7 +233,7 @@ class OpenApiContractIT extends AbstractIntegrationTest {
                 "getMyDashboard", "getAdminDashboard", "getCoordinatorDashboard",
                 "listCohorts", "createCohort", "renameCohort", "changeUserCohort", "changeUserRole",
                 "regenerateCohortCode", "changeCohortRegistration", "getMyProfile", "updateMyProfile",
-                "changeMyPassword", "createPasswordReset", "resetPassword",
+                "changeMyPassword", "createPasswordReset", "resetPassword", "renewUserExpiry", "changeUserExpiry",
                 "printRecord", "unlockPatient", "requestPatientUnlock", "discardPatientUnlockRequest");
     }
 
@@ -251,7 +251,7 @@ class OpenApiContractIT extends AbstractIntegrationTest {
             .containsExactlyInAnyOrder("content", "page", "size", "totalElements", "totalPages", "last");
         assertThat(names(schemaByName("UserSummaryResponse").get("properties")))
             .isEqualTo(Set.of("id", "email", "fullName", "role", "status", "recordQuota", "recordCount", "cohort",
-                "coordinatorCohorts", "phone", "documentType", "documentNumber", "copNumber"));
+                "coordinatorCohorts", "phone", "documentType", "documentNumber", "copNumber", "expiresOn", "expired"));
 
         String status = "/api/users/{id}/status";
         assertThat(schemaName(status, "patch", "200", MediaType.APPLICATION_JSON_VALUE)).isEqualTo("UserSummaryResponse");

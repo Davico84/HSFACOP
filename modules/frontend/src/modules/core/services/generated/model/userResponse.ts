@@ -6,10 +6,15 @@
  * OpenAPI spec version: v1
  */
 import type { UserResponseRole } from './userResponseRole';
+import type { UserResponseExpiresOn } from './userResponseExpiresOn';
 
 export interface UserResponse {
   id: number;
   email: string;
   role: UserResponseRole;
   fullName: string;
+  /** Último día con acceso completo (fecha de Lima); nulo en cuentas ADMIN, que no vencen */
+  expiresOn?: UserResponseExpiresOn;
+  /** La cuenta venció: puede ver e imprimir, no crear ni guardar */
+  readOnly: boolean;
 }

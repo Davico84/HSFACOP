@@ -13,6 +13,7 @@ import type { UserSummaryResponsePhone } from './userSummaryResponsePhone';
 import type { UserSummaryResponseDocumentType } from './userSummaryResponseDocumentType';
 import type { UserSummaryResponseDocumentNumber } from './userSummaryResponseDocumentNumber';
 import type { UserSummaryResponseCopNumber } from './userSummaryResponseCopNumber';
+import type { UserSummaryResponseExpiresOn } from './userSummaryResponseExpiresOn';
 
 export interface UserSummaryResponse {
   id: number;
@@ -36,4 +37,8 @@ export interface UserSummaryResponse {
   documentNumber?: UserSummaryResponseDocumentNumber;
   /** Número de colegiatura (COP); nulo = sin registrar */
   copNumber?: UserSummaryResponseCopNumber;
+  /** Último día con acceso completo; nulo en cuentas ADMIN, que no vencen */
+  expiresOn?: UserSummaryResponseExpiresOn;
+  /** La cuenta ya venció (solo lectura) */
+  expired: boolean;
 }

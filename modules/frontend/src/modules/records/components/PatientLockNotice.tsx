@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Lock } from "lucide-react";
 import { Button } from "@/modules/core/ui/button";
 import type { RecordResponse } from "@/modules/core/services/generated/model";
+import { useReadOnly } from "@/modules/core/hooks/useReadOnly";
+import { EXPIRED_READ_ONLY_REASON } from "@/modules/core/utils/accountExpiry";
 import { useSessionStore } from "@/store/useSessionStore";
 import {
   useDiscardPatientUnlockRequest,
@@ -22,6 +24,7 @@ interface PatientLockNoticeProps {
  * acciones (el tratante solicita el desbloqueo; el ADMIN desbloquea o descarta la solicitud).
  */
 export function PatientLockNotice({ record }: PatientLockNoticeProps) {
+  const readOnly = useReadOnly();
   const isAdmin = useSessionStore((s) => s.user?.role === "ADMIN");
   const [requesting, setRequesting] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -76,7 +79,14 @@ export function PatientLockNotice({ record }: PatientLockNoticeProps) {
             ) : null}
           </>
         ) : pendingRequest ? null : (
-          <Button type="button" size="sm" variant="outline" onClick={() => setRequesting(true)}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={readOnly}
+            title={readOnly ? EXPIRED_READ_ONLY_REASON : undefined}
+            onClick={() => setRequesting(true)}
+          >
             Solicitar desbloqueo
           </Button>
         )}

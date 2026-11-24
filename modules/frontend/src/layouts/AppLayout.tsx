@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useLogout } from "@/modules/auth/hooks/useAuth";
+import { ExpiredAccountBanner } from "@/modules/core/components/shell/ExpiredAccountBanner";
 import { Header } from "@/modules/core/components/shell/Header";
 import { MobileNavDrawer } from "@/modules/core/components/shell/MobileNavDrawer";
 import { Sidebar } from "@/modules/core/components/shell/Sidebar";
@@ -64,6 +65,7 @@ export function AppLayout() {
 
         <div className="flex min-w-0 flex-1 flex-col">
           <Header user={user} onMenuClick={() => setMenuOpen((open) => !open)} menuOpen={menuOpen} />
+          {user.readOnly ? <ExpiredAccountBanner expiresOn={user.expiresOn} /> : null}
           <main className="flex-1 p-4 sm:p-6 lg:p-8">
             {/* Ancho máximo centrado: en pantallas muy anchas el contenido no se estira (1536 px). */}
             <div className="mx-auto w-full max-w-screen-2xl">

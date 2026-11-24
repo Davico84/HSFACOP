@@ -5,6 +5,7 @@
  * Tu portal al conocimiento y al éxito profesional.
  * OpenAPI spec version: v1
  */
+import type { ListUsersExpiry } from './listUsersExpiry';
 
 export type ListUsersParams = {
 /**
@@ -17,4 +18,8 @@ page?: number;
  * @minimum 1
  */
 size?: number;
+/**
+ * Solo cuentas activas por vencer en 30 días (SOON) o ya vencidas (EXPIRED)
+ */
+expiry?: ListUsersExpiry;
 };
