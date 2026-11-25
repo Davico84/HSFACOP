@@ -309,13 +309,13 @@ Cambio `update-orthodontic-records-pseudonymous-patient`: el servidor deja de gu
 4. **Revisar la lista de alias** (no cambia nada) y el informe de historias sin respaldo, y obtener la **aprobación escrita** del responsable:
 
    ```bash
-   java -jar backend.jar --spring.main.web-application-type=none --app.identity-migration.mode=list
+   java -jar backend.jar --server.port=0 --server.address=127.0.0.1 --app.identity-migration.mode=list
    ```
 
 5. **Ejecutar la acción** con la base y las variables del servicio. Se niega sin copia verificada, sin la referencia a la aprobación, antes de la fecha límite y sin la confirmación escrita (`MIGRAR <n>`). Solo escribe conteos por la salida estándar; es reanudable:
 
    ```bash
-   java -jar backend.jar --spring.main.web-application-type=none --app.identity-migration.mode=apply      --app.identity-migration.backup-verified=true --app.identity-migration.approval="aprobación escrita del AAAA-MM-DD"
+   java -jar backend.jar --server.port=0 --server.address=127.0.0.1 --app.identity-migration.mode=apply      --app.identity-migration.backup-verified=true --app.identity-migration.approval="aprobación escrita del AAAA-MM-DD"
    ```
 
 6. **Comprobar** que la verificación final informa cero historias con columnas retiradas, nombres de firma o motivos en texto libre.
