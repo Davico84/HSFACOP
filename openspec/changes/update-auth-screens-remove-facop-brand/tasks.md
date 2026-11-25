@@ -10,6 +10,8 @@
 
 - [x] 1.6 Reemplazar `brand/logo-light.svg`, `logo-dark.svg`, `logo-white.svg` y `favicon.svg` por el símbolo nuevo (hecho a mano; falta revisar la barra lateral y el favicon en el navegador)
 
+- [x] 1.7 Nuevo tagline y descripción en `project.config.json` y `pnpm project:apply` (contrato, `application.yml` y cabecera de los clientes generados)
+
 ## 2. Docs y cierre
 
 - [ ] 2.1 `docs/vision.md`: estado del cambio al proponer y capacidad construida al archivar
