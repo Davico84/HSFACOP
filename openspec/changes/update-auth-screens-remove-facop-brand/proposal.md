@@ -8,7 +8,7 @@ La aplicación ya no se venderá a la institución FACOP. Las pantallas previas 
 
 - El logo de FACOP se reemplaza por un símbolo nuevo de ortodoncia (diente con brackets, sin texto) en todas las pantallas previas al ingreso (login, registro, restablecer contraseña y arranque del servidor): panel de marca de escritorio y logo móvil.
 - El panel de marca deja de mostrar la línea "© HS FACOP"; conserva el logo, el tagline, la descripción y el contacto.
-- El subtítulo del login pasa de "Accede a tu panel de HS FACOP" a "Accede a tu panel de historias clínicas ortodónticas".
+- Los subtítulos dejan de nombrar a HS FACOP: el del login pasa a "Accede a tu panel de historias clínicas ortodónticas" y el del registro a "Regístrate para llevar tus historias clínicas ortodónticas".
 - El logo de la aplicación (barra lateral y favicon) pasa a ser un símbolo nuevo de ortodoncia (diente con brackets, sin texto), en `brand/logo-light.svg`, `logo-dark.svg`, `logo-white.svg` y `favicon.svg`. Las rutas de `project.config.json` no cambian.
 - Sin cambios: la hoja imprimible de la historia (usa su propio logo) y los colores del tema.
 - Sin backend, base de datos ni contrato de API.
@@ -24,5 +24,5 @@ La aplicación ya no se venderá a la institución FACOP. Las pantallas previas 
 
 ## Impact
 
-- Frontend: `BrandPanel.tsx`, `AuthLayout.tsx`, `ServerWarmupScreen.tsx`, `LoginFeature.tsx` y los tests `AuthIdentity.test.tsx` y el de arranque en frío si comprueba el logo.
+- Frontend: `BrandPanel.tsx`, `AuthLayout.tsx`, `ServerWarmupScreen.tsx`, `LoginFeature.tsx`, `RegisterFeature.tsx` y los tests `AuthIdentity.test.tsx` y el de arranque en frío si comprueba el logo.
 - Sin cambios en backend, contrato ni migraciones.
