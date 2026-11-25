@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { project } from "@/config/project";
 import { PATHS } from "@/routes/paths";
 import { AuthLayout } from "./AuthLayout";
 import { RegisterForm } from "./RegisterForm";
@@ -9,7 +8,7 @@ export function RegisterFeature() {
   return (
     <AuthLayout
       title="Crear cuenta"
-      description={`Regístrate para empezar a usar ${project.name}`}
+      description="Regístrate para llevar tus historias clínicas ortodónticas"
       footer={
         <p className="text-sm text-muted-foreground">
           ¿Ya tienes cuenta?{" "}

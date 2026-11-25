@@ -1,7 +1,7 @@
 {
   "name": "HS FACOP",
-  "tagline": "De puertas abiertas para el mundo",
-  "description": "Tu portal al conocimiento y al éxito profesional.",
+  "tagline": "Cada caso de ortodoncia, completo y en orden.",
+  "description": "Registra, retoma e imprime tus historias clínicas desde cualquier lugar.",
   "database": {
     "name": "hsfacopdb",
     "user": "facop",

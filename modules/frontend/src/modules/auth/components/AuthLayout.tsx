@@ -30,7 +30,7 @@ export function AuthLayout({ title, description, children, footer }: AuthLayoutP
         </div>
         <div className="w-full max-w-sm">
           <div className="mb-8 flex justify-center lg:hidden">
-            <Logo className="h-12 w-auto" />
+            <Logo className="h-20 w-auto" />
           </div>
           <div className="mb-6">
             <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>

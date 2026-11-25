@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "HS FACOP API",
-    "description": "Tu portal al conocimiento y al éxito profesional.",
+    "description": "Registra, retoma e imprime tus historias clínicas desde cualquier lugar.",
     "version": "v1"
   },
   "servers": [

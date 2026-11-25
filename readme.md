@@ -1,4 +1,4 @@
-# HSFACOP
+# HS FACOP
 
 Sistema de gestión para una institución de formación odontológica: los tratantes llenan la **historia clínica de ortodoncia** desde un formulario por pasos, la imprimen con la presentación oficial en A4, y los supervisores y la coordinación académica la revisan.
 
