@@ -1,5 +1,6 @@
 package com.odontorisas.service.records.migration;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
@@ -17,12 +18,12 @@ import java.util.List;
 /**
  * Lanza la acción administrativa única de migración de la identidad del paciente (no es un endpoint).
  * Solo existe cuando se pide con {@code app.identity-migration.mode} ({@code list} o {@code apply}) y
- * conviene arrancarla sin servidor web:
+ * conviene arrancarla en un puerto aleatorio solo local (sin servidor web no arranca la seguridad):
  *
  * <pre>
- * java -jar backend.jar --spring.main.web-application-type=none \
+ * java -jar backend.jar --server.port=0 --server.address=127.0.0.1 \
  *   --app.identity-migration.mode=list
- * java -jar backend.jar --spring.main.web-application-type=none \
+ * java -jar backend.jar --server.port=0 --server.address=127.0.0.1 \
  *   --app.identity-migration.mode=apply --app.identity-migration.backup-verified=true \
  *   --app.identity-migration.approval="aprobación escrita del 2026-12-10"
  * </pre>
@@ -45,6 +46,7 @@ public class IdentityMigrationRunner implements ApplicationRunner {
     private final PrintStream out;
     private final BufferedReader in;
 
+    @Autowired
     public IdentityMigrationRunner(IdentityMigration migration, ConfigurableApplicationContext context,
             org.springframework.core.env.Environment env) {
         this(migration, context, env.getProperty("app.identity-migration.mode", ""),
