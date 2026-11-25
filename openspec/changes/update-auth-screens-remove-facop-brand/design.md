@@ -9,7 +9,7 @@
 
 **Goals:** que ninguna pantalla previa al ingreso muestre el logo ni la línea de derechos; subtítulo del login sobre historias clínicas ortodónticas.
 
-**Non-Goals:** cambiar `project.config.json`, el nombre en la pestaña, el favicon, la barra lateral, la hoja impresa ni los colores; sustituir el logo por otro (eso sería otro cambio, con el logo nuevo ya generado).
+**Non-Goals:** cambiar `project.config.json`, el nombre en la pestaña, la hoja impresa ni los colores del tema (el Roxo del tema no se retoca para igualar el morado del símbolo nuevo).
 
 ## Decisions
 
@@ -18,6 +18,8 @@
 **2. Panel de marca sin logo ni línea de derechos.** Con el logo y el pie fuera, el contenido (tagline, descripción, contacto) queda centrado verticalmente en el panel Roxo. En móvil el formulario sube sin el logo.
 
 **3. Subtítulo del login fijo en el componente.** "Accede a tu panel de historias clínicas ortodónticas" va como texto del componente `LoginFeature` (ya no depende de `project.name`).
+
+**4. Logo nuevo solo por reemplazo de archivos.** El símbolo nuevo (sin texto, cuadrado) sustituye a los cuatro archivos de marca sin tocar las rutas de `project.config.json`: `logo-light.svg` y `favicon.svg` en color sobre transparente; `logo-white.svg` y `logo-dark.svg` en blanco sobre transparente (modo oscuro y fondos de color).
 
 ## Risks / Trade-offs
 

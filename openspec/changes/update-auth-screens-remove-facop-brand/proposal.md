@@ -2,14 +2,15 @@
 
 ## Why
 
-La aplicación ya no se venderá a la institución FACOP. Las pantallas previas al ingreso todavía muestran su logo, la línea "© HS FACOP" y un subtítulo que nombra a "HS FACOP"; deben dejar de identificarla.
+La aplicación ya no se venderá a la institución FACOP. Las pantallas previas al ingreso todavía muestran el logo de esa institución, la línea "© HS FACOP" y un subtítulo que nombra a "HS FACOP"; deben dejar de identificarla.
 
 ## What Changes
 
 - Las pantallas previas al ingreso (login, registro, restablecer contraseña y la pantalla de arranque del servidor) dejan de mostrar el logo de FACOP, tanto en el panel de marca de escritorio como en el logo móvil.
 - El panel de marca deja de mostrar la línea "© HS FACOP"; conserva el tagline, la descripción y el contacto.
 - El subtítulo del login pasa de "Accede a tu panel de HS FACOP" a "Accede a tu panel de historias clínicas ortodónticas".
-- Sin cambios: la hoja imprimible de la historia (usa su propio logo), el logo de la barra lateral dentro de la app, el favicon y `project.config.json`.
+- El logo de la aplicación (barra lateral y favicon) pasa a ser un símbolo nuevo de ortodoncia (diente con brackets, sin texto), en `brand/logo-light.svg`, `logo-dark.svg`, `logo-white.svg` y `favicon.svg`. Las rutas de `project.config.json` no cambian.
+- Sin cambios: la hoja imprimible de la historia (usa su propio logo) y los colores del tema.
 - Sin backend, base de datos ni contrato de API.
 
 ## Capabilities
