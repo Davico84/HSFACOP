@@ -10,21 +10,17 @@ import { RegisterView } from "@/screens/auth/RegisterView";
 function expectBrand(subtitle: string) {
   expect(screen.getByRole("heading", { level: 2, name: project.tagline })).toBeInTheDocument();
   expect(screen.getByText(project.description)).toBeInTheDocument();
-  expect(screen.getByText(`© ${project.name}`)).toBeInTheDocument();
   expect(screen.getByText(subtitle)).toBeInTheDocument();
-
-  const logos = screen.getAllByRole("img", { name: project.name });
-  const sources = logos.map((img) => img.getAttribute("src"));
-  expect(sources).toEqual(
-    expect.arrayContaining([project.brand.logo.white, project.brand.logo.light, project.brand.logo.dark]),
-  );
+  // Sin la marca de la institución: ni logo ni línea de derechos.
+  expect(screen.queryByRole("img", { name: project.name })).not.toBeInTheDocument();
+  expect(screen.queryByText(`© ${project.name}`)).not.toBeInTheDocument();
 }
 
 describe("template-bootstrap — Configuración única de la identidad visible", () => {
   it("La UI muestra la identidad configurada: login", () => {
     renderWithProviders(<LoginView />, { initialEntries: ["/ingresar"] });
     expect(within(screen.getByRole("main")).getByRole("heading", { level: 1 })).toHaveTextContent("Iniciar sesión");
-    expectBrand(`Accede a tu panel de ${project.name}`);
+    expectBrand("Accede a tu panel de historias clínicas ortodónticas");
   });
 
   it("La UI muestra la identidad configurada: registro", () => {

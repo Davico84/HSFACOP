@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { project } from "@/config/project";
 import { PATHS } from "@/routes/paths";
 import { AuthLayout } from "./AuthLayout";
 import { LoginForm } from "./LoginForm";
@@ -9,7 +8,7 @@ export function LoginFeature() {
   return (
     <AuthLayout
       title="Iniciar sesión"
-      description={`Accede a tu panel de ${project.name}`}
+      description="Accede a tu panel de historias clínicas ortodónticas"
       footer={
         <p className="text-sm text-muted-foreground">
           ¿No tienes cuenta?{" "}

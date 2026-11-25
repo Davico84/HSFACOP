@@ -4,7 +4,6 @@ import { BrandPanel } from "@/modules/core/components/BrandPanel";
 import { ContactLinks } from "@/modules/core/components/ContactLinks";
 import { project } from "@/config/project";
 import { Button } from "@/modules/core/ui/button";
-import { Logo } from "@/modules/core/ui/logo";
 import { Progress } from "@/modules/core/ui/progress";
 import { cn } from "@/modules/core/utils/cn";
 import { ALMOST_AFTER_S, estimatedProgress, warmupStage } from "@/modules/core/utils/serverWarmup";
@@ -73,10 +72,6 @@ export function ServerWarmupScreen({ elapsedSeconds, online, onRetry }: ServerWa
       <BrandPanel />
       <main className="flex items-center justify-center px-6 py-10">
         <div className="w-full max-w-sm text-center">
-          <div className="mb-10 flex justify-center lg:hidden">
-            <Logo className="h-12 w-auto" />
-          </div>
-
           <div role="status" aria-live="polite">
             <div
               aria-hidden="true"
