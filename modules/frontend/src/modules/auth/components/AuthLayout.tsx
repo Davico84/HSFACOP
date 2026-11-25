@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { ThemeToggle } from "@/modules/core/ui/theme-toggle";
+import { Logo } from "@/modules/core/ui/logo";
 import { BrandPanel } from "@/modules/core/components/BrandPanel";
 import { ContactLinks } from "@/modules/core/components/ContactLinks";
 
@@ -13,8 +14,9 @@ interface AuthLayoutProps {
 
 /**
  * Marco split-screen de las pantallas de auth: panel de marca (`BrandPanel`, token
- * brand-start) con tagline y descripción de project.config.json a un lado, y el formulario al otro.
- * En móvil colapsa a una sola columna. Sin logo: estas pantallas no llevan la marca de la institución.
+ * brand-start), logo en blanco, tagline y descripción de
+ * project.config.json a un lado, y el formulario al otro. En móvil colapsa a
+ * una sola columna con el logo (a color) arriba.
  */
 export function AuthLayout({ title, description, children, footer }: AuthLayoutProps) {
   return (
@@ -27,6 +29,9 @@ export function AuthLayout({ title, description, children, footer }: AuthLayoutP
           <ThemeToggle />
         </div>
         <div className="w-full max-w-sm">
+          <div className="mb-8 flex justify-center lg:hidden">
+            <Logo className="h-12 w-auto" />
+          </div>
           <div className="mb-6">
             <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
             {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
