@@ -1331,64 +1331,8 @@ La historia SHALL identificar al paciente solo por un alias, su sexo y su edad e
 - **WHEN** la historia no tiene edad registrada
 - **THEN** se trata como adulta, la edad se imprime vacía y no hay error
 
-### Requirement: Migración de las historias existentes al alias
-Las historias existentes SHALL pasar al formato con alias con una acción administrativa única fuera de la API. La acción NO SHALL ejecutarse sin una copia de seguridad de la base verificada, sin aprobación escrita ni antes de la fecha límite de copia; el respaldo individual del autor no es condición, porque pasada la fecha se borra igual. Cada historia SHALL quedar marcada como migrada; el alias, la edad y el borrado se detallan en los escenarios.
-
-#### Scenario: Migración correcta
-- **WHEN** la acción se ejecuta con aprobación y copia verificada sobre una historia con nombre "Ana Quispe" y nacimiento 2012-05-20 e inicio 2026-05-19
-- **THEN** la historia queda con alias "Ana Q" y edad 13, y se borran nombre completo, documento, nacimiento, lugar, domicilio, celular, texto de búsqueda y nombres de firma
-
-#### Scenario: Cuentas deshabilitadas o de alumnos que se fueron
-- **WHEN** la acción llega a historias de una cuenta deshabilitada o de un alumno que ya no está en la institución
-- **THEN** sus datos de identidad se borran sin copia previa y la historia queda identificada por alias y número
-
-#### Scenario: Autor que no copia antes de la fecha límite
-- **WHEN** pasa la fecha límite de copia y un autor no respaldó sus historias
-- **THEN** la acción borra los datos antiguos igual, sin esperar al autor, y esos datos quedan solo en el papel firmado
-
-#### Scenario: Historia sin fecha de nacimiento
-- **WHEN** la historia no tiene fecha de nacimiento
-- **THEN** su edad queda vacía y el resto de la migración se aplica igual
-
-#### Scenario: Nombre vacío, de una palabra o con partículas
-- **WHEN** el nombre guardado es nulo, vacío, solo espacios, "Ana", "de la Cruz Rojas" o "María José Quispe"
-- **THEN** los alias resultan "Paciente", "Paciente", "Paciente", "Ana", "Cruz R" y "María J", y ninguna historia queda sin alias
-- **AND** el alias propuesto es un valor inicial que el tratante puede cambiar
-
-#### Scenario: Reejecución e interrupción
-- **WHEN** la acción se interrumpe a la mitad y se ejecuta de nuevo, incluso con historias que quedaron sin edad por no tener fecha de nacimiento
-- **THEN** las historias ya marcadas como migradas se omiten, las demás se procesan en su propia transacción y el resultado final es el mismo que sin interrupción
-
-#### Scenario: Nombres de firma del paciente y del apoderado
-- **WHEN** el contenido tiene `patientSignatureName`, `guardianName`, `guardianRelationship`, `supervisor1Name`, `supervisor2Name` y `treatingSignatureName`
-- **THEN** la migración borra solo los tres primeros y conserva los nombres de supervisores y tratante, también en las versiones antiguas del contenido
-
-#### Scenario: Historia migrada con datos clínicos inconsistentes
-- **WHEN** la edad calculada es 7 y la historia ya tiene la primera menstruación a los 8 años
-- **THEN** la migración conserva ambos valores y la cuenta como inconsistente en su informe, y el siguiente guardado de esa historia responde `400` con el error en el campo de la menarquia hasta que el tratante lo corrija
-
-#### Scenario: Motivos de desbloqueo anteriores
-- **WHEN** hay solicitudes pendientes y eventos con motivos en texto libre
-- **THEN** la migración los reemplaza por `OTRO` y la solicitud sigue pendiente y los eventos conservan su fecha y acción
-
-#### Scenario: Sin copia verificada o sin aprobación
-- **WHEN** la acción se intenta sin copia verificada o sin la confirmación del responsable
-- **THEN** no modifica ni borra nada
-
-#### Scenario: Verificación posterior
-- **WHEN** termina la acción
-- **THEN** informa solo conteos y comprueba que no queda ninguna historia con columnas retiradas con valor, y si queda alguna aborta sin retirar las columnas
-
-#### Scenario: Retiro del esquema
-- **WHEN** no queda ninguna historia con datos en las columnas retiradas
-- **THEN** una migración elimina esas columnas y el esquema resultante no contiene identificadores del paciente
-
-#### Scenario: Retiro con historias pendientes
-- **WHEN** queda al menos una historia con datos en esas columnas
-- **THEN** la migración aborta con un error que no incluye ningún valor y no cambia el esquema
-
 ### Requirement: Cuenta vencida solo lee e imprime
-Una cuenta vencida SHALL poder listar, buscar, abrir e imprimir sus historias. Crear una historia, guardar cambios y solicitar un desbloqueo SHALL responder `403` con el código `account-expired`, evaluado contra la base y no contra el token. Cambiar la contraseña, editar "Mis datos" y confirmar el respaldo de la libreta NO SHALL bloquearse. El cupo NO SHALL ser el motivo mostrado cuando la cuenta está vencida.
+Una cuenta vencida SHALL poder listar, buscar, abrir e imprimir sus historias. Crear una historia, guardar cambios y solicitar un desbloqueo SHALL responder `403` con el código `account-expired`, evaluado contra la base y no contra el token. Cambiar la contraseña y editar "Mis datos" NO SHALL bloquearse. El cupo NO SHALL ser el motivo mostrado cuando la cuenta está vencida.
 
 #### Scenario: Leer e imprimir
 - **WHEN** una cuenta vencida abre una historia y la imprime
@@ -1411,7 +1355,7 @@ Una cuenta vencida SHALL poder listar, buscar, abrir e imprimir sus historias. C
 - **THEN** el guardado funciona
 
 #### Scenario: Libreta y datos propios
-- **WHEN** una cuenta vencida cambia su contraseña o confirma el respaldo de su libreta
+- **WHEN** una cuenta vencida cambia su contraseña o edita "Mis datos"
 - **THEN** ambas acciones funcionan
 
 ### Requirement: Aviso y controles en modo solo lectura
@@ -1428,3 +1372,18 @@ Con la cuenta vencida, la aplicación SHALL mostrar un aviso persistente con la 
 #### Scenario: Pasa a solo lectura sin recargar
 - **WHEN** la cuenta vence mientras el tratante guarda y la API responde `403` con `account-expired`
 - **THEN** la aplicación vuelve a consultar la sesión y muestra el modo solo lectura
+
+### Requirement: Esquema sin identificadores del paciente
+El esquema de `orthodontic_records` SHALL NOT contener columnas con la identidad antigua del paciente (documento, nacimiento, lugar, domicilio, celular, nombre completo y nombres de firma anteriores). La migración que las retira SHALL comprobar antes que ninguna fila conserva valores en ellas y, si alguna los conserva, SHALL abortar sin cambiar el esquema y con un error que no incluye ningún valor.
+
+#### Scenario: Retiro del esquema
+- **WHEN** no queda ninguna historia con datos en las columnas retiradas y se aplica la migración
+- **THEN** esas columnas dejan de existir y el esquema resultante no contiene identificadores del paciente
+
+#### Scenario: Retiro con historias pendientes
+- **WHEN** queda al menos una historia con datos en esas columnas
+- **THEN** la migración aborta con un error que no incluye ningún valor y no cambia el esquema
+
+#### Scenario: Datos antiguos ya no disponibles
+- **WHEN** un autor pide los datos antiguos de su historia con `GET /orthodontic-records/{id}/legacy-identity`
+- **THEN** la API responde `404` y la historia se sigue abriendo, guardando e imprimiendo con alias, sexo y edad
