@@ -7,15 +7,15 @@
 
 ## Goals / Non-Goals
 
-**Goals:** que ninguna pantalla previa al ingreso muestre el logo ni la línea de derechos; subtítulo del login sobre historias clínicas ortodónticas.
+**Goals:** que ninguna pantalla previa al ingreso muestre el logo de FACOP ni la línea de derechos (el logo pasa a ser el símbolo nuevo); subtítulo del login sobre historias clínicas ortodónticas.
 
 **Non-Goals:** cambiar `project.config.json`, el nombre en la pestaña, la hoja impresa ni los colores del tema (el Roxo del tema no se retoca para igualar el morado del símbolo nuevo).
 
 ## Decisions
 
-**1. Quitar el logo en el componente, no en la configuración.** Se elimina el `<Logo>` de `BrandPanel`, `AuthLayout` y `ServerWarmupScreen`. `Logo` sigue existiendo para la barra lateral. Alternativa descartada: vaciar las rutas de `brand.logo` en `project.config.json`: rompería la barra lateral y el asistente de la plantilla.
+**1. Cambiar el logo por reemplazo de archivos, no del componente.** `BrandPanel`, `AuthLayout` y `ServerWarmupScreen` siguen usando `Logo`; lo que cambia son los archivos de marca (decisión 4). Alternativa descartada: quitar el logo de esas pantallas: se pidió reemplazarlo, no dejarlas sin marca.
 
-**2. Panel de marca sin logo ni línea de derechos.** Con el logo y el pie fuera, el contenido (tagline, descripción, contacto) queda centrado verticalmente en el panel Roxo. En móvil el formulario sube sin el logo.
+**2. Panel de marca sin línea de derechos.** Sin el pie, el logo queda arriba y el contenido (tagline, descripción, contacto) centrado verticalmente en el panel Roxo.
 
 **3. Subtítulo del login fijo en el componente.** "Accede a tu panel de historias clínicas ortodónticas" va como texto del componente `LoginFeature` (ya no depende de `project.name`).
 
@@ -24,7 +24,7 @@
 ## Risks / Trade-offs
 
 - El nombre "HS FACOP" sigue en otros sitios (pestaña, barra lateral, subtítulo del registro, textos de ayuda): el cambio se limita a lo pedido. Si se quiere desmarcar del todo, hace falta otro cambio.
-- Sin logo, el panel de marca depende solo del color y del tagline; la pantalla es más sobria. Cuando exista un logo nuevo se vuelve a colocar con un cambio propio.
+- El símbolo nuevo es cuadrado y sin texto; el logo anterior era ancho. Hay que revisar a ojo la barra lateral y el panel.
 
 ## Open Questions
 
