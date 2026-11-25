@@ -102,4 +102,39 @@ describe("RegisterForm", () => {
     expect(await screen.findByText(/ya está registrado/i)).toBeInTheDocument();
     expect(useSessionStore.getState().status).toBe("idle");
   });
+
+  it("Formulario mínimo: no muestra el código de turma ni los datos del alumno", () => {
+    renderWithProviders(<RegisterForm />);
+
+    expect(screen.getByLabelText(/nombre completo/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/correo/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^contraseña$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/confirmar contraseña/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/código de turma/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Celular")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/COP/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/datos del alumno/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /crear cuenta/i })).toBeInTheDocument();
+  });
+
+  it("Registro sin código ni datos opcionales: la solicitud lleva solo nombre, correo y contraseña", async () => {
+    const bodies: Record<string, unknown>[] = [];
+    server.use(
+      http.post("*/auth/register", async ({ request }) => {
+        bodies.push((await request.json()) as Record<string, unknown>);
+        return HttpResponse.json(
+          { accessToken: "tok", user: { id: 2, email: "nuevo@clinica.test", role: "USER", fullName: "Ana Pérez" } },
+          { status: 201 },
+        );
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<RegisterForm />);
+
+    await fillRegister(user);
+    await user.click(screen.getByRole("button", { name: /crear cuenta/i }));
+
+    await waitFor(() => expect(bodies).toHaveLength(1));
+    expect(bodies[0]).toEqual({ fullName: "Ana Pérez", email: "nuevo@clinica.test", password: "password123" });
+  });
 });
