@@ -324,7 +324,7 @@ Cambio `update-orthodontic-records-pseudonymous-patient`: el servidor deja de gu
 
 | Fecha de corte | Qué se purgó | Verificó |
 |---|---|---|
-| _pendiente_ | Rama de Neon `backup-antes-alias-2026-11-25`; artifacts `db-backup` anteriores al corte; descargas | _pendiente_ |
+| 2026-11-25 | Rama de Neon `backup-antes-alias-2026-11-25`; 39 artifacts `db-backup` anteriores a V25 (2026-10-08 a 2026-11-25 18:31Z); descargas locales; variable `LEGACY_COPY_DEADLINE` de Render | David Velarde (lista de artifacts vuelta a consultar: solo queda `db-backup-2026-11-25` de las 23:34Z, post-V25, con `db-backup` manual en verde) |
 
 > [!WARNING]
 > **Después del retiro de las columnas (V25) está prohibido volver a un binario anterior**: puede consultar columnas que ya no existen. Solo se restaura un par base + binario compatible desde una copia verificada, en un entorno aislado. Antes del retiro sí se puede volver, porque V21 y V22 no renombran ni borran nada.
