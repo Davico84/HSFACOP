@@ -4,7 +4,7 @@
 
 - [x] 1.1 `BrandPanel`: quitar la línea "© {project.name}" y conservar el logo en blanco; centrar el contenido (tagline, descripción, contacto)
 - [x] 1.2 `AuthLayout` y `ServerWarmupScreen`: conservan el logo móvil (ahora el símbolo nuevo)
-- [x] 1.3 `LoginFeature`: subtítulo "Accede a tu panel de historias clínicas ortodónticas"
+- [x] 1.3 `LoginFeature` y `RegisterFeature`: subtítulos "Accede a tu panel de historias clínicas ortodónticas" y "Regístrate para llevar tus historias clínicas ortodónticas"
 - [x] 1.4 Ajustar `AuthIdentity.test.tsx` a los Scenario modificados (tagline, descripción y logos visibles, sin línea de derechos, subtítulos de login y registro) y comprobar el logo configurado en la barra lateral (`AppLayout.test.tsx` ya lo cubre)
 - [ ] 1.5 `pnpm validate` en verde; revisar a ojo login, registro, restablecer y arranque del servidor en escritorio y móvil
 

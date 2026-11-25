@@ -5,7 +5,7 @@ El repositorio SHALL declarar en `project.config.json` (raíz, validado por un J
 
 #### Scenario: La UI muestra la identidad configurada
 - **WHEN** se renderizan las pantallas completas de login y de registro
-- **THEN** muestran el tagline y la descripción de `project.config.json`; el subtítulo del registro incluye el nombre y el del login habla de las historias clínicas ortodónticas; los logos usan las rutas configuradas con el nombre como texto alternativo; ninguna de las dos muestra la línea de derechos con el nombre
+- **THEN** muestran el tagline y la descripción de `project.config.json`; los subtítulos de login y de registro hablan de las historias clínicas ortodónticas; los logos usan las rutas configuradas con el nombre como texto alternativo; ninguna de las dos muestra la línea de derechos con el nombre
 
 #### Scenario: Título de la pestaña desde la configuración
 - **WHEN** se procesa el `index.html` del frontend (en desarrollo o en el build)

@@ -3,7 +3,7 @@
 - `BrandPanel` (panel de escritorio) muestra el logo en blanco, el tagline, la descripción, el contacto y "© {project.name}". Lo usan `AuthLayout` (login, registro, restablecer) y `ServerWarmupScreen`.
 - `AuthLayout` y `ServerWarmupScreen` además muestran el logo a color en móvil (`lg:hidden`).
 - El logo de la barra lateral (`Sidebar`) y la hoja impresa usan sus propios elementos; no pasan por estas pantallas.
-- `LoginFeature` arma el subtítulo con `project.name`; `RegisterFeature` hace lo mismo.
+- `LoginFeature` y `RegisterFeature` arman su subtítulo con `project.name`.
 
 ## Goals / Non-Goals
 
@@ -17,15 +17,11 @@
 
 **2. Panel de marca sin línea de derechos.** Sin el pie, el logo queda arriba y el contenido (tagline, descripción, contacto) centrado verticalmente en el panel Roxo.
 
-**3. Subtítulo del login fijo en el componente.** "Accede a tu panel de historias clínicas ortodónticas" va como texto del componente `LoginFeature` (ya no depende de `project.name`).
+**3. Subtítulos fijos en los componentes.** "Accede a tu panel de historias clínicas ortodónticas" (login) y "Regístrate para llevar tus historias clínicas ortodónticas" (registro) van como texto de `LoginFeature` y `RegisterFeature`; ya no dependen de `project.name`.
 
 **4. Logo nuevo solo por reemplazo de archivos.** El símbolo nuevo (sin texto, cuadrado) sustituye a los cuatro archivos de marca sin tocar las rutas de `project.config.json`: `logo-light.svg` y `favicon.svg` en color sobre transparente; `logo-white.svg` y `logo-dark.svg` en blanco sobre transparente (modo oscuro y fondos de color).
 
 ## Risks / Trade-offs
 
-- El nombre "HS FACOP" sigue en otros sitios (pestaña, barra lateral, subtítulo del registro, textos de ayuda): el cambio se limita a lo pedido. Si se quiere desmarcar del todo, hace falta otro cambio.
+- El nombre "HS FACOP" sigue en otros sitios (pestaña, barra lateral, textos de ayuda): el cambio se limita a lo pedido. Si se quiere desmarcar del todo, hace falta otro cambio.
 - El símbolo nuevo es cuadrado y sin texto; el logo anterior era ancho. Hay que revisar a ojo la barra lateral y el panel.
-
-## Open Questions
-
-- El subtítulo del registro ("Regístrate para empezar a usar HS FACOP") no se cambia en este alcance, porque solo se pidió el del login. Se anota por si se quiere igualarlo.

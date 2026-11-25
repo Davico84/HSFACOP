@@ -31,6 +31,6 @@ describe("template-bootstrap — Configuración única de la identidad visible",
   it("La UI muestra la identidad configurada: registro", () => {
     renderWithProviders(<RegisterView />, { initialEntries: ["/registro"] });
     expect(within(screen.getByRole("main")).getByRole("heading", { level: 1 })).toHaveTextContent("Crear cuenta");
-    expectBrand(`Regístrate para empezar a usar ${project.name}`);
+    expectBrand("Regístrate para llevar tus historias clínicas ortodónticas");
   });
 });
