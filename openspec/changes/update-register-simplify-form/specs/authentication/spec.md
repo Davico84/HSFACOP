@@ -25,18 +25,18 @@ El sistema SHALL permitir crear una cuenta con nombre completo, correo y contras
 - **THEN** el frontend muestra un error de validación en el campo de confirmación
 - **AND** no envía la petición al backend
 
-#### Scenario: Formulario mínimo
-- **WHEN** se abre el formulario de registro
-- **THEN** pide solo nombre completo, correo, contraseña y su confirmación, sin código de turma ni datos del alumno
-
-#### Scenario: Registro desde el formulario
-- **WHEN** un visitante se registra con el formulario
+#### Scenario: Registro sin código ni datos opcionales
+- **WHEN** un visitante se registra con el formulario, que pide solo nombre completo, correo, contraseña y su confirmación
 - **THEN** la cuenta se crea como alumno individual, sin turma y sin celular, documento ni COP, y los puede completar en "Mis datos"
 
-#### Scenario: Registro con datos del alumno por la API
-- **WHEN** la solicitud de registro incluye celular "987654321", DNI "74125896" y COP "12345"
+#### Scenario: Formulario mínimo
+- **WHEN** se abre el formulario de registro
+- **THEN** no muestra el código de turma ni los datos del alumno
+
+#### Scenario: Registro con datos del alumno
+- **WHEN** la solicitud de registro (por la API) incluye celular "987654321", DNI "74125896" y COP "12345"
 - **THEN** la cuenta se crea con esos datos y el alumno los ve en "Mis datos"
 
-#### Scenario: Dato opcional con formato inválido por la API
-- **WHEN** la solicitud de registro incluye un celular de 8 dígitos o un DNI de 7
+#### Scenario: Dato opcional con formato inválido
+- **WHEN** la solicitud de registro (por la API) incluye un celular de 8 dígitos o un DNI de 7
 - **THEN** el servidor responde `400` sin crear la cuenta
