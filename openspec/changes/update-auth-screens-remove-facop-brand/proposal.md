@@ -1,0 +1,27 @@
+# Proposal
+
+## Why
+
+La aplicación ya no se venderá a la institución FACOP. Las pantallas previas al ingreso todavía muestran su logo, la línea "© HS FACOP" y un subtítulo que nombra a "HS FACOP"; deben dejar de identificarla.
+
+## What Changes
+
+- Las pantallas previas al ingreso (login, registro, restablecer contraseña y la pantalla de arranque del servidor) dejan de mostrar el logo de FACOP, tanto en el panel de marca de escritorio como en el logo móvil.
+- El panel de marca deja de mostrar la línea "© HS FACOP"; conserva el tagline, la descripción y el contacto.
+- El subtítulo del login pasa de "Accede a tu panel de HS FACOP" a "Accede a tu panel de historias clínicas ortodónticas".
+- Sin cambios: la hoja imprimible de la historia (usa su propio logo), el logo de la barra lateral dentro de la app, el favicon y `project.config.json`.
+- Sin backend, base de datos ni contrato de API.
+
+## Capabilities
+
+### New Capabilities
+<!-- Ninguna. -->
+
+### Modified Capabilities
+- `template-bootstrap`: el Scenario "La UI muestra la identidad configurada" ya no exige logos ni el nombre en login y registro; el logo configurado se comprueba en la barra lateral.
+- `project-foundation`: en "Paleta de la marca FACOP", los Scenarios "Logos oficiales" y "Panel del login" dejan de mostrar el logo en las pantallas previas al ingreso; se agrega el Scenario de pantallas previas al ingreso sin logo.
+
+## Impact
+
+- Frontend: `BrandPanel.tsx`, `AuthLayout.tsx`, `ServerWarmupScreen.tsx`, `LoginFeature.tsx` y los tests `AuthIdentity.test.tsx` y el de arranque en frío si comprueba el logo.
+- Sin cambios en backend, contrato ni migraciones.
