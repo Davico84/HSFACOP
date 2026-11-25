@@ -8,7 +8,7 @@
 
 **Goals:** un alta de cuatro campos, corta y sin distracciones.
 
-**Non-Goals:** retirar el código de inscripción de las turmas, su apertura/cierre o los campos de la API (quedan sin uso desde el registro; se pueden retirar en otro change); tocar "Mis datos"; cambiar el subtítulo del registro (sigue diciendo el nombre del proyecto; lo trata el change de la marca si se quiere).
+**Non-Goals:** retirar el código de inscripción de las turmas, su apertura/cierre o los campos de la API (quedan sin uso desde el registro; se pueden retirar en otro change); tocar "Mis datos"; cambiar el subtítulo del registro (lo cubre el change `update-auth-screens-remove-facop-brand`).
 
 ## Decisions
 
