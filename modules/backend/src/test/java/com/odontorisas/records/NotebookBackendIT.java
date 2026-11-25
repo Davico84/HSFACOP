@@ -2,32 +2,21 @@ package com.odontorisas.records;
 
 import com.odontorisas.AbstractIntegrationTest;
 import com.odontorisas.TestRecordNumbers;
-import com.odontorisas.service.records.migration.IdentityMigration;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Clock;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -38,71 +27,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Parte del backend de la libreta local (add-orthodontic-records-local-patient-notebook): búsqueda por
- * identificadores (sin texto ni ids en la URL, mismo acceso por rol y sin caché), marca de respaldo del
- * autor (idempotente, solo el autor y solo en la ventana de copia) y su informe por autor para el responsable.
+ * identificadores, sin texto ni ids en la URL, con el mismo acceso por rol y sin caché.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
-@Import(NotebookBackendIT.MutableClockConfig.class)
-@TestPropertySource(properties = "app.legacy-copy.deadline=2026-10-20T00:00:00Z")
 class NotebookBackendIT extends AbstractIntegrationTest {
-
-    static final Instant BEFORE = Instant.parse("2026-10-05T15:00:00Z");
-    static final Instant AFTER = Instant.parse("2026-10-20T00:00:01Z");
-    static final MutableClock CLOCK = new MutableClock(BEFORE);
-
-    static final class MutableClock extends Clock {
-        private volatile Instant now;
-
-        MutableClock(Instant now) {
-            this.now = now;
-        }
-
-        void set(Instant instant) {
-            this.now = instant;
-        }
-
-        @Override
-        public ZoneId getZone() {
-            return ZoneOffset.UTC;
-        }
-
-        @Override
-        public Clock withZone(ZoneId zone) {
-            return this;
-        }
-
-        @Override
-        public Instant instant() {
-            return now;
-        }
-    }
-
-    @TestConfiguration
-    static class MutableClockConfig {
-        @Bean
-        @Primary
-        Clock mutableClock() {
-            return CLOCK;
-        }
-    }
 
     private static final String PASSWORD = "password123";
     private static final String BASE = "/api/orthodontic-records";
 
     @Autowired MockMvc mockMvc;
     @Autowired JdbcTemplate jdbc;
-    @Autowired IdentityMigration migration;
 
     private final JsonMapper json = JsonMapper.builder().build();
 
     record Session(long id, String token) {}
-
-    @BeforeEach
-    void resetClock() {
-        CLOCK.set(BEFORE);
-    }
 
     private JsonNode read(MvcResult result) throws Exception {
         String body = result.getResponse().getContentAsString(StandardCharsets.UTF_8);
@@ -140,20 +80,10 @@ class NotebookBackendIT extends AbstractIntegrationTest {
             .contentType(MediaType.APPLICATION_JSON).content("{\"recordIds\":" + idsJson + "}")).andReturn();
     }
 
-    private MvcResult backup(Session as, long id) throws Exception {
-        return mockMvc.perform(post(BASE + "/" + id + "/notebook-backup").header("Authorization", "Bearer " + as.token())).andReturn();
-    }
-
     private List<Long> ids(MvcResult result) throws Exception {
         List<Long> found = new ArrayList<>();
         read(result).get("content").forEach(row -> found.add(row.get("id").asLong()));
         return found;
-    }
-
-    private Instant backedUpAt(long id) {
-        var stamp = jdbc.queryForObject("SELECT notebook_backup_confirmed_at FROM orthodontic_records WHERE id = ?",
-            java.sql.Timestamp.class, id);
-        return stamp == null ? null : stamp.toInstant();
     }
 
     // --- Búsqueda por identificadores ---
@@ -208,101 +138,5 @@ class NotebookBackendIT extends AbstractIntegrationTest {
             .contentType(MediaType.APPLICATION_JSON).content("{\"q\":\"zzmarcador\"}")).andReturn();
 
         assertThat(output.getAll()).doesNotContain("recordIds").doesNotContain("Zzmarcador").doesNotContain("zzmarcador");
-    }
-
-    // --- Marca de respaldo ---
-
-    @Test
-    void the_author_marks_the_backup_and_marking_again_changes_nothing() throws Exception {
-        Session torres = register("Dra. Torres");
-        long id = record(torres, "Ana");
-        long versionBefore = jdbc.queryForObject("SELECT version FROM orthodontic_records WHERE id = ?", Long.class, id);
-
-        MvcResult first = backup(torres, id);
-        assertThat(first.getResponse().getStatus()).isEqualTo(204);
-        assertThat(first.getResponse().getHeader("Cache-Control")).contains("no-store");
-        Instant stamp = backedUpAt(id);
-        assertThat(stamp).isEqualTo(BEFORE);
-
-        CLOCK.set(BEFORE.plusSeconds(3600));
-        assertThat(backup(torres, id).getResponse().getStatus()).isEqualTo(204);
-        assertThat(backedUpAt(id)).isEqualTo(stamp);   // idempotente: no se vuelve a marcar
-        assertThat(jdbc.queryForObject("SELECT version FROM orthodontic_records WHERE id = ?", Long.class, id)).isEqualTo(versionBefore);
-    }
-
-    @Test
-    void only_the_author_can_mark_it() throws Exception {
-        Session torres = register("Dra. Torres");
-        long id = record(torres, "Ana");
-
-        assertThat(backup(register("Dr. Medina"), id).getResponse().getStatus()).isEqualTo(404);
-        assertThat(backup(withRole("Admin FACOP", "ADMIN"), id).getResponse().getStatus()).isEqualTo(404);
-        assertThat(backup(withRole("Coordinadora", "COORDINATOR"), id).getResponse().getStatus()).isIn(403, 404);
-        assertThat(backedUpAt(id)).isNull();
-    }
-
-    @Test
-    void it_closes_at_the_deadline_and_when_the_record_is_migrated() throws Exception {
-        Session torres = register("Dra. Torres");
-        long open = record(torres, "Ana");
-        long migrated = record(torres, "Beto");
-        jdbc.update("UPDATE orthodontic_records SET identity_migrated_at = now() WHERE id = ?", migrated);
-
-        assertThat(backup(torres, migrated).getResponse().getStatus()).isEqualTo(404);
-        CLOCK.set(AFTER);
-        assertThat(backup(torres, open).getResponse().getStatus()).isEqualTo(404);
-        assertThat(backedUpAt(open)).isNull();
-        assertThat(backedUpAt(migrated)).isNull();
-    }
-
-    /** Secuencia completa: copia → marca de respaldo → fin de la fecha límite → migración → la copia se cierra. */
-    @Test
-    void the_whole_sequence_copy_backup_deadline_and_migration() throws Exception {
-        Session torres = register("Dra. Torres");
-        long id = record(torres, "Ana");
-        jdbc.update("UPDATE orthodontic_records SET legacy_patient_name = 'Ana Lucía Quispe Mamani', document_type = 'DNI', "
-            + "document_number = '74125896', birth_date = DATE '2012-05-20', phone = '987654321' WHERE id = ?", id);
-        // Antes de la fecha límite el autor copia (con los datos antiguos), marca el respaldo y la migración se niega.
-        MvcResult legacy = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-            .get(BASE + "/" + id + "/legacy-identity").header("Authorization", "Bearer " + torres.token())).andReturn();
-        assertThat(legacy.getResponse().getStatus()).isEqualTo(200);
-        assertThat(backup(torres, id).getResponse().getStatus()).isEqualTo(204);
-        assertThat(org.assertj.core.api.Assertions.catchThrowable(() -> migration.migrate())).hasMessageContaining("aún no venció");
-        assertThat(jdbc.queryForObject("SELECT document_number FROM orthodontic_records WHERE id = ?", String.class, id)).isEqualTo("74125896");
-
-        // Un fallo de red al marcar se reintenta sin efecto: la marca es idempotente.
-        assertThat(backup(torres, id).getResponse().getStatus()).isEqualTo(204);
-        Instant stamp = backedUpAt(id);
-
-        // Vence la fecha: la migración corre, borra los datos antiguos y conserva la marca.
-        CLOCK.set(AFTER);
-        migration.migrate();
-
-        assertThat(jdbc.queryForObject("SELECT document_number FROM orthodontic_records WHERE id = ?", String.class, id)).isNull();
-        assertThat(jdbc.queryForObject("SELECT legacy_patient_name FROM orthodontic_records WHERE id = ?", String.class, id)).isNull();
-        assertThat(backedUpAt(id)).isEqualTo(stamp);
-        // La copia ya no está disponible: ni los datos antiguos ni la marca.
-        MvcResult closed = mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-            .get(BASE + "/" + id + "/legacy-identity").header("Authorization", "Bearer " + torres.token())).andReturn();
-        assertThat(closed.getResponse().getStatus()).isEqualTo(404);
-        assertThat(backup(torres, id).getResponse().getStatus()).isEqualTo(404);
-    }
-
-    @Test
-    void the_report_counts_pending_records_without_backup_by_author_and_shows_no_patient_values() throws Exception {
-        Session torres = register("Dra. Torres");
-        long backedUp = record(torres, "Ana");
-        long pendingOne = record(torres, "Beto");
-        long pendingTwo = record(torres, "Carla");
-        jdbc.update("UPDATE orthodontic_records SET identity_migrated_at = now(), notebook_backup_confirmed_at = NULL "
-            + "WHERE identity_migrated_at IS NULL AND author_id <> ?", torres.id());
-        backup(torres, backedUp);
-
-        var report = migration.unbackedByAuthor().orElseThrow();
-
-        assertThat(report).filteredOn(row -> row.authorId() == torres.id()).singleElement()
-            .satisfies(row -> assertThat(row.records()).isEqualTo(2));
-        assertThat(report.toString()).doesNotContain("Ana").doesNotContain("Beto").doesNotContain("Carla");
-        assertThat(pendingOne).isNotEqualTo(pendingTwo);
     }
 }

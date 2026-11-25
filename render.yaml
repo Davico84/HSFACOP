@@ -34,7 +34,3 @@ services:
       # Origen exacto del frontend de producción, sin "/" final (p. ej. https://hs-facop.vercel.app).
       - key: CORS_ALLOWED_ORIGINS
         sync: false
-      # Fecha límite (ISO-8601, p. ej. 2026-12-04T05:00:00Z) en que el autor de cada historia puede copiar a su
-      # libreta local los datos antiguos del paciente. Vacía = ventana cerrada. Ver docs/deployment.md §7.
-      - key: LEGACY_COPY_DEADLINE
-        sync: false

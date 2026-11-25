@@ -71,7 +71,6 @@ async function mockApi(context: BrowserContext, onSearch?: (body: string) => voi
     route.fulfill(json({ accessToken: "token-e2e", user: { id: 1, email: "e2e@empresa.test", role: "USER", fullName: "Dra. María Torres" } })),
   );
   await context.route("**/api/orthodontic-records/quota", (route) => route.fulfill(json({ limit: null, used: 1, reached: false })));
-  await context.route("**/api/orthodontic-records/10/legacy-identity", (route) => route.fulfill({ status: 404, contentType: "application/problem+json", body: "{}" }));
   await context.route("**/api/orthodontic-records/10/print", (route) => {
     onPrint?.(route.request().postData() ?? "");
     return route.fulfill(json({ record: { ...record, patientLockedAt: "2026-10-05T15:00:00Z" }, printedOn: "2026-10-05", clinicalFilledSteps: 1 }));

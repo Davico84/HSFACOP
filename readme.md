@@ -187,7 +187,7 @@ pnpm --filter odontorisas-frontend generate:api
 ```
 
 ### Variables de despliegue relevantes
-`LEGACY_COPY_DEADLINE` (fecha límite para que cada tratante copie los datos antiguos a su libreta; vacía = ventana cerrada), `RECORDS_DEFAULT_QUOTA`, `CORS_ALLOWED_ORIGINS`, `COOKIE_SECURE`. Guía completa en [`docs/deployment.md`](docs/deployment.md).
+`RECORDS_DEFAULT_QUOTA`, `CORS_ALLOWED_ORIGINS`, `COOKIE_SECURE`. Guía completa en [`docs/deployment.md`](docs/deployment.md).
 
 ---
 

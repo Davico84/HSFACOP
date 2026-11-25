@@ -82,7 +82,6 @@ Las de `modules/backend/secrets.properties.example`, más:
 | `COOKIE_SECURE` | `true` |
 | `CORS_ALLOWED_ORIGINS` | el origen exacto del frontend (si hay CORS; ver §3) |
 | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | de Neon (§2) |
-| `LEGACY_COPY_DEADLINE` | instante ISO-8601 (p. ej. `2026-12-04T05:00:00Z`): fecha límite en que el autor de cada historia puede copiar a su libreta local los datos antiguos del paciente (§7). Vacía = ventana cerrada. Se escribe una sola vez al desplegar la libreta |
 
 `DB_POOL_*` ya tienen defaults pensados para Neon; no hace falta definirlas.
 
@@ -299,12 +298,12 @@ Producción = rama **`main`** (Render y Vercel). `dev` llega por PR con el CI en
 
 ## 7. Migración de la identidad del paciente (alias, sexo y edad)
 
-**Estado (2026-11-20):** pasos 1 y 2 hechos — el binario con la libreta local está en producción (PRs #35 y #36; Flyway aplicó V21 a V23) y la fecha límite de copia está definida en Render: cada tratante ve la fecha en el aviso "Pasar a mi libreta". Pendientes: pasos 3 a 7 (esperar la fecha límite, ejecutar la acción administrativa y retirar las columnas con una migración **V24**).
+**Estado (2026-11-25):** pasos 1 a 6 hechos. El binario con la libreta local está en producción desde el 2026-11-20 (PRs #35 y #36; Flyway aplicó V21 a V23). El 2026-11-25 se cerró la ventana de copia y se ejecutó la acción administrativa: 11 historias migradas, 0 pendientes y verificación final en cero. El paso 7 (retiro de las columnas con la migración **V25**, V24 es el vencimiento de cuentas, y purga de copias) lo cubre `update-orthodontic-records-retire-legacy-columns`: tras desplegarlo, la acción administrativa, la ventana de copia y `LEGACY_COPY_DEADLINE` ya no existen y los pasos 2 a 6 quedan como historial.
 
 Cambio `update-orthodontic-records-pseudonymous-patient`: el servidor deja de guardar nombre completo, documento, nacimiento, lugar, domicilio y celular del paciente. **El orden importa**: la acción borra datos en producción y las columnas no se eliminan hasta que ya no quede nada.
 
 1. **Copia de seguridad verificada** de la base (§2.1) y anotar cuántas historias hay.
-2. **Desplegar el binario nuevo junto con la libreta local** (`add-orthodontic-records-local-patient-notebook`) y escribir `LEGACY_COPY_DEADLINE` (14 días después). El servidor ya no mapea ni escribe las columnas antiguas; V21, V22 y V23 solo añaden columnas (V22 guarda el nombre original y los nombres de firma; V23, la marca de respaldo de la libreta). Hasta la fecha, cada autor ve sus datos antiguos con `GET /api/orthodontic-records/{id}/legacy-identity` y los pasa a su libreta.
+2. **Desplegar el binario nuevo junto con la libreta local** (`add-orthodontic-records-local-patient-notebook`) y escribir `LEGACY_COPY_DEADLINE` (14 días después). El servidor ya no mapea ni escribe las columnas antiguas; V21, V22 y V23 solo añaden columnas (V22 guarda el nombre original y los nombres de firma; V23, la marca de respaldo de la libreta). Hasta la fecha, cada autor veía sus datos antiguos con `GET /api/orthodontic-records/{id}/legacy-identity` y los pasaba a su libreta.
 3. **Esperar a que funcione sin errores** y a que venza la fecha límite. Pasada la fecha se borra igual lo que nadie copió: queda solo en el papel firmado.
 4. **Revisar la lista de alias** (no cambia nada) y el informe de historias sin respaldo, y obtener la **aprobación escrita** del responsable:
 
@@ -319,7 +318,13 @@ Cambio `update-orthodontic-records-pseudonymous-patient`: el servidor deja de gu
    ```
 
 6. **Comprobar** que la verificación final informa cero historias con columnas retiradas, nombres de firma o motivos en texto libre.
-7. **Retirar las columnas** con un segundo despliegue (migración guardada que aborta, sin mostrar valores, si queda alguna fila con datos) y **purgar las copias anteriores** (artifacts del respaldo diario, ramas de la base del proveedor, descargas) con fecha de corte y registro de quién lo verificó.
+7. **Retirar las columnas** (migración V25 guardada que aborta, sin mostrar valores, si queda alguna fila con datos; sale junto con el binario que ya no tiene la acción ni el endpoint, porque el binario de producción ya no mapeaba esas columnas) y **purgar las copias anteriores** (rama de Neon `backup-antes-alias-2026-11-25`, artifacts del respaldo diario anteriores a la fecha de corte, descargas) con fecha de corte y registro de quién lo verificó. El respaldo diario comprueba desde entonces que el volcado restaurado no trae las columnas retiradas ni nombres de firma del paciente o apoderado.
+
+### Registro de la purga
+
+| Fecha de corte | Qué se purgó | Verificó |
+|---|---|---|
+| _pendiente_ | Rama de Neon `backup-antes-alias-2026-11-25`; artifacts `db-backup` anteriores al corte; descargas | _pendiente_ |
 
 > [!WARNING]
-> **Después del retiro de las columnas está prohibido volver al binario anterior**: mapea columnas que ya no existen. Solo se restaura un par base + binario compatible desde una copia verificada, en un entorno aislado. Antes del retiro sí se puede volver, porque V21 y V22 no renombran ni borran nada.
+> **Después del retiro de las columnas (V25) está prohibido volver a un binario anterior**: puede consultar columnas que ya no existen. Solo se restaura un par base + binario compatible desde una copia verificada, en un entorno aislado. Antes del retiro sí se puede volver, porque V21 y V22 no renombran ni borran nada.

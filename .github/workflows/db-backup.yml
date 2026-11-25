@@ -142,7 +142,20 @@ jobs:
             | sort -u > "$RUNNER_TEMP/backup/restored.txt"
           missing=$(comm -23 "$RUNNER_TEMP/backup/expected.txt" "$RUNNER_TEMP/backup/restored.txt")
           [ -z "$missing" ] || { echo "::error::Tablas sin restaurar: $(tr '\n' ' ' <<< "$missing")"; exit 1; }
-          echo "Restauración ok: V$expected, $(wc -l < "$RUNNER_TEMP/backup/expected.txt") tablas."
+          # Sin identificadores del paciente (update-orthodontic-records-retire-legacy-columns): tras el
+          # retiro (V25) la copia no puede traer las columnas antiguas ni los nombres de firma del paciente
+          # o del apoderado. Solo se informan conteos y nombres de columna, nunca valores (el log es público).
+          columns=$(pg psql -X -At -v ON_ERROR_STOP=1 -d "$RESTORE_URL" -c \
+            "SELECT string_agg(column_name, ', ' ORDER BY column_name) FROM information_schema.columns
+             WHERE table_name = 'orthodontic_records' AND column_name IN
+               ('document_type', 'document_number', 'birth_date', 'birth_place', 'address', 'phone',
+                'legacy_patient_name', 'legacy_signatures')")
+          [ -z "$columns" ] || { echo "::error::El volcado conserva columnas retiradas de orthodontic_records: $columns"; exit 1; }
+          signatures=$(pg psql -X -At -v ON_ERROR_STOP=1 -d "$RESTORE_URL" -c \
+            "SELECT count(*) FROM orthodontic_records
+             WHERE content -> 'signatures' ?| ARRAY['patientSignatureName', 'guardianName', 'guardianRelationship']")
+          [ "$signatures" = "0" ] || { echo "::error::El volcado tiene $signatures historias con nombres de firma del paciente o del apoderado."; exit 1; }
+          echo "Restauración ok: V$expected, $(wc -l < "$RUNNER_TEMP/backup/expected.txt") tablas, sin identificadores del paciente."
 
       - name: Cifrado
         if: steps.config.outputs.configured == 'true'

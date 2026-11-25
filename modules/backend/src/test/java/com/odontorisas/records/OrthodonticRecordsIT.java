@@ -491,10 +491,25 @@ class OrthodonticRecordsIT extends AbstractIntegrationTest {
             assertThat(ok.get("content").get("signatures").has(field)).as(field).isFalse();
         }
         long id = ok.get("id").asLong();
-        assertThat(jdbc.queryForMap("SELECT document_type, document_number, birth_date, birth_place, address, phone "
-            + "FROM orthodontic_records WHERE id = ?", id).values()).allMatch(java.util.Objects::isNull);
+        // Las columnas de identidad antigua ya no existen en el esquema (V25).
+        assertThat(jdbc.queryForList("SELECT column_name FROM information_schema.columns "
+            + "WHERE table_name = 'orthodontic_records' AND table_schema = current_schema()", String.class))
+            .doesNotContain("document_type", "document_number", "birth_date", "birth_place", "address", "phone");
         assertThat(jdbc.queryForObject("SELECT search_text FROM orthodontic_records WHERE id = ?", String.class, id))
             .isEqualTo(("ana " + ok.get("recordNumber").stringValue()).toLowerCase());
+    }
+
+    @Test
+    void the_old_identity_endpoints_are_gone_and_the_record_keeps_working() throws Exception {
+        Session torres = register("Dra. Torres");
+        long id = createOk(torres, "Ana").get("id").asLong();
+
+        // Datos antiguos y marca de respaldo de la libreta: ya no hay ventana de copia (retiro de columnas).
+        assertThat(mockMvc.perform(get(BASE + "/" + id + "/legacy-identity")
+            .header("Authorization", "Bearer " + torres.token())).andReturn().getResponse().getStatus()).isEqualTo(404);
+        assertThat(mockMvc.perform(post(BASE + "/" + id + "/notebook-backup")
+            .header("Authorization", "Bearer " + torres.token())).andReturn().getResponse().getStatus()).isIn(404, 405);
+        assertThat(getRecord(torres, id).getResponse().getStatus()).isEqualTo(200);
     }
 
     @Test
