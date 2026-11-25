@@ -74,7 +74,7 @@ export function ServerWarmupScreen({ elapsedSeconds, online, onRetry }: ServerWa
       <main className="flex items-center justify-center px-6 py-10">
         <div className="w-full max-w-sm text-center">
           <div className="mb-10 flex justify-center lg:hidden">
-            <Logo className="h-12 w-auto" />
+            <Logo className="h-20 w-auto" />
           </div>
 
           <div role="status" aria-live="polite">

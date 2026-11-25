@@ -4,17 +4,18 @@ import { ContactLinks } from "@/modules/core/components/ContactLinks";
 
 /**
  * Panel de marca de las pantallas a pantalla completa (login, registro, arranque en frío): Roxo
- * liso (token brand-start) con el logo en blanco, tagline, descripción y contacto de project.config.json.
- * Sin línea de derechos. Solo en escritorio; en móvil cada pantalla pone el logo.
+ * liso (token brand-start) con el logo en blanco, tagline, descripción y contacto de project.config.json,
+ * en una sola columna centrada. Sin línea de derechos. Solo en escritorio; en móvil cada pantalla
+ * pone el logo.
  */
 export function BrandPanel() {
   return (
-    <aside className="relative hidden flex-col bg-brand-start p-12 text-white lg:flex">
-      <Logo variant="white" className="h-14 w-auto self-start" />
-      <div className="my-auto max-w-md">
+    <aside className="relative hidden flex-col items-center justify-center bg-brand-start p-12 text-center text-white lg:flex">
+      <div className="flex w-full max-w-md flex-col items-center">
+        <Logo variant="white" className="mb-10 h-36 w-auto" />
         <h2 className="text-balance text-3xl font-semibold leading-tight">{project.tagline}</h2>
         <p className="mt-3 text-white/80">{project.description}</p>
-        <ContactLinks tone="onBrand" className="mt-8 border-t border-white/20 pt-5" />
+        <ContactLinks tone="onBrand" className="mt-10 w-full border-t border-white/20 pt-6" />
       </div>
     </aside>
   );
