@@ -2,13 +2,15 @@
 
 ## Purpose
 Reutilizar la plantilla en un proyecto nuevo sin buscar y reemplazar a mano: la identidad visible (nombre, textos, logos, colores, títulos de OpenAPI y de la pestaña) y los datos de la base de datos se declaran en `project.config.json` y se aplican con un asistente en consola (`pnpm project:setup`) o sin preguntas (`pnpm project:apply`), de forma segura, repetible y sin tocar identificadores técnicos. Capacidad técnica/plataforma.
+
 ## Requirements
+
 ### Requirement: Configuración única de la identidad visible
 El repositorio SHALL declarar en `project.config.json` (raíz, validado por un JSON Schema versionado) nombre visible, tagline, descripción, base de datos (nombre, usuario, puerto, contenedor), JWT issuer, logos, favicon y colores de marca (claro y oscuro), y MUST NOT contener secretos. El frontend SHALL tomar de él esa identidad y el título de la pestaña; el backend SHALL exponer nombre y descripción en OpenAPI. Paquete Java y artefactos Maven/npm MUST NOT depender de él.
 
 #### Scenario: La UI muestra la identidad configurada
 - **WHEN** se renderizan las pantallas completas de login y de registro
-- **THEN** muestran el nombre, el tagline y la descripción de `project.config.json`, sus subtítulos incluyen el nombre, y los logos usan las rutas configuradas con el nombre como texto alternativo
+- **THEN** muestran el tagline y la descripción de `project.config.json`; los subtítulos de login y de registro hablan de las historias clínicas ortodónticas; los logos usan las rutas configuradas con el nombre como texto alternativo; ninguna de las dos muestra la línea de derechos con el nombre
 
 #### Scenario: Título de la pestaña desde la configuración
 - **WHEN** se procesa el `index.html` del frontend (en desarrollo o en el build)
@@ -107,4 +109,3 @@ El repositorio SHALL declarar en `project.config.json` (raíz, validado por un J
 #### Scenario: Re-aplicar sin cambios
 - **WHEN** se aplica sin haber cambiado la configuración desde la última aplicación
 - **THEN** no modifica ningún archivo e informa que no hay cambios
-
