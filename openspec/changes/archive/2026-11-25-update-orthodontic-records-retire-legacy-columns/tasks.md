@@ -27,8 +27,8 @@
 
 ## 6. Operación tras el despliegue (sin código)
 
-- [ ] 6.1 Desplegar en Render, comprobar inicio de sesión, abrir, guardar e imprimir una historia migrada y correr `db-backup` manualmente; verificar que el workflow pasa
-- [ ] 6.2 Purgar la rama de Neon `backup-antes-alias-2026-11-25`, los artifacts `db-backup` anteriores a la fecha de corte y las descargas, y quitar `LEGACY_COPY_DEADLINE` de Render; verificar con una lista de artifacts y de ramas sin las copias anteriores y registrarlo en `docs/deployment.md` con fecha y quién lo verificó, Scenario "Purga de copias anteriores"
+- [x] 6.1 Desplegar en Render, comprobar inicio de sesión, abrir, guardar e imprimir una historia migrada y correr `db-backup` manualmente; verificar que el workflow pasa
+- [x] 6.2 Purgar la rama de Neon `backup-antes-alias-2026-11-25`, los artifacts `db-backup` anteriores a la fecha de corte y las descargas, y quitar `LEGACY_COPY_DEADLINE` de Render; verificar con una lista de artifacts y de ramas sin las copias anteriores y registrarlo en `docs/deployment.md` con fecha y quién lo verificó, Scenario "Purga de copias anteriores"
 
 ## Workflow follow-up
 
