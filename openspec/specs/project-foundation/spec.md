@@ -3,7 +3,9 @@
 ## Purpose
 
 El esqueleto ejecutable y validable del monorepo: un backend Spring Boot que levanta y aplica migraciones, un frontend React + Vite que compila/sirve y pasa `validate`, una estructura arquitectónica establecida y la validación de mensajes de commit. Provee una base estable (sin dominios de negocio) sobre la que nacen las capacidades futuras.
+
 ## Requirements
+
 ### Requirement: Backend base ejecutable
 El backend SHALL arrancar como una aplicación Spring Boot y exponer un endpoint de salud que confirme que el servicio está operativo, sin depender de ninguna capacidad de negocio.
 
@@ -128,11 +130,11 @@ El tema SHALL usar la paleta oficial de FACOP: Roxo `#832C87` como color princip
 
 #### Scenario: Logos oficiales
 - **WHEN** se abre la app en modo claro, en modo oscuro o en el login
-- **THEN** se ve el logo oficial de FACOP según el fondo: positivo (escudo Roxo y "FACOP" en Grafite) sobre fondo claro, en blanco sobre fondo oscuro o Roxo, y el escudo Roxo como favicon y en la barra contraída
+- **THEN** se ve el logo de la aplicación (símbolo de ortodoncia) según el fondo: en color sobre fondo claro, en blanco sobre fondo oscuro o Roxo, y en color como favicon y en la barra contraída
 
 #### Scenario: Panel del login
 - **WHEN** se abre el inicio de sesión en escritorio
-- **THEN** el panel de marca es Roxo liso con el logo en blanco, sin degradado ni turquesa
+- **THEN** el panel de marca es Roxo liso, con el logo en blanco, el tagline, la descripción y el contacto, sin línea de derechos, sin degradado ni turquesa
 
 #### Scenario: Hoja impresa en negro
 - **WHEN** se imprime una historia
