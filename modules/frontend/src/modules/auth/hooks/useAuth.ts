@@ -5,7 +5,7 @@ import type { LoginRequest, RegisterRequest } from "@/modules/core/services/gene
 import { useSessionStore } from "@/store/useSessionStore";
 import { useRecordsListStore } from "@/store/useRecordsListStore";
 import { useRecordsSearchStore } from "@/store/useRecordsSearchStore";
-import { getUserFriendlyError, problemType } from "@/modules/core/utils/apiError";
+import { getUserFriendlyError } from "@/modules/core/utils/apiError";
 
 /** Inicia sesión: al éxito guarda la sesión (access en memoria); errores → toast. */
 export function useLogin() {
@@ -17,9 +17,6 @@ export function useLogin() {
   });
 }
 
-/** `type` de los rechazos del código de turma: el formulario los pinta junto al campo (sin toast). */
-export const COHORT_CODE_ERROR_TYPES = ["/errors/invalid-cohort-code", "/errors/cohort-registration-closed"];
-
 /** Registra una cuenta e inicia sesión automáticamente. */
 export function useRegister() {
   const setSession = useSessionStore((s) => s.setSession);
@@ -27,7 +24,6 @@ export function useRegister() {
     mutationFn: (data: RegisterRequest) => register(data),
     onSuccess: (auth) => setSession(auth.accessToken, auth.user),
     onError: (error) => {
-      if (COHORT_CODE_ERROR_TYPES.includes(problemType(error) ?? "")) return;
       toast.error(getUserFriendlyError(error));
     },
   });
